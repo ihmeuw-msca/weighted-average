@@ -6,8 +6,8 @@ general, kernel functions should have the following form:
 * k_r(x, y) = f(d(x, y)/r)
 * f: nonnegative real-valued function whose value is decreasing (or
      non-increasing) for increasing distance between `x` and `y`
-* d: distance function
 * r: kernel radius
+* d: distance function
 
 TODO:
 * Revisit tricubic function (radius might not be correct)
@@ -31,55 +31,24 @@ class Kernel(ABC):
 
     Attributes
     ----------
-    distance : weave.distance.Distance
-        Distance function.
     radius : int or float
         Kernel radius.
+    distance : weave.distance.Distance
+        Distance function.
 
     """
 
-    def __init__(self, distance: Distance, radius: Union[int, float]) -> None:
+    def __init__(self, radius: Union[int, float], distance: Distance) -> None:
         """Create kernel function.
 
         Parameters
         ----------
-        distance : weave.distance.Distance
-            Distance function.
         radius : int or float
             Kernel radius.
-
-        """
-
-    @property
-    def distance(self) -> Distance:
-        """Get distance function.
-
-        Returns
-        -------
-        weave.distance.Distance
-            Distance function.
-
-        """
-        return self._distance
-
-    @distance.setter
-    def distance(self, distance: Distance) -> None:
-        """Set distance function.
-
-        Parameters
-        ----------
         distance : weave.distance.Distance
             Distance function.
 
-        Raises
-        ------
-        TypeError
-            If `distance` is not a distance function.
-
         """
-        if not isinstance(distance, Distance):
-            raise TypeError(f"Invalid type for `distance`: {type(distance)}.")
-        self._distance = distance
 
     @property
     def radius(self) -> Union[int, float]:
@@ -117,6 +86,37 @@ class Kernel(ABC):
         if radius <= 0.0:
             raise ValueError(f"`radius` is not positive: {radius}.")
         self._radius = radius
+
+    @property
+    def distance(self) -> Distance:
+        """Get distance function.
+
+        Returns
+        -------
+        weave.distance.Distance
+            Distance function.
+
+        """
+        return self._distance
+
+    @distance.setter
+    def distance(self, distance: Distance) -> None:
+        """Set distance function.
+
+        Parameters
+        ----------
+        distance : weave.distance.Distance
+            Distance function.
+
+        Raises
+        ------
+        TypeError
+            If `distance` is not a distance function.
+
+        """
+        if not isinstance(distance, Distance):
+            raise TypeError(f"Invalid type for `distance`: {type(distance)}.")
+        self._distance = distance
 
     @abstractmethod
     def __call__(self, x: ArrayLike, y: ArrayLike) -> Union[int, float]:
