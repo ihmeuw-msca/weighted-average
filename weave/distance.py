@@ -103,7 +103,7 @@ class Hierarchical(Distance):
         """
         self._check_length(x, y)
         try:
-            temp = np.ones(x.shape[0] + 1)
+            temp = np.ones(np.array(x).shape[0] + 1)
         except IndexError:
             temp = np.ones(2)
         temp[1:] = np.array(x) == np.array(y)
