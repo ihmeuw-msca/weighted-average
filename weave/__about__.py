@@ -5,7 +5,7 @@ __all__ = [
 
 __title__ = 'weave'
 __summary__ = 'Smooth data across multiple dimensions using weighted averages'
-__url__ = 'https://github.com/ihmeuw-msca/weighted-average' 
+__url__ = 'https://github.com/ihmeuw-msca/weighted-average'
 
 __classifiers__ = [
     'License :: OSI Approved :: BSD License',
