@@ -38,6 +38,26 @@ class Distance(ABC):
         """
         raise NotImplementedError
 
+    @staticmethod
+    def _check_length(x: ArrayLike, y: ArrayLike) -> None:
+        """Check input lengths match.
+
+        Parameters
+        ----------
+        x : array_like
+            Current point.
+        y : array_like
+            Nearby point.
+
+        Raises
+        ------
+        ValueError
+            If input lengths do not match.
+
+        """
+        if np.array(x).shape != np.array(y):
+            raise ValueError('Input lengths do not match.')
+
 
 class Continuous(Distance):
     """Continuous distance function."""
@@ -58,6 +78,7 @@ class Continuous(Distance):
             Continuous distance between `x` and `y`.
 
         """
+        self._check_length(x, y)
         return np.linalg.norm(np.array(x) - np.array(y))
 
 
@@ -80,11 +101,10 @@ class Hierarchical(Distance):
             Hierarchical distance between `x` and `y`.
 
         """
-        x = np.array(x)
-        y = np.array(y)
+        self._check_length(x, y)
         try:
-            temp = np.ones(len(x) + 1)
-        except TypeError:
+            temp = np.ones(x.shape[0] + 1)
+        except IndexError:
             temp = np.ones(2)
-        temp[1:] = x == y
+        temp[1:] = np.array(x) == np.array(y)
         return np.where(temp[::-1])[0][0]
