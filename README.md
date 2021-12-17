@@ -6,8 +6,8 @@ Smooth data across multiple dimensions using weighted averages.
 
 Method inspired by the spatial-temporal models developed in the following paper:
 
-Foreman, K.J., Lozano, R., Lopez, A.D., et al. "Modeling causes
-of death: an integrated approach using CODEm," Popul Health Metircs,
+Foreman, K.J., Lozano, R., Lopez, A.D., et al. "[Modeling causes
+of death: an integrated approach using CODEm](https://pophealthmetrics.biomedcentral.com/articles/10.1186/1478-7954-10-1)," Popul Health Metircs,
 vol. 10, no. 1, pp. 1-23, 2012.
 
 ## Installing `weave`
