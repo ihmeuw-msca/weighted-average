@@ -23,7 +23,7 @@ from typing import Union
 import numpy as np
 from numpy.typing import ArrayLike
 
-from weave.distance import Distance
+from weave.distance import Distance, Continuous
 
 
 class Kernel(ABC):
@@ -139,3 +139,53 @@ class Kernel(ABC):
 
         """
         raise NotImplementedError
+
+
+class Exponential(Kernel):
+    """Exponential kernel function.
+
+    k_r(x, y) = 1/exp(d(x, y)/r)
+    In CODEm, r = 1/omega
+
+    Attributes
+    ----------
+    radius : int or float
+        Kernel radius.
+    distance : weave.distance.Distance
+        Distance function.
+
+    """
+
+    def __init__(self, radius: Union[int, float], distance: Distance = None) \
+            -> None:
+        """Create kernel function.
+
+        Parameters
+        ----------
+        radius : int or float
+            Kernel radius.
+        distance : weave.distance.Distance, optional
+            Distance function. If None, default is Continuous.
+
+        """
+        if distance is None:
+            distance = Continuous()
+        super().__init__(radius, distance)
+
+    def __call__(self, x: ArrayLike, y: ArrayLike) -> float:
+        """Get exponential smoothing weight between `x` and `y`.
+
+        Parameters
+        ----------
+        x : array_like
+            Current point.
+        y : array_like
+            Nearby point.
+
+        Returns
+        -------
+        float
+            Smoothing weight between `x` and `y`.
+
+        """
+        return 1.0/np.exp(self._distance(x, y)/self._radius)
