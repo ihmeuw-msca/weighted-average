@@ -55,7 +55,7 @@ class Distance(ABC):
             If input lengths do not match.
 
         """
-        if np.array(x).shape != np.array(y):
+        if np.array(x).shape != np.array(y).shape:
             raise ValueError('Input lengths do not match.')
 
 
