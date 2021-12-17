@@ -1,5 +1,7 @@
 <!--- README template from https://github.com/scottydocs/README-template.md -->
 
+![ci](https://github.com/ihmeuw-msca/weighted-average/actions/workflows/ci.yml/badge.svg)
+
 # WEighted-AVErage (weave)
 
 Smooth data across multiple dimensions using weighted averages.
