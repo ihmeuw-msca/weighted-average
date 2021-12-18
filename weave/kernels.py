@@ -49,6 +49,8 @@ class Kernel(ABC):
             Distance function.
 
         """
+        self.radius = radius
+        self.distance = distance
 
     @property
     def radius(self) -> Union[int, float]:
