@@ -158,14 +158,14 @@ class Exponential(Kernel):
 
     def __init__(self, radius: Union[int, float], distance: Distance = None) \
             -> None:
-        """Create kernel function.
+        """Create exponential kernel function.
 
         Parameters
         ----------
         radius : int or float
             Kernel radius.
         distance : weave.distance.Distance, optional
-            Distance function. If None, default is Continuous.
+            Distance function; default is Continuous.
 
         """
         if distance is None:
@@ -185,7 +185,117 @@ class Exponential(Kernel):
         Returns
         -------
         float
-            Smoothing weight between `x` and `y`.
+            Exponential smoothing weight between `x` and `y`.
 
         """
         return 1.0/np.exp(self._distance(x, y)/self._radius)
+
+
+class Tricubic(Kernel):
+    """Tricubic kernel function.
+
+    k_r(x, y) = (1 - (d(x, y)/r)^2)^3
+    In CODEm, s = lambda and r = aMax + 1,
+    where aMax is max(x - x_min, x_max - x)
+
+    There may be some confusion about aMax. Specifically, should it
+    instead by x_max - x_min? For example, the tri-cube weight function
+    is often given as (1 - |u|^3)^3, where |u| <= 1.
+
+    I've implemented my interpretation here, which is slightly
+    different from what's in the CODEm function.
+
+    Attributes
+    ----------
+    radius : int or float
+        Kernel radius.
+    lam : int or float
+        Exponenent value.
+    distance : weave.distance.Distance
+        Distance function.
+
+    """
+
+    def __init__(self, radius: Union[int, float], lam: Union[int, float] = 3,
+                 distance: Distance = None) -> None:
+        """Create tricubic kernel function.
+
+        Parameters
+        ----------
+        radius : int or float
+            Kernel radius.
+        lam : int or float, optional
+            Exponent value; default is 3.
+        distance : weave.distance.Distance, optional
+            Distance function; default is Continuous.
+
+        """
+        if distance is None:
+            distance = Continuous()
+        super().__init__(radius, distance)
+        self.lam = lam
+
+    @property
+    def lam(self) -> Union[int, float]:
+        """Get exponent value.
+
+        Returns
+        -------
+        int or float
+            Exponent value.
+
+        """
+        return self._lam
+
+    @lam.setter
+    def lam(self, lam: Union[int, float]) -> None:
+        """Set exponent value.
+
+        Parameters
+        ----------
+        lam : int or float
+            Exponent value.
+
+        Raises
+        ------
+        TypeError
+            If `lam` not an int or float.
+        ValueError
+            If `lam` not positive.
+
+        """
+        is_bool = isinstance(lam, bool)
+        is_num = isinstance(lam, (int, np.integer, float, np.floating))
+        if is_bool or not is_num:
+            raise TypeError(f"Invalid type for `lam`: {type(lam)}.")
+        if lam <= 0.0:
+            raise ValueError(f"`lam` is not positive: {lam}.")
+        self._lam = lam
+
+    def __cal__(self, x: ArrayLike, y: ArrayLike) -> float:
+        """Get tricubic smoothing weight between `x` and `y`.
+
+        Parameters
+        ----------
+        x : array_like
+            Current point.
+        y : array_like
+            Nearby point.
+
+        Returns
+        -------
+        float
+            Tricubic smoothing weight between `x` and `y`.
+
+        Raises
+        ------
+        ValueError
+            If distance between `x` and `y` is greater than `radius`.
+
+        """
+        distance = self._distance(x, y)
+        if distance > self._radius:
+            msg = 'Distance between `x` and `y` is greater than `radius`: '
+            msg += f"{distance}, {self._radius}."
+            raise ValueError(msg)
+        return (1.0 - (distance/self._radius)**self._lam)**3
