@@ -274,7 +274,7 @@ class Tricubic(Kernel):
             raise ValueError(f"`lam` is not positive: {lam}.")
         self._lam = lam
 
-    def __cal__(self, x: ArrayLike, y: ArrayLike) -> float:
+    def __call__(self, x: ArrayLike, y: ArrayLike) -> float:
         """Get tricubic smoothing weight between `x` and `y`.
 
         Parameters
