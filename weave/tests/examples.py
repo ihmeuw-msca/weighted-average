@@ -18,3 +18,15 @@ data = DataFrame({
 
 # Hierarchy levels
 levels = ['level_1', 'level_2', 'level_3']
+
+# Lists of wrong types and/or values to test exceptions
+test_dict = {
+    'int': [1.0, 'dummy', True, None, [], (), {}],
+    'float': [1, 'dummy', True, None, [], (), {}],
+    'numeric': ['dummy', True, None, [], (), {}],
+    'str': [1, 1.0, True, None, [], (), {}],
+    'list': [1, 1.0, 'dummy', True, None, (), {}],
+    'other': [1, 1.0, 'dummy', True, None, [], (), {}]
+}
+test_dict['list_of_str'] = test_dict['other'] + \
+                           [[not_str] for not_str in test_dict['str']]
