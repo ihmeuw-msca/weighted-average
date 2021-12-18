@@ -23,7 +23,7 @@ from typing import Union
 import numpy as np
 from numpy.typing import ArrayLike
 
-from weave.distance import Distance, Continuous
+from weave.distance import Distance, Continuous, Hierarchical
 
 
 class Kernel(ABC):
@@ -301,3 +301,89 @@ class Tricubic(Kernel):
             msg += f"{distance}, {self._radius}."
             raise ValueError(msg)
         return (1.0 - (distance/self._radius)**self._lam)**3
+
+
+class Depth(Kernel):
+    """Depth kernel function.
+
+    If distance == 0 (same country):
+        weight = radius
+    If distance == 1 (same region):
+        weight = radius*(1 - radius)
+    If distance == 2 (same super-region):
+        weight = (1 - radius)^2
+    If distance >= 3 (different super-region):
+        weight = 0
+
+    Need to generalize for more levels (e.g., sub-national).
+    STGPR and CODEm have differnet versions. This function uses the
+    CODEm version.
+
+    Attribues
+    ---------
+    radius : float
+        Kernel radius.
+    distance : weave.distance.Hierarchical
+        Hierarchical distance function.
+
+    """
+
+    def __init__(self, radius: float) -> None:
+        """Create depth kernel function.
+
+        Parameters
+        ----------
+        radius : float
+            Kernel radius.
+
+        """
+        distance = Hierarchical()
+        super().__init__(radius, distance)
+
+    @Kernel.radius.setter
+    def radius(self, radius: float) -> None:
+        """Set kernel radius.
+
+        Parameters
+        ----------
+        radius : float
+            Kernel radius.
+
+        Raises
+        ------
+        TypeError
+            If `radius` not a float.
+        ValueError
+            If `radius` not in (0, 1).
+
+        """
+        if not isinstance(radius, (float, np.floating)):
+            raise TypeError(f"Invalid type for `radius`: {type(radius)}.")
+        if radius <= 0.0 or radius >= 1.0:
+            raise ValueError(f"`radius` not in (0, 1): {radius}.")
+        self._radius = radius
+
+    def __call__(self, x: ArrayLike, y: ArrayLike) -> float:
+        """Get depth smoothing weight between `x` and `y`.
+
+        Parameters
+        ----------
+        x : array_like
+            Current point.
+        y : array_like
+            Nearby point.
+
+        Returns
+        -------
+        float
+            Depth smoothing weight between `x` and `y`.
+
+        """
+        distance = self._distance(x, y)
+        if distance == 0:
+            return self._radius
+        if distance == 1:
+            return self._radius*(1.0 - self._radius)
+        if distance == 2:
+            return (1.0 - self._radius)**2
+        return 0.0
