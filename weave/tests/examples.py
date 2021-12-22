@@ -1,6 +1,8 @@
 """Example data for tests."""
 from pandas import DataFrame
 
+from weave.distance import Continuous, Hierarchical
+
 
 # Input data
 data = DataFrame({
@@ -30,3 +32,15 @@ test_dict = {
 }
 test_dict['list_of_str'] = test_dict['other'] + \
                            [[not_str] for not_str in test_dict['str']]
+test_dict['dimension'] = test_dict['str'] + \
+                         [[not_str] for not_str in test_dict['str']]
+test_dict['dimensions'] = test_dict['other'] + \
+                          [[not_other] for not_other in test_dict['other']]
+
+# Distance functions
+cont = Continuous()
+hier = Hierarchical()
+distance_dict = {
+    'cont': cont,
+    'hier': hier
+}
