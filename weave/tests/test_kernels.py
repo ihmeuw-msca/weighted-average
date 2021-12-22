@@ -1,4 +1,4 @@
-"""Tests for kernel function."""
+"""Tests for kernel functions."""
 import numpy as np
 import pytest
 
