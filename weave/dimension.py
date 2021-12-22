@@ -139,4 +139,4 @@ class Dimension:
         """
         if not isinstance(other, Dimension):
             return False
-        return other.dimension == self._dimension
+        return other.dimension == self.dimension
