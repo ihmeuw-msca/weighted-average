@@ -2,6 +2,7 @@
 from pandas import DataFrame
 
 from weave.distance import Continuous, Hierarchical
+from weave.kernels import Exponential, Tricubic, Depth
 
 
 # Input data
@@ -43,4 +44,13 @@ hier = Hierarchical()
 distance_dict = {
     'cont': cont,
     'hier': hier
+}
+
+# Kernel functions
+kernel_dict = {
+    'exp_cont': Exponential(0.5),
+    'exp_hier': Exponential(0.5, distance=hier),
+    'tri_cont': Tricubic(7.0),
+    'tri_hier': Tricubic(3, distance=hier),
+    'depth': Depth(0.9)
 }

@@ -2,20 +2,10 @@
 import numpy as np
 import pytest
 
-from weave.distance import Continuous, Hierarchical
+from weave.distance import Continuous
 from weave.kernels import Exponential, Tricubic, Depth
 
-from examples import data, levels, test_dict
-
-cont = Continuous()
-hier = Hierarchical()
-kernel_dict = {
-    'exp_cont': Exponential(0.5),
-    'exp_hier': Exponential(0.5, distance=hier),
-    'tri_cont': Tricubic(7.0),
-    'tri_hier': Tricubic(3, distance=hier),
-    'depth': Depth(0.9)
-}
+from examples import data, distance_dict, levels, kernel_dict, test_dict
 
 
 # Test constructor types
@@ -30,7 +20,7 @@ def test_distance_type(kernel, dist):
 
 @pytest.mark.parametrize('kernel', [Exponential, Tricubic])
 @pytest.mark.parametrize('radius', test_dict['numeric'])
-@pytest.mark.parametrize('dist', [cont, hier])
+@pytest.mark.parametrize('dist', distance_dict.values())
 def test_radius_type(kernel, radius, dist):
     """Raise TypeError if `radius` not an int or float."""
     with pytest.raises(TypeError):
@@ -45,7 +35,7 @@ def test_depth_radius_type(radius):
 
 
 @pytest.mark.parametrize('lam', test_dict['numeric'])
-@pytest.mark.parametrize('dist', [cont, hier])
+@pytest.mark.parametrize('dist', distance_dict.values())
 def test_lam_type(lam, dist):
     """Raise TypeError if `lam` not an int or float."""
     with pytest.raises(TypeError):
@@ -55,7 +45,7 @@ def test_lam_type(lam, dist):
 # Test constructor values
 @pytest.mark.parametrize('kernel', [Exponential, Tricubic])
 @pytest.mark.parametrize('radius', [-1, -1.0, 0, 0.0])
-@pytest.mark.parametrize('dist', [cont, hier])
+@pytest.mark.parametrize('dist', distance_dict.values())
 def test_radius_value(kernel, radius, dist):
     """Raise ValueError if `radius` not positive."""
     with pytest.raises(ValueError):
@@ -70,7 +60,7 @@ def test_depth_radius_value(radius):
 
 
 @pytest.mark.parametrize('lam', [-1, -1.0, 0, 0.0])
-@pytest.mark.parametrize('dist', [cont, hier])
+@pytest.mark.parametrize('dist', distance_dict.values())
 def test_lam_value(lam, dist):
     """Raise ValueError if `lam` not positive."""
     with pytest.raises(ValueError):
@@ -93,7 +83,7 @@ def test_vector_length(kernel):
 
 
 # Test input values
-@pytest.mark.parametrize('dist', [cont, hier])
+@pytest.mark.parametrize('dist', distance_dict.values())
 def test_dist_rad(dist):
     """Raise ValueError if distance greater than `radius`."""
     with pytest.raises(ValueError):
