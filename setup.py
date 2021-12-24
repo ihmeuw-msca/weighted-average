@@ -20,6 +20,7 @@ install_requires = [
     'numba',
     'numpy',
     'pandas',
+    'scipy',
 ]
 
 tests_require = [
