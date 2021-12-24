@@ -16,7 +16,6 @@ Checks
 from typing import List, Tuple, Union
 
 import numpy as np
-from numpy.typing import NDArray
 from pandas import DataFrame
 
 from weave.dimension import Dimension
@@ -149,7 +148,7 @@ class Smoother:
 
     @staticmethod
     def get_data(data: DataFrame, indicator: str, columns: List[str] = None) \
-            -> Tuple[NDArray, Union[None, List[NDArray]]]:
+            -> Tuple[np.ndarray, Union[None, List[np.ndarray]]]:
         """Get `fit` or `predict` data as numpy arrays.
 
         Parameters
@@ -180,8 +179,9 @@ class Smoother:
                 else [data[data_ind][col].values for col in columns]
         return idx_ind, col_list
 
-    def smooth_data(self, dim_list: List[NDArray], col_list: List[NDArray],
-                    idx_fit: NDArray, idx_pred: NDArray) -> NDArray:
+    def smooth_data(self, dim_list: List[np.ndarray],
+                    col_list: List[np.ndarray], idx_fit: np.ndarray,
+                    idx_pred: np.ndarray) -> np.ndarray:
         """Smooth data across dimensions with weighted averages.
 
         Parameters
