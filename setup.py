@@ -17,6 +17,7 @@ with open(path.join(here, 'CHANGELOG.md')) as changelog_file:
 long_description = readme + '\n\n' + changelog
 
 install_requires = [
+    'numba',
     'numpy',
     'pandas',
 ]
