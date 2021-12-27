@@ -47,7 +47,6 @@ def float_arrays(draw, n=2):
 
 
 # Property 1: Output is a real-valued, finite, nonnegative float
-@settings(deadline=None)
 def property_1(distance):
     """Output satisfies property 1."""
     assert np.isreal(distance)
@@ -56,6 +55,7 @@ def property_1(distance):
     assert isinstance(distance, float)
 
 
+@settings(deadline=None)
 @given(my_integers, my_integers)
 def test_continuous_type_int(x, y):
     """Continuous output satisfies property 1."""
@@ -63,6 +63,7 @@ def test_continuous_type_int(x, y):
     property_1(distance)
 
 
+@settings(deadline=None)
 @given(my_floats, my_floats)
 def test_continuous_type_float(x, y):
     """Continuous output satisfies property 1."""
@@ -70,6 +71,7 @@ def test_continuous_type_float(x, y):
     property_1(distance)
 
 
+@settings(deadline=None)
 @given(float_arrays())
 def test_euclidean_type(my_arrays):
     """Euclidean output satisfies property 1."""
@@ -78,6 +80,7 @@ def test_euclidean_type(my_arrays):
     property_1(distance)
 
 
+@settings(deadline=None)
 @given(int_arrays())
 def test_hierarchical_type_int(my_arrays):
     """Hierarchical output satisfies property 1."""
@@ -86,6 +89,7 @@ def test_hierarchical_type_int(my_arrays):
     property_1(distance)
 
 
+@settings(deadline=None)
 @given(float_arrays())
 def test_hierarchical_type_float(my_arrays):
     """Hierarchical output satisfies property 1."""
