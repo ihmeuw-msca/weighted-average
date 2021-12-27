@@ -8,7 +8,7 @@ In general, distance functions should satisfy the following properties:
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
 """
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis.strategies import composite, integers, floats
 from hypothesis.extra.numpy import arrays
 import numpy as np
@@ -47,6 +47,7 @@ def float_arrays(draw, n=2):
 
 
 # Property 1: Output is a real-valued, finite, nonnegative float
+@settings(deadline=None)
 def property_1(distance):
     """Output satisfies property 1."""
     assert np.isreal(distance)
