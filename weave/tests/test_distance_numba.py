@@ -1,3 +1,4 @@
+# pylint: disable=C0103, C0411, W1114
 """Tests for distance functions."""
 import numpy as np
 import pytest
