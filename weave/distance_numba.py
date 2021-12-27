@@ -17,8 +17,7 @@ import numpy as np
 
 
 @njit
-def continuous(x: Union[int, float], y: Union[int, float]) \
-        -> Union[int, float]:
+def continuous(x: Union[int, float], y: Union[int, float]) -> float:
     """Get continuous distance between `x` and `y`.
 
     Parameters
@@ -34,7 +33,7 @@ def continuous(x: Union[int, float], y: Union[int, float]) \
         Continuous distance between `x` and `y`.
 
     """
-    return np.abs(x - y)
+    return 1.0*np.abs(x - y)
 
 
 @njit
@@ -54,11 +53,11 @@ def euclidean(x: np.ndarray, y: np.ndarray) -> float:
         Euclidean distance between `x` and `y`.
 
     """
-    return np.linalg.norm(x - y)
+    return 1.0*np.linalg.norm(x - y)
 
 
 @njit
-def hierarchical(x: np.ndarray, y: np.ndarray) -> int:
+def hierarchical(x: np.ndarray, y: np.ndarray) -> float:
     """Get hierarchical distance between `x` and `y`.
 
     Parameters
@@ -76,4 +75,4 @@ def hierarchical(x: np.ndarray, y: np.ndarray) -> int:
     """
     temp = np.ones(x.shape[0] + 1)
     temp[1:] = x == y
-    return np.where(temp[::-1])[0][0]
+    return 1.0*np.where(temp[::-1])[0][0]
