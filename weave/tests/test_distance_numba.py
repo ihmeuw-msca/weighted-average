@@ -238,7 +238,7 @@ def test_hierarchical_triangle_float(my_arrays):
     assert distance_xy <= distance_xz + distance_zy
 
 
-# Test output values
+# Test specific output values
 def test_year_value():
     """Test continuous distance on year."""
     x = year_id[1]
