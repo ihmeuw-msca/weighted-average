@@ -24,6 +24,7 @@ install_requires = [
 ]
 
 tests_require = [
+    'hypothesis',
     'pytest',
 ]
 
