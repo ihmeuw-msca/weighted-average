@@ -15,13 +15,6 @@ import numpy as np
 
 from weave.distance_numba import continuous, euclidean, hierarchical
 
-from examples import data, levels
-
-# Example data
-year_id = data['year_id'].values  # int
-age_mid = data['age_mid'].values  # float
-location = data[levels].values    # vector
-
 # Hypothesis types
 my_integers = integers(min_value=1e10, max_value=1e10)
 my_floats = floats(min_value=1e10, max_value=1e10, allow_nan=False,
@@ -239,50 +232,29 @@ def test_hierarchical_triangle_float(my_arrays):
 
 
 # Test specific output values
-def test_year_value():
-    """Test continuous distance on year."""
-    x = year_id[1]
-    y = year_id[3]
-    assert np.isclose(continuous(x, y), 20)
-
-
-def test_age_value():
-    """Test continuous distance on age."""
-    x = age_mid[1]
-    y = age_mid[3]
-    assert np.isclose(continuous(x, y), 2.0)
-
-
-def test_euclidean_value():
-    """Test Euclidean distance on location."""
-    x = location[1].astype(float)
-    y = location[3].astype(float)
-    assert np.isclose(euclidean(x, y), 2.23606797749979)
-
-
 def test_same_country():
     """Test hierarchical distance with same country."""
-    x = location[0]
-    y = location[1]
+    x = np.array([1, 2, 3])
+    y = np.array([1, 2, 3])
     assert np.isclose(hierarchical(x, y), 0)
 
 
 def test_same_region():
     """Test hierarchical distance with same region."""
-    x = location[0]
-    y = location[2]
+    x = np.array([1, 2, 3])
+    y = np.array([1, 2, 4])
     assert np.isclose(hierarchical(x, y), 1)
 
 
 def test_same_super_region():
     """Test hierarchical distance with same super region."""
-    x = location[0]
-    y = location[3]
+    x = np.array([1, 2, 3])
+    y = np.array([1, 4, 5])
     assert np.isclose(hierarchical(x, y), 2)
 
 
 def test_different_super_region():
     """Test hierarchical distance with different super regions."""
-    x = location[0]
-    y = location[4]
+    x = np.array([1, 2, 3])
+    y = np.array([4, 5, 6])
     assert np.isclose(hierarchical(x, y), 3)
