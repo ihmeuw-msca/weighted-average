@@ -7,6 +7,8 @@ In general, distance functions should satisfy the following properties:
 3. d(x, y) == d(y, x) (symmetry)
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
+Failing tests related to floating point errors.
+
 """
 from hypothesis import given, settings
 from hypothesis.strategies import composite, integers, floats
@@ -16,9 +18,9 @@ import numpy as np
 from weave.distance_numba import continuous, euclidean, hierarchical
 
 # Hypothesis types
-my_integers = integers(min_value=1e10, max_value=1e10)
-my_floats = floats(min_value=1e10, max_value=1e10, allow_nan=False,
-                   allow_infinity=False)
+my_integers = integers(min_value=-1e10, max_value=1e10)
+my_floats = floats(min_value=-1e10, max_value=1e10, allow_nan=False,
+                   allow_infinity=False, allow_subnormal=False)
 
 
 @composite
