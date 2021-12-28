@@ -7,7 +7,9 @@ In general, distance functions should satisfy the following properties:
 3. d(x, y) == d(y, x) (symmetry)
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
-Failing tests related to floating point errors.
+TODO:
+* Figure out reasonable min_value, max_value to prevent tests from
+  failing due to floating point errors
 
 """
 from hypothesis import given, settings
