@@ -29,7 +29,7 @@ def continuous(x: Union[int, float], y: Union[int, float]) -> float:
 
     Returns
     -------
-    int or float
+    float
         Continuous distance between `x` and `y`.
 
     """
@@ -73,6 +73,9 @@ def hierarchical(x: np.ndarray, y: np.ndarray) -> float:
         Hierarchical distance between `x` and `y`.
 
     """
-    temp = np.ones(x.shape[0] + 1)
-    temp[1:] = x == y
-    return 1.0*np.where(temp[::-1])[0][0]
+    if (x == y).all():
+        return 0.0
+    for ii in range(1, len(x)):
+        if (x[:-ii] == y[:-ii]).all():
+            return 1.0*ii
+    return 1.0*len(x)
