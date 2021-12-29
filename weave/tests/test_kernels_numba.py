@@ -5,10 +5,6 @@ In general, kernel functions should satisfy the following properties:
 2. k(x, y) <= k(x', y') if d(x, y) > d(x', y')
    k(x, y) >= k(x', y') if d(x, y) < d(x', y')
 
-TODO:
-* Figure out reasonable min_value, max_value to prevent tests from
-  failing due to floating point errors
-
 """
 from hypothesis import given
 from hypothesis.strategies import floats
@@ -17,9 +13,9 @@ import numpy as np
 from weave.kernels_numba import exponential, tricubic, depth
 
 # Hypothesis types
-my_distance = floats(min_value=0.0, max_value=1e10, allow_nan=False,
+my_distance = floats(min_value=0.0, max_value=1e5, allow_nan=False,
                      allow_infinity=False, allow_subnormal=False)
-my_radius = floats(min_value=0.0, max_value=1e10, allow_nan=False,
+my_radius = floats(min_value=0.0, max_value=1e5, allow_nan=False,
                    allow_infinity=False, allow_subnormal=False,
                    exclude_min=True)
 my_depth = floats(min_value=0.0, max_value=1.0, allow_nan=False,

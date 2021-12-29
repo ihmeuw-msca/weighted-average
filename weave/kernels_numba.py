@@ -2,6 +2,7 @@
 
 Kernel functions to calculate the smoothing weight for a nearby point
 given the current point, where points are given as scalars or vectors.
+
 In general, kernel functions should have the following form:
 * k_r(x, y) = f(d(x, y)/r)
 * f: function whose value is decreasing (or non-increasing) for
@@ -9,13 +10,16 @@ In general, kernel functions should have the following form:
 * d: distance function
 * r: kernel radius
 
+In general, kernel functions should satisfy the following properties:
+1. k(x, y) is real-valued, finite, and nonnegative
+2. k(x, y) <= k(x', y') if d(x, y) > d(x', y')
+   k(x, y) >= k(x', y') if d(x, y) < d(x', y')
+
 TODO:
 * Generalize depth function to include more levels (e.g., sub-national)
 * STGPR has a different depth function than CODEm
 * Some parameters may depend on whether or not there is country-level
   data (should we add an argument for that? an alternate radius?)
-* Tricubic should have conditions on arguments to guarantee that output
-  is nonnegative
 
 """
 from typing import Union
@@ -52,7 +56,7 @@ def tricubic(distance: float, radius: Union[int, float],
              exponent: Union[int, float]) -> float:
     """Get tricubic smoothing weight.
 
-    k_r(x, y) = (1 - (d(x, y)/r)^s)^3
+    k_r(x, y) = max(0, (1 - (d(x, y)/r)^s)^3)
     CODEm: s = lambda, r = max(x - x_min, x_max - x) + 1
 
     Parameters
@@ -70,7 +74,7 @@ def tricubic(distance: float, radius: Union[int, float],
         Tricubic smoothing weight.
 
     """
-    return (1.0 - (distance/radius)**exponent)**3
+    return max(0.0, (1.0 - (distance/radius)**exponent)**3)
 
 
 @njit
