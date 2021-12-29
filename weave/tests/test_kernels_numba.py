@@ -6,7 +6,7 @@ In general, kernel functions should satisfy the following properties:
    k(x, y) >= k(x', y') if d(x, y) < d(x', y')
 
 """
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis.strategies import floats
 import numpy as np
 
@@ -32,6 +32,7 @@ def property_1(weight):
     assert isinstance(weight, float)
 
 
+@settings(deadline=None)
 @given(my_distance, my_radius)
 def test_exponential_type(distance, radius):
     """Exponential output satisfies property 1."""
@@ -39,6 +40,7 @@ def test_exponential_type(distance, radius):
     property_1(weight)
 
 
+@settings(deadline=None)
 @given(my_distance, my_radius, my_radius)
 def test_tricubic_type(distance, radius, exponent):
     """Tricubic output satisfies property 1."""
@@ -46,6 +48,7 @@ def test_tricubic_type(distance, radius, exponent):
     property_1(weight)
 
 
+@settings(deadline=None)
 @given(my_distance, my_depth)
 def test_depth_type(distance, radius):
     """Depth output satisfies property 1."""
