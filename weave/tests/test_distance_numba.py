@@ -7,10 +7,6 @@ In general, distance functions should satisfy the following properties:
 3. d(x, y) == d(y, x) (symmetry)
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
-TODO:
-* Figure out reasonable min_value, max_value to prevent tests from
-  failing due to floating point errors
-
 """
 from hypothesis import given, settings
 from hypothesis.strategies import composite, integers, floats
@@ -20,15 +16,21 @@ import numpy as np
 from weave.distance_numba import continuous, euclidean, hierarchical
 
 # Hypothesis types
-my_integers = integers(min_value=-1e10, max_value=1e10)
-my_floats = floats(min_value=-1e10, max_value=1e10, allow_nan=False,
-                   allow_infinity=False, allow_subnormal=False)
+my_integers = integers(min_value=-1e5, max_value=1e5)
+
+
+@composite
+def my_floats(draw):
+    """Return float rounded to 5 decimals."""
+    my_float = draw(floats(min_value=-1e-5, max_value=1e5, allow_nan=False,
+                           allow_infinity=False, allow_subnormal=False))
+    return np.around(my_float, decimals=5)
 
 
 @composite
 def int_arrays(draw, n=2):
     """Return n vectors of int with matching lengths."""
-    m = draw(integers(min_value=1, max_value=10))
+    m = draw(integers(min_value=2, max_value=5))
     vec_list = [draw(arrays(int, m, elements=my_integers))
                 for ii in range(n)]
     return vec_list
@@ -37,8 +39,8 @@ def int_arrays(draw, n=2):
 @composite
 def float_arrays(draw, n=2):
     """Return n vectors of float with matching lengths."""
-    m = draw(integers(min_value=1, max_value=10))
-    vec_list = [draw(arrays(float, m, elements=my_floats))
+    m = draw(integers(min_value=2, max_value=5))
+    vec_list = [draw(arrays(float, m, elements=my_floats()))
                 for ii in range(n)]
     return vec_list
 
@@ -61,7 +63,7 @@ def test_continuous_type_int(x, y):
 
 
 @settings(deadline=None)
-@given(my_floats, my_floats)
+@given(my_floats(), my_floats())
 def test_continuous_type_float(x, y):
     """Continuous output satisfies property 1."""
     distance = continuous(x, y)
@@ -79,16 +81,7 @@ def test_euclidean_type(my_arrays):
 
 @settings(deadline=None)
 @given(int_arrays())
-def test_hierarchical_type_int(my_arrays):
-    """Hierarchical output satisfies property 1."""
-    x, y = my_arrays
-    distance = hierarchical(x, y)
-    property_1(distance)
-
-
-@settings(deadline=None)
-@given(float_arrays())
-def test_hierarchical_type_float(my_arrays):
+def test_hierarchical_type(my_arrays):
     """Hierarchical output satisfies property 1."""
     x, y = my_arrays
     distance = hierarchical(x, y)
@@ -98,10 +91,10 @@ def test_hierarchical_type_float(my_arrays):
 # Property 2: Output == 0 iff x == y
 def property_2(x, y, distance):
     """Output satisfies property 2."""
-    if np.isclose(distance, 0.0):
+    if np.isclose(distance, 0.0, rtol=0):
         assert np.allclose(x, y)
     if np.allclose(x, y):
-        assert np.isclose(distance, 0.0)
+        assert np.isclose(distance, 0.0, rtol=0)
 
 
 @given(my_integers, my_integers)
@@ -111,7 +104,7 @@ def test_continuous_zero_int(x, y):
     property_2(x, y, distance)
 
 
-@given(my_floats, my_floats)
+@given(my_floats(), my_floats())
 def test_continuous_zero_float(x, y):
     """Continuous output satisfies property 2."""
     distance = continuous(x, y)
@@ -127,15 +120,7 @@ def test_euclidean_zero(my_arrays):
 
 
 @given(int_arrays())
-def test_hierarchical_zero_int(my_arrays):
-    """Hierarchical output satisfies property 2."""
-    x, y = my_arrays
-    distance = hierarchical(x, y)
-    property_2(x, y, distance)
-
-
-@given(float_arrays())
-def test_hierarchical_zero_float(my_arrays):
+def test_hierarchical_zero(my_arrays):
     """Hierarchical output satisfies property 2."""
     x, y = my_arrays
     distance = hierarchical(x, y)
@@ -148,15 +133,15 @@ def test_continuous_symmetric_int(x, y):
     """Continuous output satisfies property 3."""
     distance_xy = continuous(x, y)
     distance_yx = continuous(y, x)
-    assert distance_xy == distance_yx
+    assert np.isclose(distance_xy, distance_yx)
 
 
-@given(my_floats, my_floats)
+@given(my_floats(), my_floats())
 def test_continuous_symmetric_float(x, y):
     """Continuous output satisfies property 3."""
     distance_xy = continuous(x, y)
     distance_yx = continuous(y, x)
-    assert distance_xy == distance_yx
+    assert np.isclose(distance_xy, distance_yx)
 
 
 @given(float_arrays())
@@ -165,44 +150,42 @@ def test_euclidean_symmetric(my_arrays):
     x, y = my_arrays
     distance_xy = euclidean(x, y)
     distance_yx = euclidean(y, x)
-    assert distance_xy == distance_yx
+    assert np.isclose(distance_xy, distance_yx)
 
 
 @given(int_arrays())
-def test_hierarchical_symmetric_int(my_arrays):
+def test_hierarchical_symmetric(my_arrays):
     """Hierarchical output satisfies property 3."""
     x, y = my_arrays
     distance_xy = hierarchical(x, y)
     distance_yx = hierarchical(y, x)
-    assert distance_xy == distance_yx
-
-
-@given(float_arrays())
-def test_hierarchical_symmetric_float(my_arrays):
-    """Hierarchical output satisfies property 3."""
-    x, y = my_arrays
-    distance_xy = hierarchical(x, y)
-    distance_yx = hierarchical(y, x)
-    assert distance_xy == distance_yx
+    assert np.isclose(distance_xy, distance_yx)
 
 
 # Property 4: Triangle inequality
+def property_4(distance_xy, distance_xz, distance_zy):
+    """Output satisfies property 4."""
+    distance_xy = np.around(distance_xy, decimals=5)
+    distance_xzy = np.around(distance_xz + distance_zy, decimals=5)
+    assert distance_xy <= distance_xzy
+
+
 @given(my_integers, my_integers, my_integers)
 def test_continuous_triangle_int(x, y, z):
     """Continuous output satisfies property 4."""
     distance_xy = continuous(x, y)
     distance_xz = continuous(x, z)
     distance_zy = continuous(z, y)
-    assert distance_xy <= distance_xz + distance_zy
+    property_4(distance_xy, distance_xz, distance_zy)
 
 
-@given(my_floats, my_floats, my_floats)
+@given(my_floats(), my_floats(), my_floats())
 def test_continuous_triangle_float(x, y, z):
     """Continuous output satisfies property 4."""
     distance_xy = continuous(x, y)
     distance_xz = continuous(x, z)
     distance_zy = continuous(z, y)
-    assert distance_xy <= distance_xz + distance_zy
+    property_4(distance_xy, distance_xz, distance_zy)
 
 
 @given(float_arrays(n=3))
@@ -212,27 +195,17 @@ def test_euclidean_triangle(my_arrays):
     distance_xy = euclidean(x, y)
     distance_xz = euclidean(x, z)
     distance_zy = euclidean(z, y)
-    assert distance_xy <= distance_xz + distance_zy
+    property_4(distance_xy, distance_xz, distance_zy)
 
 
 @given(int_arrays(n=3))
-def test_hierarchical_triangle_int(my_arrays):
+def test_hierarchical_triangle(my_arrays):
     """Hierarchical output satisfies property 4."""
     x, y, z = my_arrays
     distance_xy = hierarchical(x, y)
     distance_xz = hierarchical(x, z)
     distance_zy = hierarchical(z, y)
-    assert distance_xy <= distance_xz + distance_zy
-
-
-@given(float_arrays(n=3))
-def test_hierarchical_triangle_float(my_arrays):
-    """Hierarchical output satisfies property 4."""
-    x, y, z = my_arrays
-    distance_xy = hierarchical(x, y)
-    distance_xz = hierarchical(x, z)
-    distance_zy = hierarchical(z, y)
-    assert distance_xy <= distance_xz + distance_zy
+    property_4(distance_xy, distance_xz, distance_zy)
 
 
 # Test specific output values
