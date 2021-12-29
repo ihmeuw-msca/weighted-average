@@ -5,12 +5,15 @@ Dimension class to specify smoothing dimension column name(s), distance
 function, and kernel function.
 
 TODO:
-* Add equality function (used by smoother to check for duplicates)
-* Check anything else in previous dimension class
+* Equality is currently based on self._dimension == other.dimension,
+  but there could also be instances where their `dimension` attributes
+  intersect (e.g., self._dimension = ['age_mid', 'year_id'] and
+  other.dimension = ['age_mid', 'location_id']). Do we want to add a
+  check for intersections?
 * Write tests
 
 """
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 import warnings
 
 import numpy as np
@@ -67,6 +70,28 @@ class Dimension:
         if distance is None:
             distance = 'hierarchical' if kernel == 'depth' else 'continuous'
         self.distance = distance
+
+    def __eq__(self, other: Any) -> bool:
+        """Check dimension equality.
+
+        Equality determined by `dimension` attribute only; `kernel` is
+        ignored. Used by Smoother class to check for duplicate
+        dimensions.
+
+        Parameters
+        ----------
+        other : Any
+            Variable to be compared against.
+
+        Returns
+        -------
+        bool
+            Whether or not `self.dimension` equals `other.dimension`.
+
+        """
+        if not isinstance(other, Dimension):
+            return False
+        return other.dimension == self.dimension
 
     @property
     def dimension(self) -> Union[str, List[str]]:
