@@ -2,8 +2,9 @@
 """Calculate the distance between two points.
 
 Distance functions to calculate the distance between two points, where
-points are given as scalars or vectors. In general, distance functions
-should satisfy the following properties:
+points are given as scalars or vectors.
+
+In general, distance functions should satisfy the following properties:
 1. d(x, y) is real-valued, finite, and nonnegative
 2. d(x, y) == 0 if and only if x == y
 3. d(x, y) == d(y, x) (symmetry)
