@@ -37,9 +37,9 @@ def exponential(distance: float, radius: Union[int, float]) -> float:
 
     Parameters
     ----------
-    distance : float
+    distance : nonnegative float
         Distance between points.
-    radius : int or float
+    radius : positive int or float
         Kernel radius.
 
     Returns
@@ -61,11 +61,11 @@ def tricubic(distance: float, radius: Union[int, float],
 
     Parameters
     ----------
-    distance : float
+    distance : nonnegative float
         Distance between points.
-    radius : int or float
+    radius : positive int or float
         Kernel radius.
-    exponent : int or float
+    exponent : positive int or float
         Exponent value.
 
     Returns
@@ -96,9 +96,9 @@ def depth(distance: float, radius: float):
 
     Parameters
     ----------
-    distance : float
+    distance : nonnegative float
         Distance between points.
-    radius : float
+    radius : float in (0, 1)
         Kernel radius.
 
     Returns
@@ -109,7 +109,7 @@ def depth(distance: float, radius: float):
     """
     if distance == 0.0:
         return radius
-    if distance == 1.0:
+    if distance ==1.0:
         return radius*(1.0 - radius)
     if distance == 2.0:
         return (1.0 - radius)**2
