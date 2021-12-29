@@ -1,14 +1,19 @@
+# pylint: disable=C0103, R0902
 """Smoothing dimension specifications.
 
 Dimension class to specify smoothing dimension column name(s), distance
 function, and kernel function.
 
 TODO:
-* Add checks to kernel parameters based on kernel
+* Add equality function (used by smoother to check for duplicates)
+* Check anything else in previous dimension class
+* Write tests
 
 """
 from typing import Dict, List, Union
 import warnings
+
+import numpy as np
 
 from weave.utils import as_list
 
@@ -22,16 +27,26 @@ class Dimension:
         Dimension column name(s).
     kernel : {'exponential', 'tricubic', 'depth'}
         Kernel function name.
-    kernel_pars : dict of {str: int or float}
+    pars : dict of {str: int or float}
         Kernel function parameters.
     distance : {'continuous', 'euclidean', 'hierarchical'}
         Distance function name.
 
+    Kernel Parameters
+    -----------------
+    'exponential'
+        `radius` : positive int or float
+    'tricubic'
+        `radius` : positive int or float
+        `exponent` : positive int or float
+    'depth'
+        `radius` : float in (0, 1)
+
     """
 
     def __init__(self, dimension: Union[str, List[str]], kernel: str,
-                 kernel_pars: Dict[str, Union[str, float]],
-                 distance: str = None) -> None:
+                 distance: str = None, **pars) \
+            -> None:
         """Create smoothing dimension.
 
         Parameters
@@ -40,18 +55,18 @@ class Dimension:
             Dimension column name(s).
         kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
-        kernel_pars : dict of {str: int or float}
-            Kernel function parameters.
         distance : {'continuous', 'euclidean', 'hierarchical'}, optional
             Distance function name.
+        **pars : dict
+            Kernel function parameters.
 
         """
-        self._dimension = dimension
-        self._kernel = kernel
-        self._kernel_pars = kernel_pars
+        self.dimension = dimension
+        self.kernel = kernel
+        self.pars = pars
         if distance is None:
             distance = 'hierarchical' if kernel == 'depth' else 'continuous'
-        self._distance = distance
+        self.distance = distance
 
     @property
     def dimension(self) -> Union[str, List[str]]:
@@ -114,7 +129,7 @@ class Dimension:
 
         Parameters
         ----------
-        kernel : str
+        kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
 
         Raises
@@ -125,19 +140,31 @@ class Dimension:
             If `kernel` is not a valid kernel function.
 
         """
+        # Check type
         if not isinstance(kernel, str):
             raise TypeError('`kernel` is not a str.')
+
+        # Check value
         if kernel not in ('exponential', 'tricubic', 'depth'):
             raise ValueError('`kernel` is not a valid kernel function.')
-        if hasattr(self, 'kernel_pars'):
-            warnings.warn('`kernel` has changed; must reset `kernel_pars`.')
-            del self.kernel_pars
-        if hasattr(self, 'distance'):
-            warnings.warn('ChEcK dIsTaNcE!')
+
+        # Delete kernel parameters
+        if hasattr(self, 'pars'):
+            warnings.warn('`kernel` has changed; must reset `pars`.')
+            del self._pars
+
+        # Check distance
+        if kernel == 'depth' and hasattr(self, 'distance'):
+            if self.distance != 'hierarchical':
+                msg = "`kernel` == 'depth' but `distance` != 'hierarchical'. "
+                msg += "Using 'hierarchical' instead."
+                warnings.warn(msg)
+                self.distance = 'hierarchical'
+
         self._kernel = kernel
 
     @property
-    def kernel_pars(self) -> Dict[str, Union[int, float]]:
+    def pars(self) -> Dict[str, Union[int, float]]:
         """Get kernel function parameters.
 
         Returns
@@ -146,29 +173,25 @@ class Dimension:
             Kernel function parameters.
 
         """
-        return self._kernel_pars
+        return self._pars
 
-    @kernel_pars.setter
-    def kernel_pars(self, kernel_pars: Dict[str, Union[int, float]]) -> None:
+    @pars.setter
+    def pars(self, pars: Dict[str, Union[int, float]]) -> None:
         """Set kernel function parameters.
 
         Parameters
         ----------
-        kernel_pars : dict of {str: int or float}
+        pars : dict of {str: int or float}
             Kernel function parameters.
 
-        Raises
-        ------
-        All sorts of things!
-
         """
-        # checks
-        self._kernel_pars = kernel_pars
-
-    @kernel_pars.deleter
-    def kernel_pars(self) -> None:
-        """Delete kernel function."""
-        del self._kernel_pars
+        if self.kernel == 'exponential':
+            self.check_pars(pars, 'radius', 'pos_num')
+        elif self.kernel == 'tricubic':
+            self.check_pars(pars, ['radius', 'exponent'], 'pos_num')
+        else:  # 'depth'
+            self.check_pars(pars, 'radius', 'pos_frac')
+        self._pars = pars
 
     @property
     def distance(self) -> str:
@@ -199,14 +222,74 @@ class Dimension:
             If `distance` is not a valid distance function.
 
         """
+        # Check type
         if not isinstance(distance, str):
             raise TypeError('`distance` is not a str.')
+
+        # Check value
         if distance not in ('continuous', 'euclidean', 'hierarchical'):
             msg = '`distance` is not a valid distance function.'
             raise ValueError(msg)
+
+        # Check kernel
         if self.kernel == 'depth' and distance != 'hierarchical':
             msg = "`kernel` == 'depth' but `distance` != 'hierarchical'. "
             msg += "Using 'hierarchical' instead."
             warnings.warn(msg)
             distance = 'hierarchical'
+
         self._distance = distance
+
+    @staticmethod
+    def check_pars(pars: dict, names: Union[str, List[str]],
+                   types: Union[str, List[str]]) -> None:
+        """Check parameter types and values.
+
+        Parameters
+        ----------
+        pars : dict
+            Kernel parameters
+        names : str or list of str
+            Parameter names.
+        types : str or list of str
+            Parameter types. Valid types are 'pos_num' or 'pos_frac'.
+
+        Raises
+        ------
+        KeyError
+            If `pars` is missing a kernel parameter.
+        TypeError
+            If a kernel parameter is an invalid type.
+        ValueError
+            If a kernel parameter is an invalid value.
+
+        """
+        names = as_list(names)
+        if isinstance(types, str):
+            types = [types]*len(names)
+        for ii, par_name in enumerate(names):
+            # Check key
+            if par_name not in pars:
+                raise KeyError(f"`{par_name}` is not in `pars`.")
+            par_val = pars[par_name]
+
+            if types[ii] == 'pos_num':
+                # Check type
+                is_bool = isinstance(par_val, bool)
+                is_int = isinstance(par_val, (int, np.integer))
+                is_float = isinstance(par_val, (float, np.floating))
+                if is_bool or not (is_int or is_float):
+                    raise TypeError(f"`{par_name}` is not an int or float.")
+
+                # Check value
+                if par_val <= 0.0:
+                    raise ValueError(f"`{par_name}` is not positive.")
+
+            else:  # 'pos_frac'
+                # Check type
+                if not isinstance(par_val, (float, np.floating)):
+                    raise TypeError(f"`{par_name}` is not a float.")
+
+                # Check value
+                if par_val <= 0.0 or par_val >= 1.0:
+                    raise ValueError(f"`{par_name}` is not in (0, 1).")
