@@ -186,7 +186,7 @@ def test_depth_distance_default():
     assert dim.distance == 'hierarchical'
 
 
-@pytest.mark.filterwarnings("ignore:`kernel` == 'depth'")
+@pytest.mark.filterwarnings('ignore:`kernel`')
 def test_distance_changed():
     """`distance` is changed to 'hierarchical'.
 
@@ -225,16 +225,22 @@ def test_dimension_len():
 
 
 # Test setter behavior
+@pytest.mark.filterwarnings('ignore:`kernel`')
 def test_kernel_pars_deleted():
     """Delete `pars` when `kernel` is changed."""
-    pass
+    dim = Dimension('dummy', 'exponential', radius=0.5)
+    dim.kernel = 'tricubic'
+    assert hasattr(dim, 'pars') is False
 
 
 def test_kernel_pars_warning():
     """Warn that `pars` deleted when `kernel` is changed."""
-    pass
+    with pytest.warns(UserWarning):
+        dim = Dimension('dummy', 'exponential', radius=0.5)
+        dim.kernel = 'tricubic'
 
 
+@pytest.mark.filterwarnings('ignore:`kernel`')
 def test_kernel_distance_changed():
     """`distance` is changed to 'hierarchical'.
 
@@ -242,7 +248,10 @@ def test_kernel_distance_changed():
     'hierarchical'.
 
     """
-    pass
+    dim = Dimension(['dummy1', 'dummy2'], 'exponential', 'euclidean',
+                    radius=0.5)
+    dim.kernel = 'depth'
+    assert dim.distance == 'hierarchical'
 
 
 def test_kernel_distance_warning():
@@ -252,15 +261,35 @@ def test_kernel_distance_warning():
     'hierarchical'. If `distance` is changed, produce a warning.
 
     """
-    pass
+    with pytest.warns(UserWarning):
+        dim = Dimension(['dummy1', 'dummy2'], 'exponential', 'euclidean',
+                        radius=0.5)
+        dim.kernel = 'depth'
 
 
 # Test equality
 def test_dimension_equal():
     """Return True if `dimension` equal."""
-    pass
+    dimension = 'dummy'
+    dim1 = Dimension(dimension, 'exponential', radius=0.5)
+    dim2 = Dimension(dimension, 'tricubic', radius=0.5, exponent=3)
+    assert dim1 == dim2
+
+    dimension = ['dummy1', 'dummy2']
+    dim1 = Dimension(dimension, 'exponential', 'euclidean', radius=0.5)
+    dim2 = Dimension(dimension, 'depth', 'hierarchical', radius=0.5)
+    assert dim1 == dim2
 
 
 def test_dimension_not_equal():
     """Return False if `dimension` not equal."""
-    pass
+    dim1 = Dimension('dummy1', 'exponential', radius=0.5)
+    dim2 = Dimension('dummy2', 'exponential', radius=0.5)
+    assert dim1 != dim2
+
+    dim1 = Dimension(['dummy1', 'dummy2'], 'depth', radius=0.5)
+    dim2 = Dimension(['dummy3', 'dummy4'], 'depth', radius=0.5)
+    assert dim1 != dim2
+
+    dim1 = Dimension('dummy', 'exponential', radius=0.5)
+    dim2 = Dimension(['dummy1', 'dummy2'], 'depth', radius=0.5)
