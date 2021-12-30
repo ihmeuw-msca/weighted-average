@@ -212,11 +212,13 @@ class Dimension:
         """
         if self.kernel == 'exponential':
             self.check_pars(pars, 'radius', 'pos_num')
+            self._pars = {'radius': pars['radius']}
         elif self.kernel == 'tricubic':
             self.check_pars(pars, ['radius', 'exponent'], 'pos_num')
+            self._pars = {key: pars[key] for key in ['radius', 'exponent']}
         else:  # 'depth'
             self.check_pars(pars, 'radius', 'pos_frac')
-        self._pars = pars
+            self._pars = {'radius': pars['radius']}
 
     @property
     def distance(self) -> str:
@@ -292,6 +294,7 @@ class Dimension:
         names = as_list(names)
         if isinstance(types, str):
             types = [types]*len(names)
+
         for ii, par_name in enumerate(names):
             # Check key
             if par_name not in pars:
