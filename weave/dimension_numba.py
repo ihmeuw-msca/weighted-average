@@ -11,6 +11,9 @@ TODO:
   other.dimension = ['age_mid', 'location_id']). Do we want to add a
   check for intersections?
 * Write tests
+* Write checks that single dimension must have continuous distance and
+  either exponential or tricubic kernel, but vector dimensions must
+  have either euclidean or hierarchical distance
 
 """
 from typing import Any, Dict, List, Union
@@ -134,6 +137,8 @@ class Dimension:
         # Check duplicates
         if len(dimension) > len(set(dimension)):
             raise ValueError('`dimension` contains duplicates.')
+        if hasattr(self, 'dimension'):
+            raise AttributeError('`dimension` cannot be changed.')
         self._dimension = dimension
 
     @property
