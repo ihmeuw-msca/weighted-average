@@ -1,43 +1,71 @@
-"""Tests for Dimension class."""
+"""Tests for Dimension class.
+
+Length of dimension should also correspond to distance function:
+* 'continuous': dimension = 1
+* 'euclidean': dimension > 1
+* 'hierarchical': dimension > 1
+
+"""
 import pytest
 
 from weave.dimension_numba import Dimension
 
+from examples import test_dict
+
+dimension_list = ['dummy', ['dummy1', 'dummy2']]
+kernel_list = ['exponential', 'tricubic', 'depth']
+distance_list = ['continuous', 'euclidean', 'hierarchical']
+
 
 # Test constructor types
-def test_dimension_type():
+@pytest.mark.parametrize('dimension', test_dict['dimension'])
+def test_dimension_type(dimension):
     """Raise TypeError if `dimension` is not a str or list of str."""
-    pass
+    with pytest.raises(TypeError):
+        Dimension(dimension, 'exponential', radius=0.5)
 
 
-def test_kernel_type():
+@pytest.mark.parametrize('kernel', test_dict['str'])
+def test_kernel_type(kernel):
     """Raise TypeError if `kernel` is not a str."""
-    pass
+    with pytest.raises(TypeError):
+        Dimension('dummy', kernel, radius=0.5)
 
 
-def test_distance_type():
+@pytest.mark.parametrize('distance', test_dict['str'])
+def test_distance_type(distance):
     """Raise TypeError if `distance` is not a str."""
-    pass
+    if distance is not None:
+        with pytest.raises(TypeError):
+            Dimension('dummy', 'exponential', distance, radius=0.5)
 
 
-def test_exponential_radius_type():
+@pytest.mark.parametrize('radius', test_dict['numeric'])
+def test_exponential_radius_type(radius):
     """Raise TypeError if `radius` is an invalid type."""
-    pass
+    with pytest.raises(TypeError):
+        Dimension('dummy', 'exponential', radius=radius)
 
 
-def test_tricubic_radius_type():
+@pytest.mark.parametrize('radius', test_dict['numeric'])
+def test_tricubic_radius_type(radius):
     """Raise TypeError if `radius` is an invalid type."""
-    pass
+    with pytest.raises(TypeError):
+        Dimension('dummy', 'tricubic', radius=radius, exponent=3)
 
 
-def test_tricubic_exponent_type():
+@pytest.mark.parametrize('exponent', test_dict['numeric'])
+def test_tricubic_exponent_type(exponent):
     """Raise TypeError if `exponent` is an invalid type."""
-    pass
+    with pytest.raises(TypeError):
+        Dimension('dummy', 'tricubic', radius=0.5, exponent=exponent)
 
 
-def test_depth_radius_type():
+@pytest.mark.parametrize('radius', test_dict['numeric'])
+def test_depth_radius_type(radius):
     """Raise TypeError if `radius` is an invalid type."""
-    pass
+    with pytest.raises(TypeError):
+        Dimension('dummy', 'depth', radius=radius)
 
 
 # Test constructor values
