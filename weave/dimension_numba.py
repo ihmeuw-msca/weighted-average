@@ -11,9 +11,6 @@ TODO:
   other.dimension = ['age_mid', 'location_id']). Do we want to add a
   check for intersections?
 * Write tests
-* Write checks that single dimension must have continuous distance and
-  either exponential or tricubic kernel, but vector dimensions must
-  have either euclidean or hierarchical distance
 
 """
 from typing import Any, Dict, List, Union
@@ -38,16 +35,6 @@ class Dimension:
     distance : {'continuous', 'euclidean', 'hierarchical'}
         Distance function name.
 
-    Kernel Parameters
-    -----------------
-    'exponential'
-        `radius` : positive int or float
-    'tricubic'
-        `radius` : positive int or float
-        `exponent` : positive int or float
-    'depth'
-        `radius` : float in (0, 1)
-
     """
 
     def __init__(self, dimension: Union[str, List[str]], kernel: str,
@@ -66,12 +53,30 @@ class Dimension:
         **pars : dict
             Kernel function parameters.
 
+        Distance function defaults
+        --------------------------
+        `kernel` : {'exponential', 'tricubic'}
+            `dimension` : str
+                `distance` : 'continuous'
+            `dimension` : list of str
+                `distance` : 'euclidean'
+        `kernel` : 'depth'
+            `distance` : 'hierarchical'
+
+        Kernel function parameters
+        --------------------------
+        `kernel` : 'exponential'
+            `radius` : positive int or float
+        `kernel` : 'tricubic'
+            `radius` : positive int or float
+            `exponent` : positive int or float
+        `kernel` : 'depth'
+            `radius` : float in (0, 1)
+
         """
         self.dimension = dimension
         self.kernel = kernel
         self.pars = pars
-        if distance is None:
-            distance = 'hierarchical' if kernel == 'depth' else 'continuous'
         self.distance = distance
 
     def __eq__(self, other: Any) -> bool:
@@ -121,12 +126,18 @@ class Dimension:
 
         Raises
         ------
+        AttributeError
+            If `dimension` has already been set.
         TypeError
             If `dimension` not a str or list of str.
         ValueError
             If `dimension` contains duplicates.
 
         """
+        # Once set, `dimension` cannot be changed
+        if hasattr(self, 'dimension'):
+            raise AttributeError('`dimension` cannot be changed.')
+
         # Check types
         dimension = as_list(dimension)
         empty_list = len(dimension) == 0
@@ -137,8 +148,7 @@ class Dimension:
         # Check duplicates
         if len(dimension) > len(set(dimension)):
             raise ValueError('`dimension` contains duplicates.')
-        if hasattr(self, 'dimension'):
-            raise AttributeError('`dimension` cannot be changed.')
+
         self._dimension = dimension
 
     @property
@@ -169,6 +179,15 @@ class Dimension:
         ValueError
             If `kernel` is not a valid kernel function.
 
+        Warns
+        -----
+        UserWarning
+            Attribute `pars` is deleted when `kernel` is reset, so
+            `pars` must also be reset.
+        UserWarning
+            If current `distance` attribute is not a valid distance
+            function for `kernel`. Default `distance` used instead.
+
         """
         # Check type
         if not isinstance(kernel, str):
@@ -183,15 +202,11 @@ class Dimension:
             warnings.warn('`kernel` has changed; must reset `pars`.')
             del self._pars
 
-        # Check distance
-        if kernel == 'depth' and hasattr(self, 'distance'):
-            if self.distance != 'hierarchical':
-                msg = "`kernel` == 'depth' but `distance` != 'hierarchical'. "
-                msg += "Using 'hierarchical' instead."
-                warnings.warn(msg)
-                self.distance = 'hierarchical'
-
         self._kernel = kernel
+
+        # Check distance
+        if hasattr(self, 'distance'):
+            self.distance = self.distance
 
     @property
     def pars(self) -> Dict[str, Union[int, float]]:
@@ -238,7 +253,7 @@ class Dimension:
         return self._distance
 
     @distance.setter
-    def distance(self, distance: str) -> None:
+    def distance(self, distance: Union[str, None]) -> None:
         """Set distance function name.
 
         Parameters
@@ -253,7 +268,23 @@ class Dimension:
         ValueError
             If `distance` is not a valid distance function.
 
+        Warns
+        -----
+        UserWarning
+            If `distance` is not a valid distance function for current
+            `dimension` and `kernel` attributes. Default used instead.
+
         """
+        # Set defaults
+        if distance is None:
+            if self.kernel == 'depth':
+                distance = 'hierarchical'
+            else:
+                if isinstance(self.dimension, str):
+                    distance = 'continuous'
+                else:
+                    distance = 'euclidean'
+
         # Check type
         if not isinstance(distance, str):
             raise TypeError('`distance` is not a str.')
@@ -269,6 +300,12 @@ class Dimension:
             msg += "Using 'hierarchical' instead."
             warnings.warn(msg)
             distance = 'hierarchical'
+        else:
+            if isinstance(self.dimension, list) and distance == 'continuous':
+                msg = "`dimension` is a list of str but `distance` == "
+                msg += "'continuous'. Using 'euclidean' instead."
+                warnings.warn(msg)
+                distance = 'euclidean'
 
         self._distance = distance
 
