@@ -80,15 +80,19 @@ class Smoother:
         """
         # Check types
         dimensions = as_list(dimensions)
-        if len(dimensions) == 0:
-            raise TypeError('`dimensions` is an empty list.')
-        if not all(isinstance(dim, Dimension) for dim in dimensions):
-            raise TypeError('Invalid type(s) in `dimensions`.')
+
+        # Check types
+        dimensions = as_list(dimensions)
+        empty_list = len(dimensions) == 0
+        not_all_str = not all(isinstance(dim, Dimension) for dim in dimensions)
+        if empty_list or not_all_str:
+            raise TypeError('`dimensions` contains invalid type(s).')
 
         # Check duplicates
         dim_list = [tuple(dim.dimension) for dim in dimensions]
         if len(dim_list) > len(set(dim_list)):
             raise ValueError('Duplicates found in `dimensions`.')
+
         self._dimensions = dimensions
 
     def __call__(self, data: DataFrame, columns: Union[str, List[str]],
