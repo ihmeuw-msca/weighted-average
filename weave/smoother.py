@@ -1,10 +1,13 @@
+# pylint: disable=C0103
 """Smooth data across multiple dimensions using weighted averages.
 
 TODO
 * Modify __init__ to import Smoother
 * Write checks and tests
-* Numba-fy
+* Modify functions for new numba versions
+* Numba-fy any methods where possible
 * Specify order of weight aggregation (e.g., location last)
+* Check meeting notes for other changes
 
 Checks
 * Check for duplicates in columns
