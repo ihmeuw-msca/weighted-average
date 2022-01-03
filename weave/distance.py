@@ -1,110 +1,82 @@
-"""Calculate distance between points.
+# pylint: disable=C0103
+"""Calculate the distance between two points.
 
-Callable distance function classes that calculate the distance between
-two points, where points are given as scalars or vectors. In general,
-distance functions should satisfy the following properties:
+Distance functions to calculate the distance between two points, where
+points are given as scalars or vectors.
+
+In general, distance functions should satisfy the following properties:
 1. d(x, y) is real-valued, finite, and nonnegative
 2. d(x, y) == 0 if and only if x == y
 3. d(x, y) == d(y, x) (symmetry)
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
 """
-from abc import ABC, abstractmethod
 from typing import Union
 
+from numba import njit
 import numpy as np
-from numpy.typing import ArrayLike
 
 
-class Distance(ABC):
-    """Abstract distance function."""
+@njit
+def continuous(x: Union[int, float], y: Union[int, float]) -> float:
+    """Get continuous distance between `x` and `y`.
 
-    @abstractmethod
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> Union[int, float]:
-        """Get distance between `x` and `y`.
+    Parameters
+    ----------
+    x : int or float
+        Current point.
+    y : int or float
+        Nearby point.
 
-        Parameters
-        ----------
-        x : array_like
-            Current point.
-        y: array_like
-            Nearby point.
+    Returns
+    -------
+    float
+        Continuous distance between `x` and `y`.
 
-        Returns
-        -------
-        int or float
-            Distance between `x` and `y`.
-
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def _check_length(x: ArrayLike, y: ArrayLike) -> None:
-        """Check input lengths match.
-
-        Parameters
-        ----------
-        x : array_like
-            Current point.
-        y : array_like
-            Nearby point.
-
-        Raises
-        ------
-        ValueError
-            If input lengths do not match.
-
-        """
-        if np.array(x).shape != np.array(y).shape:
-            raise ValueError('Input lengths do not match.')
+    """
+    return 1.0*np.abs(x - y)
 
 
-class Continuous(Distance):
-    """Continuous distance function."""
+@njit
+def euclidean(x: np.ndarray, y: np.ndarray) -> float:
+    """Get Euclidean distance between `x` and `y`.
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> float:
-        """Get continuous distance between `x` and `y`.
+    Parameters
+    ----------
+    x : 1D numpy.ndarray of float
+        Current point.
+    y : 1D numpy.ndarray of float
+        Nearby point.
 
-        Parameters
-        ----------
-        x : array_like
-            Current point.
-        y : array_like
-            Nearby point.
+    Returns
+    -------
+    float
+        Euclidean distance between `x` and `y`.
 
-        Returns
-        -------
-        float
-            Continuous distance between `x` and `y`.
-
-        """
-        self._check_length(x, y)
-        return np.linalg.norm(np.array(x) - np.array(y))
+    """
+    return 1.0*np.linalg.norm(x - y)
 
 
-class Hierarchical(Distance):
-    """Hierarchical distance function."""
+@njit
+def hierarchical(x: np.ndarray, y: np.ndarray) -> float:
+    """Get hierarchical distance between `x` and `y`.
 
-    def __call__(self, x: ArrayLike, y: ArrayLike) -> int:
-        """Get hierarchical distance between `x` and `y`.
+    Parameters
+    ----------
+    x : 1D numpy.ndarray
+        Current point.
+    y : 1D numpy.ndarray
+        Nearby point.
 
-        Parameters
-        ----------
-        x : array_like
-            Current point.
-        y : array_like
-            Nearby point.
+    Returns
+    -------
+    int
+        Hierarchical distance between `x` and `y`.
 
-        Returns
-        -------
-        int
-            Hierarchical distance between `x` and `y`.
-
-        """
-        self._check_length(x, y)
-        try:
-            temp = np.ones(np.array(x).shape[0] + 1)
-        except IndexError:
-            temp = np.ones(2)
-        temp[1:] = np.array(x) == np.array(y)
-        return np.where(temp[::-1])[0][0]
+    """
+    if (x == y).all():
+        return 0.0
+    for ii in range(1, len(x)):
+        if (x[:-ii] == y[:-ii]).all():
+            return 1.0*ii
+    return 1.0*len(x)

@@ -1,144 +1,237 @@
-"""Tests for distance functions."""
+# pylint: disable=C0103, W1114
+"""Tests for distance functions.
+
+In general, distance functions should satisfy the following properties:
+1. d(x, y) is real-valued, finite, and nonnegative
+2. d(x, y) == 0 if and only if x == y
+3. d(x, y) == d(y, x) (symmetry)
+4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
+
+"""
+from hypothesis import given, settings
+from hypothesis.strategies import composite, integers, floats
+from hypothesis.extra.numpy import arrays
 import numpy as np
-import pytest
 
-from examples import data, distance_dict, levels
+from weave.distance import continuous, euclidean, hierarchical
 
-
-# Test input length
-@pytest.mark.parametrize('dist', distance_dict.values())
-def test_scalar_length(dist):
-    """Raise ValueError if input lengths do not match."""
-    with pytest.raises(ValueError):
-        dist(1, [1, 2])
+# Hypothesis types
+my_integers = integers(min_value=-1e5, max_value=1e5)
 
 
-@pytest.mark.parametrize('dist', distance_dict.values())
-def test_vector_length(dist):
-    """Raise ValueError if input lenghts do not match."""
-    with pytest.raises(ValueError):
-        dist([1, 2], [1, 2, 3])
+@composite
+def my_floats(draw):
+    """Return float rounded to 5 decimals."""
+    my_float = draw(floats(min_value=-1e-5, max_value=1e5, allow_nan=False,
+                           allow_infinity=False, allow_subnormal=False))
+    return np.around(my_float, decimals=5)
 
 
-# Test output type
-@pytest.mark.parametrize('dim', ['age_mid', 'year_id'])
-def test_continuous_scalar_type(dim):
-    """Output is float."""
-    x = data.iloc[1][dim]
-    y = data.iloc[3][dim]
-    assert isinstance(distance_dict['cont'](x, y), (float, np.floating))
+@composite
+def int_arrays(draw, n=2):
+    """Return n vectors of int with matching lengths."""
+    m = draw(integers(min_value=2, max_value=5))
+    vec_list = [draw(arrays(int, m, elements=my_integers))
+                for ii in range(n)]
+    return vec_list
 
 
-def test_continuous_vector_type():
-    """Output is float."""
-    x = data.iloc[1][['age_mid', 'year_id']]
-    y = data.iloc[3][['age_mid', 'year_id']]
-    assert isinstance(distance_dict['cont'](x, y), (float, np.floating))
+@composite
+def float_arrays(draw, n=2):
+    """Return n vectors of float with matching lengths."""
+    m = draw(integers(min_value=2, max_value=5))
+    vec_list = [draw(arrays(float, m, elements=my_floats()))
+                for ii in range(n)]
+    return vec_list
 
 
-def test_hierarchical_scalar_type():
-    """Output is int."""
-    x = data.iloc[1]['name']
-    y = data.iloc[3]['name']
-    assert isinstance(distance_dict['hier'](x, y), (int, np.integer))
+# Property 1: Output is a real-valued, finite, nonnegative float
+def property_1(distance):
+    """Output satisfies property 1."""
+    assert np.isreal(distance)
+    assert np.isfinite(distance)
+    assert distance >= 0.0
+    assert isinstance(distance, float)
 
 
-def test_hierarchical_vector_type():
-    """Output is int."""
-    x = data.iloc[1][levels]
-    y = data.iloc[3][levels]
-    assert isinstance(distance_dict['hier'](x, y), (int, np.integer))
+@settings(deadline=None)
+@given(my_integers, my_integers)
+def test_continuous_type_int(x, y):
+    """Continuous output satisfies property 1."""
+    distance = continuous(x, y)
+    property_1(distance)
 
 
-# Test output symmetric
-@pytest.mark.parametrize('dim', ['age_mid', 'year_id'])
-def test_continuous_scalar_symmetric(dim):
-    """Output is symmetric."""
-    x = data.iloc[1][dim]
-    y = data.iloc[3][dim]
-    assert distance_dict['cont'](x, y) == distance_dict['cont'](y, x)
+@settings(deadline=None)
+@given(my_floats(), my_floats())
+def test_continuous_type_float(x, y):
+    """Continuous output satisfies property 1."""
+    distance = continuous(x, y)
+    property_1(distance)
 
 
-def test_continuous_vector_symmetric():
-    """Output is symmetric."""
-    x = data.iloc[1][['age_mid', 'year_id']]
-    y = data.iloc[3][['age_mid', 'year_id']]
-    assert distance_dict['cont'](x, y) == distance_dict['cont'](y, x)
+@settings(deadline=None)
+@given(float_arrays())
+def test_euclidean_type(my_arrays):
+    """Euclidean output satisfies property 1."""
+    x, y = my_arrays
+    distance = euclidean(x, y)
+    property_1(distance)
 
 
-def test_hierarchical_scalar_symmetric():
-    """Output is symmetric."""
-    x = data.iloc[1]['name']
-    y = data.iloc[3]['name']
-    assert distance_dict['hier'](x, y) == distance_dict['hier'](y, x)
+@settings(deadline=None)
+@given(int_arrays())
+def test_hierarchical_type(my_arrays):
+    """Hierarchical output satisfies property 1."""
+    x, y = my_arrays
+    distance = hierarchical(x, y)
+    property_1(distance)
 
 
-def test_hierarchical_vector_symmetric():
-    """Output is symmetric."""
-    x = data.iloc[1][levels]
-    y = data.iloc[3][levels]
-    assert distance_dict['hier'](x, y) == distance_dict['hier'](y, x)
+# Property 2: Output == 0 iff x == y
+def property_2(x, y, distance):
+    """Output satisfies property 2."""
+    if np.isclose(distance, 0.0, rtol=0):
+        assert np.allclose(x, y)
+    if np.allclose(x, y):
+        assert np.isclose(distance, 0.0, rtol=0)
 
 
-# Test output values
-def test_age_example():
-    """Test continuous distance on age."""
-    x = data.iloc[1]['age_mid']
-    y = data.iloc[3]['age_mid']
-    assert np.isclose(distance_dict['cont'](x, y), 2.0)
+@given(my_integers, my_integers)
+def test_continuous_zero_int(x, y):
+    """Continuous output satisfies property 2."""
+    distance = continuous(x, y)
+    property_2(x, y, distance)
 
 
-def test_year_example():
-    """Test continuous distance on year."""
-    x = data.iloc[1]['year_id']
-    y = data.iloc[3]['year_id']
-    assert np.isclose(distance_dict['cont'](x, y), 20.0)
+@given(my_floats(), my_floats())
+def test_continuous_zero_float(x, y):
+    """Continuous output satisfies property 2."""
+    distance = continuous(x, y)
+    property_2(x, y, distance)
 
 
-def test_age_year_example():
-    """Test continuous distance on age and year."""
-    x = data.iloc[1][['age_mid', 'year_id']]
-    y = data.iloc[3][['age_mid', 'year_id']]
-    assert np.isclose(distance_dict['cont'](x, y), 20.09975124224178)
+@given(float_arrays())
+def test_euclidean_zero(my_arrays):
+    """Euclidean output satisfies property 2."""
+    x, y = my_arrays
+    distance = euclidean(x, y)
+    property_2(x, y, distance)
 
 
-def test_same_name():
-    """Test hierarchical distance with same name."""
-    x = data.iloc[0]['name']
-    y = data.iloc[0]['name']
-    assert np.isclose(distance_dict['hier'](x, y), 0)
+@given(int_arrays())
+def test_hierarchical_zero(my_arrays):
+    """Hierarchical output satisfies property 2."""
+    x, y = my_arrays
+    distance = hierarchical(x, y)
+    property_2(x, y, distance)
 
 
-def test_different_name():
-    """Test hierarchical distance with different name."""
-    x = data.iloc[1]['name']
-    y = data.iloc[3]['name']
-    assert np.isclose(distance_dict['hier'](x, y), 1)
+# Property 3: Output is symmetric
+@given(my_integers, my_integers)
+def test_continuous_symmetric_int(x, y):
+    """Continuous output satisfies property 3."""
+    distance_xy = continuous(x, y)
+    distance_yx = continuous(y, x)
+    assert np.isclose(distance_xy, distance_yx)
 
 
+@given(my_floats(), my_floats())
+def test_continuous_symmetric_float(x, y):
+    """Continuous output satisfies property 3."""
+    distance_xy = continuous(x, y)
+    distance_yx = continuous(y, x)
+    assert np.isclose(distance_xy, distance_yx)
+
+
+@given(float_arrays())
+def test_euclidean_symmetric(my_arrays):
+    """Euclidean output satisfies property 3."""
+    x, y = my_arrays
+    distance_xy = euclidean(x, y)
+    distance_yx = euclidean(y, x)
+    assert np.isclose(distance_xy, distance_yx)
+
+
+@given(int_arrays())
+def test_hierarchical_symmetric(my_arrays):
+    """Hierarchical output satisfies property 3."""
+    x, y = my_arrays
+    distance_xy = hierarchical(x, y)
+    distance_yx = hierarchical(y, x)
+    assert np.isclose(distance_xy, distance_yx)
+
+
+# Property 4: Triangle inequality
+def property_4(distance_xy, distance_xz, distance_zy):
+    """Output satisfies property 4."""
+    distance_xy = np.around(distance_xy, decimals=5)
+    distance_xzy = np.around(distance_xz + distance_zy, decimals=5)
+    assert distance_xy <= distance_xzy
+
+
+@given(my_integers, my_integers, my_integers)
+def test_continuous_triangle_int(x, y, z):
+    """Continuous output satisfies property 4."""
+    distance_xy = continuous(x, y)
+    distance_xz = continuous(x, z)
+    distance_zy = continuous(z, y)
+    property_4(distance_xy, distance_xz, distance_zy)
+
+
+@given(my_floats(), my_floats(), my_floats())
+def test_continuous_triangle_float(x, y, z):
+    """Continuous output satisfies property 4."""
+    distance_xy = continuous(x, y)
+    distance_xz = continuous(x, z)
+    distance_zy = continuous(z, y)
+    property_4(distance_xy, distance_xz, distance_zy)
+
+
+@given(float_arrays(n=3))
+def test_euclidean_triangle(my_arrays):
+    """Euclidean output satisfies property 4."""
+    x, y, z = my_arrays
+    distance_xy = euclidean(x, y)
+    distance_xz = euclidean(x, z)
+    distance_zy = euclidean(z, y)
+    property_4(distance_xy, distance_xz, distance_zy)
+
+
+@given(int_arrays(n=3))
+def test_hierarchical_triangle(my_arrays):
+    """Hierarchical output satisfies property 4."""
+    x, y, z = my_arrays
+    distance_xy = hierarchical(x, y)
+    distance_xz = hierarchical(x, z)
+    distance_zy = hierarchical(z, y)
+    property_4(distance_xy, distance_xz, distance_zy)
+
+
+# Test specific output values
 def test_same_country():
     """Test hierarchical distance with same country."""
-    x = data.iloc[0][levels]
-    y = data.iloc[1][levels]
-    assert np.isclose(distance_dict['hier'](x, y), 0)
+    x = np.array([1, 2, 3])
+    y = np.array([1, 2, 3])
+    assert np.isclose(hierarchical(x, y), 0)
 
 
 def test_same_region():
     """Test hierarchical distance with same region."""
-    x = data.iloc[0][levels]
-    y = data.iloc[2][levels]
-    assert np.isclose(distance_dict['hier'](x, y), 1)
+    x = np.array([1, 2, 3])
+    y = np.array([1, 2, 4])
+    assert np.isclose(hierarchical(x, y), 1)
 
 
 def test_same_super_region():
     """Test hierarchical distance with same super region."""
-    x = data.iloc[0][levels]
-    y = data.iloc[3][levels]
-    assert np.isclose(distance_dict['hier'](x, y), 2)
+    x = np.array([1, 2, 3])
+    y = np.array([1, 4, 5])
+    assert np.isclose(hierarchical(x, y), 2)
 
 
 def test_different_super_region():
-    """Test hierarchical distance with different super region."""
-    x = data.iloc[0][levels]
-    y = data.iloc[4][levels]
-    assert np.isclose(distance_dict['hier'](x, y), 3)
+    """Test hierarchical distance with different super regions."""
+    x = np.array([1, 2, 3])
+    y = np.array([4, 5, 6])
+    assert np.isclose(hierarchical(x, y), 3)

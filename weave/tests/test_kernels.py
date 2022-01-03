@@ -1,190 +1,118 @@
-"""Tests for kernel functions."""
+"""Tests for kernel functions.
+
+In general, kernel functions should satisfy the following properties:
+1. k(x, y) is real-valued, finite, and nonnegative
+2. k(x, y) <= k(x', y') if d(x, y) > d(x', y')
+   k(x, y) >= k(x', y') if d(x, y) < d(x', y')
+
+"""
+from hypothesis import given, settings
+from hypothesis.strategies import floats
 import numpy as np
-import pytest
 
-from weave.distance import Continuous
-from weave.kernels import Exponential, Tricubic, Depth
+from weave.kernels import exponential, tricubic, depth
 
-from examples import data, distance_dict, levels, kernel_dict, test_dict
-
-
-# Test constructor types
-@pytest.mark.parametrize('kernel', [Exponential, Tricubic])
-@pytest.mark.parametrize('dist', test_dict['other'])
-def test_distance_type(kernel, dist):
-    """Raise TypeError if `distance` not a distance function."""
-    if dist is not None:
-        with pytest.raises(TypeError):
-            kernel(0.5, distance=dist)
+# Hypothesis types
+my_distance = floats(min_value=0.0, max_value=1e5, allow_nan=False,
+                     allow_infinity=False, allow_subnormal=False)
+my_radius = floats(min_value=0.0, max_value=1e5, allow_nan=False,
+                   allow_infinity=False, allow_subnormal=False,
+                   exclude_min=True)
+my_depth = floats(min_value=0.0, max_value=1.0, allow_nan=False,
+                  allow_infinity=False, allow_subnormal=False,
+                  exclude_min=True, exclude_max=True)
 
 
-@pytest.mark.parametrize('kernel', [Exponential, Tricubic])
-@pytest.mark.parametrize('radius', test_dict['numeric'])
-@pytest.mark.parametrize('dist', distance_dict.values())
-def test_radius_type(kernel, radius, dist):
-    """Raise TypeError if `radius` not an int or float."""
-    with pytest.raises(TypeError):
-        kernel(radius, distance=dist)
+# Property 1: Output is a real-valued, finite, nonnegative float
+def property_1(weight):
+    """Output satisfies property 1."""
+    assert np.isreal(weight)
+    assert np.isfinite(weight)
+    assert weight >= 0.0
+    assert isinstance(weight, float)
 
 
-@pytest.mark.parametrize('radius', test_dict['float'])
-def test_depth_radius_type(radius):
-    """Raise TypeError if `radius` not a float."""
-    with pytest.raises(TypeError):
-        Depth(radius)
+@settings(deadline=None)
+@given(my_distance, my_radius)
+def test_exponential_type(distance, radius):
+    """Exponential output satisfies property 1."""
+    weight = exponential(distance, radius)
+    property_1(weight)
 
 
-@pytest.mark.parametrize('lam', test_dict['numeric'])
-@pytest.mark.parametrize('dist', distance_dict.values())
-def test_lam_type(lam, dist):
-    """Raise TypeError if `lam` not an int or float."""
-    with pytest.raises(TypeError):
-        Tricubic(0.5, lam, dist)
+@settings(deadline=None)
+@given(my_distance, my_radius, my_radius)
+def test_tricubic_type(distance, radius, exponent):
+    """Tricubic output satisfies property 1."""
+    weight = tricubic(distance, radius, exponent)
+    property_1(weight)
 
 
-# Test constructor values
-@pytest.mark.parametrize('kernel', [Exponential, Tricubic])
-@pytest.mark.parametrize('radius', [-1, -1.0, 0, 0.0])
-@pytest.mark.parametrize('dist', distance_dict.values())
-def test_radius_value(kernel, radius, dist):
-    """Raise ValueError if `radius` not positive."""
-    with pytest.raises(ValueError):
-        kernel(radius, distance=dist)
+@settings(deadline=None)
+@given(my_distance, my_depth)
+def test_depth_type(distance, radius):
+    """Depth output satisfies property 1."""
+    weight = depth(distance, radius)
+    property_1(weight)
 
 
-@pytest.mark.parametrize('radius', [-1.0, 0.0, 1.0, 2.0])
-def test_depth_radius_value(radius):
-    """Raise ValueError if `radius` not in (0, 1)."""
-    with pytest.raises(ValueError):
-        Depth(radius)
+# Property 2: Output decreases as distance increases
+def property_2(distance_a, distance_b, weight_a, weight_b):
+    """Output satisfies property 2."""
+    if distance_a > distance_b:
+        assert weight_a <= weight_b
+    if distance_a < distance_b:
+        assert weight_a >= weight_b
 
 
-@pytest.mark.parametrize('lam', [-1, -1.0, 0, 0.0])
-@pytest.mark.parametrize('dist', distance_dict.values())
-def test_lam_value(lam, dist):
-    """Raise ValueError if `lam` not positive."""
-    with pytest.raises(ValueError):
-        Tricubic(0.5, lam, dist)
+@given(my_distance, my_distance, my_radius)
+def test_exponential_direction(distance_a, distance_b, radius):
+    """Exponential output satisfies property 2."""
+    weight_a = exponential(distance_a, radius)
+    weight_b = exponential(distance_b, radius)
+    property_2(distance_a, distance_b, weight_a, weight_b)
 
 
-# Test input length
-@pytest.mark.parametrize('kernel', kernel_dict.values())
-def test_scalar_length(kernel):
-    """Raise ValueError if input lengths do not match."""
-    with pytest.raises(ValueError):
-        kernel(1, [1, 2])
+@given(my_distance, my_distance, my_radius, my_radius)
+def test_tricubic_direction(distance_a, distance_b, radius, exponent):
+    """Tricubic output satisfies property 2."""
+    weight_a = tricubic(distance_a, radius, exponent)
+    weight_b = tricubic(distance_b, radius, exponent)
+    property_2(distance_a, distance_b, weight_a, weight_b)
 
 
-@pytest.mark.parametrize('kernel', kernel_dict.values())
-def test_vector_length(kernel):
-    """Raise ValueError if input lenghts do not match."""
-    with pytest.raises(ValueError):
-        kernel([1, 2], [1, 2, 3])
+@given(my_distance, my_distance, my_depth)
+def test_depth_direction(distance_a, distance_b, radius):
+    """Depth output satisfies property 2."""
+    weight_a = depth(distance_a, radius)
+    weight_b = depth(distance_b, radius)
+    property_2(distance_a, distance_b, weight_a, weight_b)
 
 
-# Test input values
-@pytest.mark.parametrize('dist', distance_dict.values())
-def test_dist_rad(dist):
-    """Raise ValueError if distance greater than `radius`."""
-    with pytest.raises(ValueError):
-        if isinstance(dist, Continuous):
-            radius = 3.0
-            columns = 'age_mid'
-        else:
-            radius = 2
-            columns = levels
-        kernel = Tricubic(radius, distance=dist)
-        x = data.iloc[0][columns]
-        y = data.iloc[4][columns]
-        kernel(x, y)
-
-
-# Test output type
-@pytest.mark.parametrize('kernel', kernel_dict.values())
-@pytest.mark.parametrize('columns', ['age_mid', levels])
-def test_output_type(kernel, columns):
-    """Output is a float."""
-    x = data.iloc[0][columns]
-    y = data.iloc[4][columns]
-    assert isinstance(kernel(x, y), (float, np.floating))
-
-
-# Test output values
-def test_exponential_continuous():
-    """Test exponential kernel with continuous distance."""
-    x = data.iloc[0]['age_mid']
-    y = data.iloc[4]['age_mid']
-    kernel = kernel_dict['exp_cont']
-    assert np.isclose(kernel(x, y), 0.00033546262790251185)
-
-
-def test_exponential_hierarchical():
-    """Test exponential kernel with hierarchical distance."""
-    x = data.iloc[0][levels]
-    y = data.iloc[4][levels]
-    kernel = kernel_dict['exp_hier']
-    assert np.isclose(kernel(x, y), 0.0024787521766663585)
-
-
-def test_tricubic_continuous():
-    """Test tricubic kernel with continuous distance."""
-    x = data.iloc[0]['age_mid']
-    y = data.iloc[4]['age_mid']
-    kernel = kernel_dict['tri_cont']
-    assert np.isclose(kernel(x, y), 0.5381833400915066)
-
-
-def test_tricubic_hierarchical():
-    """Test tricubic kernel with hierarchical distance."""
-    x = data.iloc[0][levels]
-    y = data.iloc[4][levels]
-    kernel = kernel_dict['tri_hier']
-    assert np.isclose(kernel(x, y), 0.0)
-
-
-def test_same_name():
-    """Test depth kernel with same name."""
-    x = data.iloc[0]['name']
-    y = data.iloc[0]['name']
-    kernel = kernel_dict['depth']
-    assert np.isclose(kernel(x, y), 0.9)
-
-
-def test_different_name():
-    """Test depth kernel with different name."""
-    x = data.iloc[0]['name']
-    y = data.iloc[4]['name']
-    kernel = kernel_dict['depth']
-    assert np.isclose(kernel(x, y), 0.09)
-
-
+# Test specific output values
 def test_same_country():
     """Test depth kernel with same country."""
-    x = data.iloc[0][levels]
-    y = data.iloc[1][levels]
-    kernel = kernel_dict['depth']
-    assert np.isclose(kernel(x, y), 0.9)
+    distance = 0
+    weight = depth(distance, 0.9)
+    assert np.isclose(weight, 0.9)
 
 
 def test_same_region():
     """Test depth kernel with same region."""
-    x = data.iloc[0][levels]
-    y = data.iloc[2][levels]
-    kernel = kernel_dict['depth']
-    assert np.isclose(kernel(x, y), 0.09)
+    distance = 1
+    weight = depth(distance, 0.9)
+    assert np.isclose(weight, 0.09)
 
 
 def test_same_super_region():
     """Test depth kernel with same super region."""
-    x = data.iloc[0][levels]
-    y = data.iloc[3][levels]
-    kernel = kernel_dict['depth']
-    assert np.isclose(kernel(x, y), 0.01)
+    distance = 2
+    weight = depth(distance, 0.9)
+    assert np.isclose(weight, 0.01)
 
 
 def test_different_super_region():
     """Test depth kernel with different super regions."""
-    x = data.iloc[0][levels]
-    y = data.iloc[4][levels]
-    kernel = kernel_dict['depth']
-    assert np.isclose(kernel(x, y), 0.0)
+    distance = 3
+    weight = depth(distance, 0.9)
+    assert np.isclose(weight, 0.0)
