@@ -20,31 +20,28 @@ import pytest
 from weave.dimension import Dimension
 
 # Lists of wrong types to test exceptions
-test_dict = {
-    'float': [1, 'dummy', True, None, [], (), {}],
-    'numeric': ['dummy', True, None, [], (), {}],
-    'str': [1, 1.0, True, None, [], (), {}]
-}
-test_dict['dimension'] = test_dict['str'] + \
-                         [[not_str] for not_str in test_dict['str']]
+not_float = [1, 'dummy', True, None, [], (), {}]
+not_numeric = ['dummy', True, None, [], (), {}]
+not_str = [1, 1.0, True, None, [], (), {}]
+not_dimension = not_str + [[value] for value in not_str]
 
 
 # Test constructor types
-@pytest.mark.parametrize('dimension', test_dict['dimension'])
+@pytest.mark.parametrize('dimension', not_dimension)
 def test_dimension_type(dimension):
     """Raise TypeError if `dimension` is not a str or list of str."""
     with pytest.raises(TypeError):
         Dimension(dimension, 'exponential', radius=0.5)
 
 
-@pytest.mark.parametrize('kernel', test_dict['str'])
+@pytest.mark.parametrize('kernel', not_str)
 def test_kernel_type(kernel):
     """Raise TypeError if `kernel` is not a str."""
     with pytest.raises(TypeError):
         Dimension('dummy', kernel)
 
 
-@pytest.mark.parametrize('distance', test_dict['str'])
+@pytest.mark.parametrize('distance', not_str)
 def test_distance_type(distance):
     """Raise TypeError if `distance` is not a str."""
     if distance is not None:
@@ -52,28 +49,28 @@ def test_distance_type(distance):
             Dimension('dummy', 'exponential', distance, radius=0.5)
 
 
-@pytest.mark.parametrize('radius', test_dict['numeric'])
+@pytest.mark.parametrize('radius', not_numeric)
 def test_exponential_radius_type(radius):
     """Raise TypeError if `radius` is not an int or float."""
     with pytest.raises(TypeError):
         Dimension('dummy', 'exponential', radius=radius)
 
 
-@pytest.mark.parametrize('radius', test_dict['numeric'])
+@pytest.mark.parametrize('radius', not_numeric)
 def test_tricubic_radius_type(radius):
     """Raise TypeError if `radius` is not an int or float."""
     with pytest.raises(TypeError):
         Dimension('dummy', 'tricubic', radius=radius, exponent=3)
 
 
-@pytest.mark.parametrize('exponent', test_dict['numeric'])
+@pytest.mark.parametrize('exponent', not_numeric)
 def test_tricubic_exponent_type(exponent):
     """Raise TypeError if `exponent` is not an int or float."""
     with pytest.raises(TypeError):
         Dimension('dummy', 'tricubic', radius=0.5, exponent=exponent)
 
 
-@pytest.mark.parametrize('radius', test_dict['float'])
+@pytest.mark.parametrize('radius', not_float)
 def test_depth_radius_type(radius):
     """Raise TypeError if `radius` is not a float."""
     with pytest.raises(TypeError):
