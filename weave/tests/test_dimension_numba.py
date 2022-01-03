@@ -1,20 +1,8 @@
 """Tests for Dimension class.
 
-Length of dimension should also correspond to distance function:
-* 'continuous': dimension = 1
-* 'euclidean': dimension > 1
-* 'hierarchical': dimension > 1
-* 'depth' -> 'hierarchical': dimension > 1
-
-Where would I check this? Can I make `dimension` immutable?
-Can I just set self._dimension = tuple()?
-Solution: Add error in setter if already exists.
-Add to documentation somewhere? Rethink where checks happen for
-dimension/kernel/distance combinations?
-
 Currently only testing a simple example for most cases, not testing
-other examples of valid input. Could do this with parametrize or
-hypothesis. Examples of valid input:
+other examples of valid input. Could do this with 'parametrize' or
+'hypothesis'. Examples of valid input:
 * 'dummy', 'exponential', None, radius=0.5
 * 'dummy', 'exponential', 'continuous', radius=0.5
 * ['dummy1', 'dummy2'], 'exponential', 'euclidean', radius=0.5
@@ -31,7 +19,14 @@ import pytest
 
 from weave.dimension_numba import Dimension
 
-from examples import test_dict
+# Lists of wrong types to test exceptions
+test_dict = {
+    'float': [1, 'dummy', True, None, [], (), {}],
+    'numeric': ['dummy', True, None, [], (), {}],
+    'str': [1, 1.0, True, None, [], (), {}]
+}
+test_dict['dimension'] = test_dict['str'] + \
+                         [[not_str] for not_str in test_dict['str']]
 
 
 # Test constructor types
@@ -59,28 +54,28 @@ def test_distance_type(distance):
 
 @pytest.mark.parametrize('radius', test_dict['numeric'])
 def test_exponential_radius_type(radius):
-    """Raise TypeError if `radius` is an invalid type."""
+    """Raise TypeError if `radius` is not an int or float."""
     with pytest.raises(TypeError):
         Dimension('dummy', 'exponential', radius=radius)
 
 
 @pytest.mark.parametrize('radius', test_dict['numeric'])
 def test_tricubic_radius_type(radius):
-    """Raise TypeError if `radius` is an invalid type."""
+    """Raise TypeError if `radius` is not an int or float."""
     with pytest.raises(TypeError):
         Dimension('dummy', 'tricubic', radius=radius, exponent=3)
 
 
 @pytest.mark.parametrize('exponent', test_dict['numeric'])
 def test_tricubic_exponent_type(exponent):
-    """Raise TypeError if `exponent` is an invalid type."""
+    """Raise TypeError if `exponent` is not an int or float."""
     with pytest.raises(TypeError):
         Dimension('dummy', 'tricubic', radius=0.5, exponent=exponent)
 
 
-@pytest.mark.parametrize('radius', test_dict['numeric'])
+@pytest.mark.parametrize('radius', test_dict['float'])
 def test_depth_radius_type(radius):
-    """Raise TypeError if `radius` is an invalid type."""
+    """Raise TypeError if `radius` is not a float."""
     with pytest.raises(TypeError):
         Dimension('dummy', 'depth', radius=radius)
 
@@ -104,29 +99,17 @@ def test_exponential_radius_exist():
         Dimension('dummy', 'exponential')
 
 
-def test_tricubic_radius_exist():
-    """Raise KeyError if `radius` is not passed."""
-    with pytest.raises(KeyError):
-        Dimension('dummy', 'tricubic', exponent=3)
-
-
-def test_tricubic_exponent_exist():
-    """Raise KeyError if `exponent` is not passed."""
-    with pytest.raises(KeyError):
-        Dimension('dummy', 'tricubic', radius=0.5)
-
-
-def test_depth_radius_exist():
-    """Raise KeyError if `radius` is not passed."""
-    with pytest.raises(KeyError):
-        Dimension(['dummy1', 'dummy2'], 'depth')
-
-
 @pytest.mark.parametrize('radius', [-1, -1.0, 0, 0.0])
 def test_exponential_radius_value(radius):
     """Raise ValueError if `radius` is not valid."""
     with pytest.raises(ValueError):
         Dimension('dummy', 'exponential', radius=radius)
+
+
+def test_tricubic_radius_exist():
+    """Raise KeyError if `radius` is not passed."""
+    with pytest.raises(KeyError):
+        Dimension('dummy', 'tricubic', exponent=3)
 
 
 @pytest.mark.parametrize('radius', [-1, -1.0, 0, 0.0])
@@ -136,11 +119,23 @@ def test_tricubic_radius_value(radius):
         Dimension('dummy', 'tricubic', radius=radius, exponent=3)
 
 
+def test_tricubic_exponent_exist():
+    """Raise KeyError if `exponent` is not passed."""
+    with pytest.raises(KeyError):
+        Dimension('dummy', 'tricubic', radius=0.5)
+
+
 @pytest.mark.parametrize('exponent', [-1, -1.0, 0, 0.0])
 def test_tricubic_exponent_value(exponent):
     """Raise ValueError if `exponenent` is not valid."""
     with pytest.raises(ValueError):
         Dimension('dummy', 'tricubic', radius=0.5, exponent=exponent)
+
+
+def test_depth_radius_exist():
+    """Raise KeyError if `radius` is not passed."""
+    with pytest.raises(KeyError):
+        Dimension(['dummy1', 'dummy2'], 'depth')
 
 
 @pytest.mark.parametrize('radius', [-1.0, 0.0, 1.0, 2.0])
@@ -168,16 +163,28 @@ def test_distance_value():
         Dimension('dummy', 'exponential', 'dummy', radius=0.5)
 
 
-def test_exponential_distance_default():
+def test_exponential_distance_scalar_default():
     """`distance` is set to 'continuous' if not supplied."""
     dim = Dimension('dummy', 'exponential', radius=0.5)
     assert dim.distance == 'continuous'
 
 
-def test_tricubic_distance_default():
+def test_exponential_distance_vector_default():
+    """`distance` is set to 'euclidean' if not supplied."""
+    dim = Dimension(['dummy1', 'dummy2'], 'exponential', radius=0.5)
+    assert dim.distance == 'euclidean'
+
+
+def test_tricubic_distance_scalar_default():
     """`distance` is set to 'continuous' if not supplied."""
     dim = Dimension('dummy', 'tricubic', radius=0.5, exponent=3)
     assert dim.distance == 'continuous'
+
+
+def test_tricubic_distance_vector_default():
+    """`distance` is set to 'euclidean' if not supplied."""
+    dim = Dimension(['dummy1', 'dummy2'], 'tricubic', radius=0.5, exponent=3)
+    assert dim.distance == 'euclidean'
 
 
 def test_depth_distance_default():
@@ -187,7 +194,7 @@ def test_depth_distance_default():
 
 
 @pytest.mark.filterwarnings('ignore:`kernel`')
-def test_distance_changed():
+def test_distance_changed_hierarchical():
     """`distance` is changed to 'hierarchical'.
 
     When `kernel` == 'depth', enforce `distance` == 'hierarchical'.
@@ -197,7 +204,7 @@ def test_distance_changed():
     assert dim.distance == 'hierarchical'
 
 
-def test_distance_warning():
+def test_distance_warning_hierarchical():
     """Warn when `distance` is changed to 'hierarchical'.
 
     When `kernel` == 'depth', enforce `distance` == 'hierarchical'.
@@ -206,6 +213,34 @@ def test_distance_warning():
     """
     with pytest.warns(UserWarning):
         Dimension(['dummy1', 'dummy2'], 'depth', 'euclidean', radius=0.5)
+
+
+@pytest.mark.filterwarnings('ignore:`dimension`')
+@pytest.mark.parametrize('kernel', ['exponential', 'tricubic'])
+def test_distance_changed_euclidean(kernel):
+    """`distance` is changed to 'euclidean'.
+
+    When `kernel` in {'exponential', 'tricubic'} and `dimension` is a
+    list of str, enforce `distance` != 'continuous'.
+
+    """
+    dim = Dimension(['dummy1', 'dummy2'], kernel, 'continuous', radius=0.5,
+                    exponent=3)
+    assert dim.distance == 'euclidean'
+
+
+@pytest.mark.parametrize('kernel', ['exponential', 'tricubic'])
+def test_distance_warning_euclidean(kernel):
+    """Warn when `distance` is changed to 'euclidean'.
+
+    When `kernel` in {'exponential', 'tricubic'} and `dimension` is a
+    list of str, enforce `distance` != 'continuous'. If `distance` is
+    changed, produce a warning.
+
+    """
+    with pytest.warns(UserWarning):
+        Dimension(['dummy1', 'dummy2'], kernel, 'continuous', radius=0.5,
+                  exponent=3)
 
 
 # Test getter behavior
@@ -217,8 +252,7 @@ def test_dimension_len():
 
     """
     dim1 = Dimension('dummy', 'exponential', radius=0.5)
-    dim2 = Dimension(['dummy1', 'dummy2'], 'exponential', 'euclidean',
-                     radius=0.5)
+    dim2 = Dimension(['dummy1', 'dummy2'], 'exponential', radius=0.5)
     assert isinstance(dim1.dimension, str)
     assert isinstance(dim2.dimension, list)
     assert len(dim2.dimension) == 2
@@ -241,20 +275,19 @@ def test_kernel_pars_warning():
 
 
 @pytest.mark.filterwarnings('ignore:`kernel`')
-def test_kernel_distance_changed():
+def test_setter_distance_changed_hierarchical():
     """`distance` is changed to 'hierarchical'.
 
     When `kernel` is changed to 'depth', enforce `distance` ==
     'hierarchical'.
 
     """
-    dim = Dimension(['dummy1', 'dummy2'], 'exponential', 'euclidean',
-                    radius=0.5)
+    dim = Dimension(['dummy1', 'dummy2'], 'exponential', radius=0.5)
     dim.kernel = 'depth'
     assert dim.distance == 'hierarchical'
 
 
-def test_kernel_distance_warning():
+def test_setter_distance_warning_hierarchical():
     """Warn when `distance` is changed to 'hierarchical'.
 
     When `kernel` is changed to 'depth', enforce `distance` ==
@@ -262,9 +295,36 @@ def test_kernel_distance_warning():
 
     """
     with pytest.warns(UserWarning):
-        dim = Dimension(['dummy1', 'dummy2'], 'exponential', 'euclidean',
-                        radius=0.5)
+        dim = Dimension(['dummy1', 'dummy2'], 'exponential', radius=0.5)
         dim.kernel = 'depth'
+
+
+@pytest.mark.filterwarnings('ignore:`dimension`')
+@pytest.mark.parametrize('kernel', ['exponential', 'tricubic'])
+def test_setter_distance_changed_euclidean(kernel):
+    """`distance` is changed to 'euclidean'.
+
+    When `kernel` in {'exponential', 'tricubic'} and `dimension` is a
+    list of str, enforce `distance` != 'continuous'.
+
+    """
+    dim = Dimension(['dummy1', 'dummy2'], kernel, radius=0.5, exponent=3)
+    dim.distance = 'continuous'
+    assert dim.distance == 'euclidean'
+
+
+@pytest.mark.parametrize('kernel', ['exponential', 'tricubic'])
+def test_setter_distance_warning_euclidean(kernel):
+    """Warn when `distance` is changed to 'euclidean'.
+
+    When `kernel` in {'exponential', 'tricubic'} and `dimension` is a
+    list of str, enforce `distance` != 'continuous'. If `distance` is
+    changed, produce a warning.
+
+    """
+    with pytest.warns(UserWarning):
+        dim = Dimension(['dummy1', 'dummy2'], kernel, radius=0.5, exponent=3)
+        dim.distance = 'continuous'
 
 
 # Test equality

@@ -10,7 +10,6 @@ TODO:
   intersect (e.g., self._dimension = ['age_mid', 'year_id'] and
   other.dimension = ['age_mid', 'location_id']). Do we want to add a
   check for intersections?
-* Write tests
 
 """
 from typing import Any, Dict, List, Union
@@ -294,7 +293,7 @@ class Dimension:
             msg = '`distance` is not a valid distance function.'
             raise ValueError(msg)
 
-        # Check kernel
+        # Check kernel and dimension
         if self.kernel == 'depth' and distance != 'hierarchical':
             msg = "`kernel` == 'depth' but `distance` != 'hierarchical'. "
             msg += "Using 'hierarchical' instead."
