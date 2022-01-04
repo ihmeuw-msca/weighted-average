@@ -161,9 +161,9 @@ class Smoother:
         smooth_cols = self.smooth_data(dim_list, col_list, idx_fit, idx_pred)
 
         # Construct smoothed data frame
-        smooth_data = data[data[predict]]
+        smooth_data = data.iloc[idx_pred].reset_index(drop=True)
         for idx_col, col in enumerate(columns):
-            data[f"{col}_smooth"] = smooth_cols[:, idx_col]
+            smooth_data[f"{col}_smooth"] = smooth_cols[:, idx_col]
         return smooth_data
 
     @staticmethod
