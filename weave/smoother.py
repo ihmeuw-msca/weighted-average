@@ -2,7 +2,6 @@
 """Smooth data across multiple dimensions using weighted averages.
 
 TODO
-* Modify __init__ to import Smoother
 * Write checks and tests
 * Modify functions for new numba versions
 * Numba-fy any methods where possible
@@ -22,7 +21,21 @@ import numpy as np
 from pandas import DataFrame
 
 from weave.dimension import Dimension
+from weave.distance import continuous, euclidean, hierarchical
+from weave.kernels import exponential, depth, tricubic
 from weave.utils import as_list
+
+distance_dict = {
+    'continuous': continuous,
+    'euclidean': euclidean,
+    'hierarchical': hierarchical
+}
+
+kernel_dict = {
+    'exponential': exponential,
+    'depth': depth,
+    'tricubic': tricubic
+}
 
 
 class Smoother:
@@ -249,12 +262,14 @@ class Smoother:
         # Calculate weights one dimension at a time
         for idx_dim in range(n_dims):
             x = dim_list[idx_dim][idx_x]
-            kernel = self._dimensions[idx_dim].kernel
+            kernel = kernel_dict[self._dimensions[idx_dim].kernel]
+            distance = distance_dict[self._dimensions[idx_dim].distance]
+            pars = tuple(self._dimensions[idx_dim].pars.values())
 
             # Calculate weights one point at a time
             for idx_y in range(n_fit):
                 y = dim_list[idx_dim][idx_fit[idx_y]]
-                dim_weights[idx_dim, idx_y] = kernel(x, y)
+                dim_weights[idx_dim, idx_y] = kernel(distance(x, y), *pars)
 
         # Aggregate dimension weights
         weights = dim_weights.prod(axis=0)
