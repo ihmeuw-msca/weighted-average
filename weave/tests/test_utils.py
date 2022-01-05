@@ -36,11 +36,11 @@ def test_flatten_type(values):
 
 def test_flatten_not_flat():
     """Return a flattened list."""
-    values = [0, [[[1], 2], 3, [4, [5]]]]
-    assert flatten_list(values) == [0, 1, 2, 3, 4, 5]
+    values = [['age', 'year'], [['sup_reg', 'reg', 'loc']]]
+    assert flatten_list(values) == ['age', 'year', 'sup_reg', 'reg', 'loc']
 
 
 def test_flatten_flat():
     """Return `values` if already flattened."""
-    values = [1, 2, 3, 4]
+    values = ['age', 'year', 'location']
     assert flatten_list(values) == values
