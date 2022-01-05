@@ -30,8 +30,7 @@ class Dimension:
     """
 
     def __init__(self, dimension: Union[str, List[str]], kernel: str,
-                 distance: str = None, **pars) \
-            -> None:
+                 distance: str = None, **pars) -> None:
         """Create smoothing dimension.
 
         Parameters
@@ -200,10 +199,10 @@ class Dimension:
             Kernel function parameters.
 
         """
-        if self.kernel == 'exponential':
+        if self._kernel == 'exponential':
             self.check_pars(pars, 'radius', 'pos_num')
             self._pars = {'radius': pars['radius']}
-        elif self.kernel == 'tricubic':
+        elif self._kernel == 'tricubic':
             self.check_pars(pars, ['radius', 'exponent'], 'pos_num')
             self._pars = {key: pars[key] for key in ['radius', 'exponent']}
         else:  # 'depth'
@@ -247,10 +246,10 @@ class Dimension:
         """
         # Set defaults
         if distance is None:
-            if self.kernel == 'depth':
+            if self._kernel == 'depth':
                 distance = 'hierarchical'
             else:
-                if isinstance(self.dimension, str):
+                if len(self._dimension) == 1:
                     distance = 'continuous'
                 else:
                     distance = 'euclidean'
@@ -265,13 +264,13 @@ class Dimension:
             raise ValueError(msg)
 
         # Check kernel and dimension
-        if self.kernel == 'depth' and distance != 'hierarchical':
+        if self._kernel == 'depth' and distance != 'hierarchical':
             msg = "`kernel` == 'depth' but `distance` != 'hierarchical'. "
             msg += "Using 'hierarchical' instead."
             warnings.warn(msg)
             distance = 'hierarchical'
         else:
-            if isinstance(self.dimension, list) and distance == 'continuous':
+            if len(self._dimension) > 1 and distance == 'continuous':
                 msg = "`dimension` is a list of str but `distance` == "
                 msg += "'continuous'. Using 'euclidean' instead."
                 warnings.warn(msg)
