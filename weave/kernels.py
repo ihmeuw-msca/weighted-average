@@ -37,7 +37,7 @@ def exponential(distance: float, pars: Dict[str, float]) -> float:
     ----------
     distance : nonnegative float
         Distance between points.
-    pars : dict of {str: float}
+    pars : numba dict of {str: float}
         Kernel function parameters.
 
     Kernel function parameters
@@ -65,7 +65,7 @@ def tricubic(distance: float, pars: Dict[str, float]) -> float:
     ----------
     distance : nonnegative float
         Distance between points.
-    pars : dict of {str: float}
+    pars : numba dict of {str: float}
         Kernel function parameters.
 
     Kernel function parameters
@@ -105,7 +105,7 @@ def depth(distance: float, pars: Dict[str, float]) -> float:
     ----------
     distance : nonnegative float
         Distance between points.
-    pars : dict of {str: float}
+    pars : numba dict of {str: float}
         Kernel function parameters.
 
     Kernel function parameters
