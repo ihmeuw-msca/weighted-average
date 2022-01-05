@@ -28,7 +28,7 @@ def my_floats(draw):
 
 
 @composite
-def float_arrays(draw, n=2):
+def my_arrays(draw, n=2):
     """Return n vectors of float with matching lengths."""
     m = draw(integers(min_value=2, max_value=5))
     vec_list = [draw(arrays(float, m, elements=my_floats()))
@@ -54,19 +54,19 @@ def test_continuous_type(x, y):
 
 
 @settings(deadline=None)
-@given(float_arrays())
-def test_euclidean_type(my_arrays):
+@given(my_arrays())
+def test_euclidean_type(xy):
     """Euclidean output satisfies property 1."""
-    x, y = my_arrays
+    x, y = xy
     distance = euclidean(x, y)
     property_1(distance)
 
 
 @settings(deadline=None)
-@given(float_arrays())
-def test_hierarchical_type(my_arrays):
+@given(my_arrays())
+def test_hierarchical_type(xy):
     """Hierarchical output satisfies property 1."""
-    x, y = my_arrays
+    x, y = xy
     distance = hierarchical(x, y)
     property_1(distance)
 
@@ -87,18 +87,18 @@ def test_continuous_zero(x, y):
     property_2(x, y, distance)
 
 
-@given(float_arrays())
-def test_euclidean_zero(my_arrays):
+@given(my_arrays())
+def test_euclidean_zero(xy):
     """Euclidean output satisfies property 2."""
-    x, y = my_arrays
+    x, y = xy
     distance = euclidean(x, y)
     property_2(x, y, distance)
 
 
-@given(float_arrays())
-def test_hierarchical_zero(my_arrays):
+@given(my_arrays())
+def test_hierarchical_zero(xy):
     """Hierarchical output satisfies property 2."""
-    x, y = my_arrays
+    x, y = xy
     distance = hierarchical(x, y)
     property_2(x, y, distance)
 
@@ -112,19 +112,19 @@ def test_continuous_symmetric(x, y):
     assert np.isclose(distance_xy, distance_yx)
 
 
-@given(float_arrays())
-def test_euclidean_symmetric(my_arrays):
+@given(my_arrays())
+def test_euclidean_symmetric(xy):
     """Euclidean output satisfies property 3."""
-    x, y = my_arrays
+    x, y = xy
     distance_xy = euclidean(x, y)
     distance_yx = euclidean(y, x)
     assert np.isclose(distance_xy, distance_yx)
 
 
-@given(float_arrays())
-def test_hierarchical_symmetric(my_arrays):
+@given(my_arrays())
+def test_hierarchical_symmetric(xy):
     """Hierarchical output satisfies property 3."""
-    x, y = my_arrays
+    x, y = xy
     distance_xy = hierarchical(x, y)
     distance_yx = hierarchical(y, x)
     assert np.isclose(distance_xy, distance_yx)
@@ -147,20 +147,20 @@ def test_continuous_triangle(x, y, z):
     property_4(distance_xy, distance_xz, distance_zy)
 
 
-@given(float_arrays(n=3))
-def test_euclidean_triangle(my_arrays):
+@given(my_arrays(n=3))
+def test_euclidean_triangle(xyz):
     """Euclidean output satisfies property 4."""
-    x, y, z = my_arrays
+    x, y, z = xyz
     distance_xy = euclidean(x, y)
     distance_xz = euclidean(x, z)
     distance_zy = euclidean(z, y)
     property_4(distance_xy, distance_xz, distance_zy)
 
 
-@given(float_arrays(n=3))
-def test_hierarchical_triangle(my_arrays):
+@given(my_arrays(n=3))
+def test_hierarchical_triangle(xyz):
     """Hierarchical output satisfies property 4."""
-    x, y, z = my_arrays
+    x, y, z = xyz
     distance_xy = hierarchical(x, y)
     distance_xz = hierarchical(x, z)
     distance_zy = hierarchical(z, y)
