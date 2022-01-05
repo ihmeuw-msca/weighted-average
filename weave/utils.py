@@ -21,7 +21,7 @@ def as_list(values: Union[Any, List[Any]]) -> List[Any]:
     return [values]
 
 
-def flatten_list(values: List[Union[Any, List[Any]]]) -> List[Any]:
+def flatten(values: List[Union[Any, List[Any]]]) -> List[Any]:
     """Flatten a list of lists.
 
     Parameters
@@ -40,5 +40,5 @@ def flatten_list(values: List[Union[Any, List[Any]]]) -> List[Any]:
     if len(values) == 0:
         return values
     if isinstance(values[0], list):
-        return flatten_list(values[0]) + flatten_list(values[1:])
-    return values[:1] + flatten_list(values[1:])
+        return flatten(values[0]) + flatten(values[1:])
+    return values[:1] + flatten(values[1:])
