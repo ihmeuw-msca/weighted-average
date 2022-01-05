@@ -28,4 +28,4 @@ def test_duplicate_dimensions(dimension1, dimension2, kernel1, kernel2):
     with pytest.raises(ValueError):
         dim1 = Dimension(dimension1, kernel1, radius=0.5, exponent=3)
         dim2 = Dimension(dimension2, kernel2, radius=0.5, exponent=3)
-        Smoother([dim1, dim2])
+        Smoother([[dim1, dim2]])
