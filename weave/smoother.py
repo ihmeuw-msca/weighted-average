@@ -1,4 +1,4 @@
-# pylint: disable=C0103
+# pylint: disable=C0103, R0914
 """Smooth data across multiple dimensions using weighted averages.
 
 TODO
@@ -25,7 +25,7 @@ from weave.distance import continuous, euclidean, hierarchical
 from weave.kernels import exponential, depth, tricubic
 from weave.utils import as_list, flatten
 
-distance_dict = {
+dist_dict = {
     'continuous': continuous,
     'euclidean': euclidean,
     'hierarchical': hierarchical
@@ -95,11 +95,13 @@ class Smoother:
 
         """
         # Check types
-        dimensions = as_list(dimensions)
+        if not isinstance(dimensions, list):
+            raise TypeError('`dimensions` is not a list.')
         if len(dimensions) == 0:
             raise TypeError('`dimensions` is an empty list.')
+        if not all(isinstance(group, list) for group in dimensions):
+            raise TypeError('`dimensions` contains invalid type(s).')
         for group in dimensions:
-            group = as_list(group)
             if len(group) == 0:
                 raise TypeError('`dimensions` contains an empty list.')
             if not all(isinstance(dim, Dimension) for dim in group):
@@ -157,12 +159,13 @@ class Smoother:
         columns = as_list(columns)
 
         # Extract data from data frame
-        dim_list = [data[dim.dimension].values for dim in self._dimensions]
+        group_list = [[data[dim.dimension].values for dim in group]
+                      for group in self._dimensions]
         idx_fit, col_list = self.get_data(data, fit, columns)
         idx_pred, _ = self.get_data(data, predict)
 
         # Calculate smoothed values
-        smooth_cols = self.smooth_data(dim_list, col_list, idx_fit, idx_pred)
+        smooth_cols = self.smooth_data(group_list, col_list, idx_fit, idx_pred)
 
         # Construct smoothed data frame
         smooth_data = data.iloc[idx_pred].reset_index(drop=True)
@@ -203,15 +206,15 @@ class Smoother:
                 else [data[data_ind][col].values for col in columns]
         return idx_ind, col_list
 
-    def smooth_data(self, dim_list: List[np.ndarray],
+    def smooth_data(self, group_list: List[List[np.ndarray]],
                     col_list: List[np.ndarray], idx_fit: np.ndarray,
                     idx_pred: np.ndarray) -> np.ndarray:
         """Smooth data across dimensions with weighted averages.
 
         Parameters
         ----------
-        dim_list : list of numpy.ndarray
-            Point locations across dimensions.
+        group_list : list of list of numpy.ndarray
+            Point locations across dimension groups.
         col_list : list of numpy.ndarray
             Values to smooth.
         idx_fit : numpy.ndarray
@@ -232,7 +235,7 @@ class Smoother:
 
         # Calculate smoothed values one point at a time
         for idx_x in range(n_pred):
-            weights = self.get_weights(dim_list, idx_fit, idx_pred[idx_x])
+            weights = self.get_weights(group_list, idx_fit, idx_pred[idx_x])
 
             # Compute smoothed values one column at a time
             for idx_col in range(n_cols):
@@ -240,13 +243,14 @@ class Smoother:
 
         return smooth_cols
 
-    def get_weights(self, dim_list, idx_fit, idx_x):
+    def get_weights(self, group_list: List[List[np.ndarray]],
+                    idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
         """Get smoothing weights for current point.
 
         Parameters
         ----------
-        dim_list : list of numpy.ndarray
-            Point locations across dimensions.
+        group_list : list of list of numpy.ndarray
+            Point locations across dimension groups.
         idx_fit : numpy.ndarray
             Indices of nearby points in `dim_list`.
         idx_x : int
@@ -258,23 +262,55 @@ class Smoother:
             Smoothing weights for current point.
 
         """
-        # Initialize weight vectors
-        n_dims = len(dim_list)
+        # Initialize weight vector
+        weights = np.ones(len(idx_fit))
+
+        # Calculate weights one group at a time
+        for idx_group, dim_list in enumerate(group_list):
+            group_weights = self.get_group_weights(dim_list, idx_group,
+                                                   idx_fit, idx_x)
+            weights *= group_weights
+            weights /= weights.sum()
+
+        return weights
+
+    def get_group_weights(self, dim_list: List[np.ndarray], idx_group: int,
+                          idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
+        """Get smoothing weights for current point and dimension group.
+
+        Parameters
+        ----------
+        dim_list : list of numpy.npdarray
+            Point locations across group dimensions.
+        idx_group : int
+            Index of current dimension group.
+        idx_fit : numpy.ndarray
+            Indices of nearby points in `group_list`.
+        idx_x : int
+            Index of current point in `group_list`.
+
+        Returns
+        -------
+        numpy.ndarray
+            Smoothing weights for current point and dimension group.
+
+        """
+        # Initialize weight vector
         n_fit = len(idx_fit)
-        dim_weights = np.empty((n_dims, n_fit))
+        weights = np.ones(n_fit)
 
         # Calculate weights one dimension at a time
-        for idx_dim in range(n_dims):
-            x = dim_list[idx_dim][idx_x]
-            kernel = kernel_dict[self._dimensions[idx_dim].kernel]
-            distance = distance_dict[self._dimensions[idx_dim].distance]
-            pars = tuple(self._dimensions[idx_dim].pars.values())
+        for idx_dim, dim in enumerate(dim_list):
+            x = dim[idx_x]
+            kernel = kernel_dict[self._dimensions[idx_group][idx_dim].kernel]
+            distance = dist_dict[self._dimensions[idx_group][idx_dim].distance]
+            pars = tuple(self._dimensions[idx_group][idx_dim].pars.values())
 
             # Calculate weights one point at a time
+            dim_weights = np.empty(n_fit)
             for idx_y in range(n_fit):
-                y = dim_list[idx_dim][idx_fit[idx_y]]
-                dim_weights[idx_dim, idx_y] = kernel(distance(x, y), *pars)
+                y = dim[idx_fit[idx_y]]
+                dim_weights[idx_y] = kernel(distance(x, y), *pars)
+            weights *= dim_weights
 
-        # Aggregate dimension weights
-        weights = dim_weights.prod(axis=0)
         return weights/weights.sum()
