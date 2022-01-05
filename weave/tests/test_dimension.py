@@ -322,31 +322,3 @@ def test_setter_distance_warning_euclidean(kernel):
     with pytest.warns(UserWarning):
         dim = Dimension(['dummy1', 'dummy2'], kernel, radius=0.5, exponent=3)
         dim.distance = 'continuous'
-
-
-# Test equality
-def test_dimension_equal():
-    """Return True if `dimension` equal."""
-    dimension = 'dummy'
-    dim1 = Dimension(dimension, 'exponential', radius=0.5)
-    dim2 = Dimension(dimension, 'tricubic', radius=0.5, exponent=3)
-    assert dim1 == dim2
-
-    dimension = ['dummy1', 'dummy2']
-    dim1 = Dimension(dimension, 'exponential', 'euclidean', radius=0.5)
-    dim2 = Dimension(dimension, 'depth', 'hierarchical', radius=0.5)
-    assert dim1 == dim2
-
-
-def test_dimension_not_equal():
-    """Return False if `dimension` not equal."""
-    dim1 = Dimension('dummy1', 'exponential', radius=0.5)
-    dim2 = Dimension('dummy2', 'exponential', radius=0.5)
-    assert dim1 != dim2
-
-    dim1 = Dimension(['dummy1', 'dummy2'], 'depth', radius=0.5)
-    dim2 = Dimension(['dummy3', 'dummy4'], 'depth', radius=0.5)
-    assert dim1 != dim2
-
-    dim1 = Dimension('dummy', 'exponential', radius=0.5)
-    dim2 = Dimension(['dummy1', 'dummy2'], 'depth', radius=0.5)
