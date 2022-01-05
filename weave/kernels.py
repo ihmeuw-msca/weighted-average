@@ -1,3 +1,4 @@
+# pylint: disable=E0611
 """Calculate the smoothing weight for nearby point given current point.
 
 Kernel functions to calculate the smoothing weight for a nearby point
@@ -20,14 +21,13 @@ TODO:
 * STGPR has a different depth function than CODEm
 
 """
-from typing import Union
-
 from numba import njit
+from numba.typed import Dict
 import numpy as np
 
 
 @njit
-def exponential(distance: float, radius: Union[int, float]) -> float:
+def exponential(distance: float, pars: Dict[str, float]) -> float:
     """Get exponential smoothing weight.
 
     k_r(x, y) = 1/exp(d(x, y)/r)
@@ -37,7 +37,12 @@ def exponential(distance: float, radius: Union[int, float]) -> float:
     ----------
     distance : nonnegative float
         Distance between points.
-    radius : positive int or float
+    pars : dict of {str: float}
+        Kernel function parameters.
+
+    Kernel function parameters
+    --------------------------
+    radius : positive float
         Kernel radius.
 
     Returns
@@ -46,12 +51,11 @@ def exponential(distance: float, radius: Union[int, float]) -> float:
         Exponential smoothing weight.
 
     """
-    return 1.0/np.exp(distance/radius)
+    return 1.0/np.exp(distance/pars['radius'])
 
 
 @njit
-def tricubic(distance: float, radius: Union[int, float],
-             exponent: Union[int, float]) -> float:
+def tricubic(distance: float, pars: Dict[str, float]) -> float:
     """Get tricubic smoothing weight.
 
     k_r(x, y) = max(0, (1 - (d(x, y)/r)^s)^3)
@@ -61,9 +65,14 @@ def tricubic(distance: float, radius: Union[int, float],
     ----------
     distance : nonnegative float
         Distance between points.
-    radius : positive int or float
+    pars : dict of {str: float}
+        Kernel function parameters.
+
+    Kernel function parameters
+    --------------------------
+    radius : positive float
         Kernel radius.
-    exponent : positive int or float
+    exponent : positive float
         Exponent value.
 
     Returns
@@ -72,11 +81,11 @@ def tricubic(distance: float, radius: Union[int, float],
         Tricubic smoothing weight.
 
     """
-    return max(0.0, (1.0 - (distance/radius)**exponent)**3)
+    return max(0.0, (1.0 - (distance/pars['radius'])**pars['exponent'])**3)
 
 
 @njit
-def depth(distance: float, radius: float):
+def depth(distance: float, pars: Dict[str, float]) -> float:
     """Get depth smoothing weight.
 
     If distance == 0 (same country):
@@ -96,6 +105,11 @@ def depth(distance: float, radius: float):
     ----------
     distance : nonnegative float
         Distance between points.
+    pars : dict of {str: float}
+        Kernel function parameters.
+
+    Kernel function parameters
+    --------------------------
     radius : float in (0, 1)
         Kernel radius.
 
@@ -106,9 +120,9 @@ def depth(distance: float, radius: float):
 
     """
     if distance == 0.0:
-        return radius
-    if distance ==1.0:
-        return radius*(1.0 - radius)
+        return pars['radius']
+    if distance == 1.0:
+        return pars['radius']*(1.0 - pars['radius'])
     if distance == 2.0:
-        return (1.0 - radius)**2
+        return (1.0 - pars['radius'])**2
     return 0.0
