@@ -11,21 +11,19 @@ In general, distance functions should satisfy the following properties:
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
 """
-from typing import Union
-
 from numba import njit
 import numpy as np
 
 
 @njit
-def continuous(x: Union[int, float], y: Union[int, float]) -> float:
+def continuous(x: float, y: float) -> float:
     """Get continuous distance between `x` and `y`.
 
     Parameters
     ----------
-    x : int or float
+    x : float
         Current point.
-    y : int or float
+    y : float
         Nearby point.
 
     Returns
@@ -63,9 +61,9 @@ def hierarchical(x: np.ndarray, y: np.ndarray) -> float:
 
     Parameters
     ----------
-    x : 1D numpy.ndarray
+    x : 1D numpy.ndarray of float
         Current point.
-    y : 1D numpy.ndarray
+    y : 1D numpy.ndarray of float
         Nearby point.
 
     Returns
