@@ -18,8 +18,6 @@ In general, kernel functions should satisfy the following properties:
 TODO:
 * Generalize depth function to include more levels (e.g., sub-national)
 * STGPR has a different depth function than CODEm
-* Some parameters may depend on whether or not there is country-level
-  data (should we add an argument for that? an alternate radius?)
 
 """
 from typing import Union
