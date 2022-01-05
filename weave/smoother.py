@@ -256,67 +256,76 @@ class Smoother:
 
         # Calculate weights one group at a time
         for idx_group, dim_list in enumerate(group_list):
-            group_weights = self.get_group_weights(dim_list, idx_group,
-                                                   idx_fit, idx_x)
+            dist_list = [dim.distance for dim in self._dimensions[idx_group]]
+            kernel_list = [dim.kernel for dim in self._dimensions[idx_group]]
+            pars_list = [tuple(dim.pars.values())
+                         for dim in self._dimensions[idx_group]]
+            group_weights = get_group_weights(dim_list, dist_list, kernel_list,
+                                              pars_list, idx_fit, idx_x)
             weights *= group_weights
             weights /= weights.sum()
 
         return weights
 
-    @jit
-    def get_group_weights(self, dim_list: List[np.ndarray], idx_group: int,
-                          idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
-        """Get smoothing weights for current point and dimension group.
 
-        Parameters
-        ----------
-        dim_list : list of numpy.npdarray
-            Point locations across group dimension(s).
-        idx_group : int
-            Index of current dimension group.
-        idx_fit : numpy.ndarray
-            Indices of nearby points in `group_list`.
-        idx_x : int
-            Index of current point in `group_list`.
+@jit
+def get_group_weights(dim_list: List[np.ndarray], dist_list: List[str],
+                      kernel_list: List[str],
+                      pars_list: List[Tuple[Union[int, float]]],
+                      idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
+    """Get smoothing weights for current point and dimension group.
 
-        Returns
-        -------
-        numpy.ndarray
-            Smoothing weights for current point and dimension group.
+    Parameters
+    ----------
+    dim_list : list of numpy.npdarray
+        Point locations across group dimension(s).
+    dist_list : list of str
+        Distance function names for group dimension(s).
+    kernel_list : list of str
+        Kernel function names for group dimension(s).
+    pars_list : list of tuple of int or float
+        Kernel function parameters for group dimension(s).
+    idx_fit : numpy.ndarray
+        Indices of nearby points in `group_list`.
+    idx_x : int
+        Index of current point in `group_list`.
 
-        """
-        # Initialize weight vector
-        n_fit = len(idx_fit)
-        weights = np.ones(n_fit)
+    Returns
+    -------
+    numpy.ndarray
+        Smoothing weights for current point and dimension group.
 
-        # Calculate weights one dimension at a time
-        for idx_dim, dim in enumerate(dim_list):
-            x = dim[idx_x]
-            pars = tuple(self._dimensions[idx_group][idx_dim].pars.values())
+    """
+    # Initialize weight vector
+    n_fit = len(idx_fit)
+    weights = np.ones(n_fit)
 
-            # Calculate weights one point at a time
-            dim_weights = np.empty(n_fit)
-            for idx_y in range(n_fit):
-                y = dim[idx_fit[idx_y]]
+    # Calculate weights one dimension at a time
+    for idx_dim, dim in enumerate(dim_list):
+        x = dim[idx_x]
+        pars = pars_list[idx_dim]
 
-                # Get distance
-                dist_name = self._dimensions[idx_group][idx_dim].distance
-                if dist_name == 'continuous':
-                    distance = continuous(x, y)
-                elif dist_name == 'euclidean':
-                    distance = euclidean(x, y)
-                else:  # hierarchical
-                    distance = hierarchical(x, y)
+        # Calculate weights one point at a time
+        dim_weights = np.empty(n_fit)
+        for idx_y in range(n_fit):
+            y = dim[idx_fit[idx_y]]
 
-                # Get weight
-                kernel_name = self._dimensions[idx_group][idx_dim].kernel
-                if kernel_name == 'exponential':
-                    dim_weights[idx_y] = exponential(distance, *pars)
-                elif kernel_name == 'tricubic':
-                    dim_weights[idx_y] = tricubic(distance, *pars)
-                else:  # depth
-                    dim_weights[idx_y] = depth(distance, *pars)
+            # Get distance
+            if dist_list[idx_dim] == 'continuous':
+                distance = continuous(x, y)
+            elif dist_list[idx_dim] == 'euclidean':
+                distance = euclidean(x, y)
+            else:  # hierarchical
+                distance = hierarchical(x, y)
 
-            weights *= dim_weights
+            # Get weight
+            if kernel_list[idx_dim] == 'exponential':
+                dim_weights[idx_y] = exponential(distance, *pars)
+            elif kernel_list[idx_dim] == 'tricubic':
+                dim_weights[idx_y] = tricubic(distance, *pars)
+            else:  # depth
+                dim_weights[idx_y] = depth(distance, *pars)
 
-        return weights/weights.sum()
+        weights *= dim_weights
+
+    return weights/weights.sum()
