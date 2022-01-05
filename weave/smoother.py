@@ -3,9 +3,7 @@
 
 TODO
 * Write checks and tests
-* Modify functions for new numba versions
 * Numba-fy any methods where possible
-* Specify order of weight aggregation (e.g., location last)
 * Check meeting notes for other changes
 
 Checks
@@ -17,6 +15,7 @@ Checks
 """
 from typing import List, Tuple, Union
 
+from numba import jit
 import numpy as np
 from pandas import DataFrame
 
@@ -206,6 +205,7 @@ class Smoother:
                 else [data[data_ind][col].values for col in columns]
         return idx_ind, col_list
 
+    @jit
     def smooth_data(self, group_list: List[List[np.ndarray]],
                     col_list: List[np.ndarray], idx_fit: np.ndarray,
                     idx_pred: np.ndarray) -> np.ndarray:
@@ -243,6 +243,7 @@ class Smoother:
 
         return smooth_cols
 
+    @jit
     def get_weights(self, group_list: List[List[np.ndarray]],
                     idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
         """Get smoothing weights for current point.
@@ -274,6 +275,7 @@ class Smoother:
 
         return weights
 
+    @jit
     def get_group_weights(self, dim_list: List[np.ndarray], idx_group: int,
                           idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
         """Get smoothing weights for current point and dimension group.
