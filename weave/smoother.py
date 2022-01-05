@@ -23,7 +23,7 @@ from pandas import DataFrame
 from weave.dimension import Dimension
 from weave.distance import continuous, euclidean, hierarchical
 from weave.kernels import exponential, depth, tricubic
-from weave.utils import as_list
+from weave.utils import as_list, flatten
 
 distance_dict = {
     'continuous': continuous,
@@ -43,66 +43,70 @@ class Smoother:
 
     Attributes
     ----------
-    dimensions : Dimension or list of Dimension
+    dimensions : list of list of Dimension
         Smoothing dimension(s).
 
     """
 
-    def __init__(self, dimensions: Union[Dimension, List[Dimension]]) -> None:
+    def __init__(self, dimensions: List[List[Dimension]]) -> None:
         """Create smoother function.
+
+        Dimension weights are aggregated in the order and groupings
+        present in `dimensions`. For example, if `dimensions` ==
+        [['age', 'year'], ['location']], then age and year weights will
+        be multiplied and normalized, then the result will be
+        multiplied by location weights and normalized.
 
         Parameters
         ----------
-        dimensions : Dimension or list of Dimension
+        dimensions : list of list of Dimension
             Smoothing dimension(s).
 
         """
         self.dimensions = dimensions
 
     @property
-    def dimensions(self) -> Union[Dimension, List[Dimension]]:
+    def dimensions(self) -> List[List[Dimension]]:
         """Get smoothing dimension(s).
 
         Returns
         -------
-        Dimension or list of Dimension
+        list of list of Dimension
             Smoothing dimension(s).
 
         """
-        if len(self._dimensions) == 1:
-            return self._dimensions[0]
         return self._dimensions
 
     @dimensions.setter
-    def dimensions(self, dimensions: Union[Dimension, List[Dimension]]) \
-            -> None:
+    def dimensions(self, dimensions: List[List[Dimension]]) -> None:
         """Set smoothing dimension(s).
 
         Parameters
         ----------
-        dimensions : Dimension or list of Dimension
+        dimensions : list of list of Dimension
             Smoothing dimension(s).
 
         Raises
         ------
         TypeError
-            If `dimensions` is not a Dimension or list of Dimension.
+            If `dimensions` is not a list of list of Dimension.
         ValueError
             If duplicates found in `dimensions`.
 
         """
         # Check types
         dimensions = as_list(dimensions)
-
-        # Check types
-        dimensions = as_list(dimensions)
-        empty_list = len(dimensions) == 0
-        not_all_str = not all(isinstance(dim, Dimension) for dim in dimensions)
-        if empty_list or not_all_str:
-            raise TypeError('`dimensions` contains invalid type(s).')
+        if len(dimensions) == 0:
+            raise TypeError('`dimensions` is an empty list.')
+        for group in dimensions:
+            group = as_list(group)
+            if len(group) == 0:
+                raise TypeError('`dimensions` contains an empty list.')
+            if not all(isinstance(dim, Dimension) for dim in group):
+                raise TypeError('`dimensions` contains invalid type(s).')
 
         # Check duplicates
-        dim_list = [tuple(dim.dimension) for dim in dimensions]
+        dim_list = flatten([dim.dimension for dim in flatten(dimensions)])
         if len(dim_list) > len(set(dim_list)):
             raise ValueError('Duplicates found in `dimensions`.')
 
