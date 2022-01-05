@@ -26,6 +26,7 @@ def test_dimensions_type(dimensions):
 def test_duplicate_dimensions(dimension1, dimension2, kernel1, kernel2):
     """Raise ValueError if duplicates in `dimensions`."""
     with pytest.raises(ValueError):
-        dim1 = Dimension(dimension1, kernel1, radius=0.5, exponent=3)
-        dim2 = Dimension(dimension2, kernel2, radius=0.5, exponent=3)
+        pars = {'radius': 0.4, 'exponent': 3}
+        dim1 = Dimension(dimension1, kernel1, pars)
+        dim2 = Dimension(dimension2, kernel2, pars)
         Smoother([[dim1, dim2]])
