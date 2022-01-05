@@ -1,13 +1,18 @@
-# pylint: disable=C0103, R0902
+# pylint: disable=E0611, R0902
 """Smoothing dimension specifications.
 
 Dimension class to specify smoothing dimension column name(s), distance
 function, and kernel function.
 
+TODO:
+* Update tests
+* Convert all ints to floats
+
 """
 from typing import Dict, List, Union
 import warnings
 
+from numba.typed import Dict as NumbaDict
 import numpy as np
 
 from weave.utils import as_list
@@ -22,7 +27,7 @@ class Dimension:
         Dimension column name(s).
     kernel : {'exponential', 'tricubic', 'depth'}
         Kernel function name.
-    pars : dict of {str: int or float}
+    pars : numba dict of {str: float}
         Kernel function parameters.
     distance : {'continuous', 'euclidean', 'hierarchical'}
         Distance function name.
@@ -30,7 +35,8 @@ class Dimension:
     """
 
     def __init__(self, dimension: Union[str, List[str]], kernel: str,
-                 distance: str = None, **pars) -> None:
+                 pars: Dict[str, Union[int, float]], distance: str = None) \
+            -> None:
         """Create smoothing dimension.
 
         Parameters
@@ -39,10 +45,10 @@ class Dimension:
             Dimension column name(s).
         kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
+        pars : dict of {str: int or float}
+            Kernel function parameters.
         distance : {'continuous', 'euclidean', 'hierarchical'}, optional
             Distance function name.
-        **pars : dict
-            Kernel function parameters.
 
         Distance function defaults
         --------------------------
@@ -178,12 +184,12 @@ class Dimension:
             self.distance = self.distance
 
     @property
-    def pars(self) -> Dict[str, Union[int, float]]:
+    def pars(self) -> NumbaDict[str, float]:
         """Get kernel function parameters.
 
         Returns
         -------
-        dict of {str: int or float}
+        numba dict of {str: float}
             Kernel function parameters.
 
         """
@@ -201,13 +207,16 @@ class Dimension:
         """
         if self._kernel == 'exponential':
             self.check_pars(pars, 'radius', 'pos_num')
-            self._pars = {'radius': pars['radius']}
+            pars = {'radius': pars['radius']}
         elif self._kernel == 'tricubic':
             self.check_pars(pars, ['radius', 'exponent'], 'pos_num')
-            self._pars = {key: pars[key] for key in ['radius', 'exponent']}
+            pars = {key: pars[key] for key in ['radius', 'exponent']}
         else:  # 'depth'
             self.check_pars(pars, 'radius', 'pos_frac')
-            self._pars = {'radius': pars['radius']}
+            pars = {'radius': pars['radius']}
+        self._pars = NumbaDict()
+        for key in pars:
+            self._pars[key] = float(pars[key])
 
     @property
     def distance(self) -> str:
@@ -227,13 +236,13 @@ class Dimension:
 
         Parameters
         ----------
-        distance : {'continuous', 'euclidean', 'hierarchical'}
+        distance : {'continuous', 'euclidean', 'hierarchical', None}
             Distance function name.
 
         Raises
         ------
         TypeError
-            If `distance` is not a str.
+            If `distance` is not a str or None.
         ValueError
             If `distance` is not a valid distance function.
 
@@ -279,13 +288,14 @@ class Dimension:
         self._distance = distance
 
     @staticmethod
-    def check_pars(pars: dict, names: Union[str, List[str]],
+    def check_pars(pars: Dict[str, Union[int, float]],
+                   names: Union[str, List[str]],
                    types: Union[str, List[str]]) -> None:
         """Check parameter types and values.
 
         Parameters
         ----------
-        pars : dict
+        pars : dict of {str: int or float}
             Kernel parameters
         names : str or list of str
             Parameter names.
@@ -306,13 +316,13 @@ class Dimension:
         if isinstance(types, str):
             types = [types]*len(names)
 
-        for ii, par_name in enumerate(names):
+        for idx_par, par_name in enumerate(names):
             # Check key
             if par_name not in pars:
                 raise KeyError(f"`{par_name}` is not in `pars`.")
             par_val = pars[par_name]
 
-            if types[ii] == 'pos_num':
+            if types[idx_par] == 'pos_num':
                 # Check type
                 is_bool = isinstance(par_val, bool)
                 is_int = isinstance(par_val, (int, np.integer))
