@@ -19,3 +19,26 @@ def as_list(values: Union[Any, List[Any]]) -> List[Any]:
     if isinstance(values, list):
         return values
     return [values]
+
+
+def flatten_list(values: List[Union[Any, List[Any]]]) -> List[Any]:
+    """Flatten a list of lists.
+
+    Parameters
+    ----------
+    values : list of {Any or list of Any}
+        List of values.
+
+    Returns
+    -------
+    list of Any
+        Flattened list.
+
+    """
+    if not isinstance(values, list):
+        raise TypeError('`values` is not a list.')
+    if len(values) == 0:
+        return values
+    if isinstance(values[0], list):
+        return flatten_list(values[0]) + flatten_list(values[1:])
+    return values[:1] + flatten_list(values[1:])

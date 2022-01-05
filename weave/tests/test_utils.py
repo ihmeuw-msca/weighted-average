@@ -1,11 +1,12 @@
 """Tests for general utility functions."""
 import pytest
 
-from weave.utils import as_list
+from weave.utils import as_list, flatten_list
 
 value_list = [1, 1.0, 'dummy', True, None, (), {}]
 
 
+# Test `as_list()`
 @pytest.mark.parametrize('values', value_list)
 def test_list_single_type(values):
     """Cast `values` as list if not already."""
@@ -23,3 +24,23 @@ def test_list_single_value(values):
 def test_list_multi(values):
     """Return `values` if already a list."""
     assert as_list(values) == values
+
+
+# Test `flatten_list()`
+@pytest.mark.parametrize('values', value_list)
+def test_flatten_type(values):
+    """Raise TypeError if `values` is not a list."""
+    with pytest.raises(TypeError):
+        flatten_list(values)
+
+
+def test_flatten_not_flat():
+    """Return a flattened list."""
+    values = [0, [[[1], 2], 3, [4, [5]]]]
+    assert flatten_list(values) == [0, 1, 2, 3, 4, 5]
+
+
+def test_flatten_flat():
+    """Return `values` if already flattened."""
+    values = [1, 2, 3, 4]
+    assert flatten_list(values) == values
