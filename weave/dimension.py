@@ -109,9 +109,9 @@ class Dimension:
 
         # Check types
         dimension = as_list(dimension)
-        empty_list = len(dimension) == 0
-        not_all_str = not all(isinstance(dim, str) for dim in dimension)
-        if empty_list or not_all_str:
+        if len(dimension) == 0:
+            raise TypeError('`dimension` is an empty list.')
+        if not all(isinstance(dim, str) for dim in dimension):
             raise TypeError('`dimension` contains invalid type(s).')
 
         # Check duplicates
