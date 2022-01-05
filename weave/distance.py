@@ -28,7 +28,7 @@ def continuous(x: float, y: float) -> float:
 
     Returns
     -------
-    float
+    nonnegative float
         Continuous distance between `x` and `y`.
 
     """
@@ -48,7 +48,7 @@ def euclidean(x: np.ndarray, y: np.ndarray) -> float:
 
     Returns
     -------
-    float
+    nonnegative float
         Euclidean distance between `x` and `y`.
 
     """
@@ -68,7 +68,7 @@ def hierarchical(x: np.ndarray, y: np.ndarray) -> float:
 
     Returns
     -------
-    int
+    nonnegative float
         Hierarchical distance between `x` and `y`.
 
     """

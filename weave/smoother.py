@@ -1,4 +1,4 @@
-# pylint: disable=C0103, R0913, R0914
+# pylint: disable=C0103, E0611, R0913, R0914
 """Smooth data across multiple dimensions using weighted averages.
 
 TODO
@@ -15,7 +15,8 @@ Checks
 """
 from typing import List, Tuple, Union
 
-from numba import jit
+from numba import jit, njit
+from numba.typed import Dict
 import numpy as np
 from pandas import DataFrame
 
@@ -193,7 +194,7 @@ class Smoother:
                 else [data[data_ind][col].values for col in columns]
         return idx_ind, col_list
 
-    @jit
+    @jit(forceobj=True)
     def smooth_data(self, group_list: List[List[np.ndarray]],
                     col_list: List[np.ndarray], idx_fit: np.ndarray,
                     idx_pred: np.ndarray) -> np.ndarray:
@@ -231,7 +232,7 @@ class Smoother:
 
         return smooth_cols
 
-    @jit
+    @jit(forceobj=True)
     def get_weights(self, group_list: List[List[np.ndarray]],
                     idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
         """Get smoothing weights for current point.
@@ -241,9 +242,9 @@ class Smoother:
         group_list : list of list of numpy.ndarray
             Point locations across dimension groups.
         idx_fit : numpy.ndarray
-            Indices of nearby points in `dim_list`.
+            Indices of nearby points in `group_list`.
         idx_x : int
-            Index of current point in `dim_list`.
+            Index of current point in `group_list`.
 
         Returns
         -------
@@ -268,7 +269,7 @@ class Smoother:
         return weights
 
 
-@jit
+@njit
 def get_group_weights(dim_list: List[np.ndarray], dist_list: List[str],
                       kernel_list: List[str],
                       pars_list: List[Tuple[Union[int, float]]],
@@ -302,30 +303,68 @@ def get_group_weights(dim_list: List[np.ndarray], dist_list: List[str],
 
     # Calculate weights one dimension at a time
     for idx_dim, dim in enumerate(dim_list):
-        x = dim[idx_x]
+        x = np.atleast_1d(np.array(dim[idx_x]))
         pars = pars_list[idx_dim]
 
         # Calculate weights one point at a time
-        dim_weights = np.empty(n_fit)
+        dim_weights = np.empty_like(weights)
         for idx_y in range(n_fit):
-            y = dim[idx_fit[idx_y]]
-
-            # Get distance
-            if dist_list[idx_dim] == 'continuous':
-                distance = continuous(x, y)
-            elif dist_list[idx_dim] == 'euclidean':
-                distance = euclidean(x, y)
-            else:  # hierarchical
-                distance = hierarchical(x, y)
-
-            # Get weight
-            if kernel_list[idx_dim] == 'exponential':
-                dim_weights[idx_y] = exponential(distance, *pars)
-            elif kernel_list[idx_dim] == 'tricubic':
-                dim_weights[idx_y] = tricubic(distance, *pars)
-            else:  # depth
-                dim_weights[idx_y] = depth(distance, *pars)
-
+            y = np.atleast_1d(np.array(dim[idx_fit[idx_y]]))
+            distance = get_distance(x, y, dist_list[idx_dim])
+            dim_weights[idx_y] = get_weight(distance, kernel_list[idx_dim],
+                                            pars)
         weights *= dim_weights
 
     return weights/weights.sum()
+
+
+@njit
+def get_distance(x: np.ndarray, y: np.ndarray, distance: str) -> float:
+    """Get distance between `x` and `y`.
+
+    Parameters
+    ----------
+    x : 1D numpy.ndarray of float
+        Current point.
+    y : 1D numpy.ndarray of float
+        Nearby point.
+    distance : str
+        Name of distance function.
+
+    Returns
+    -------
+    float
+        Distance between `x` and `y`.
+
+    """
+    if distance == 'continuous':
+        return continuous(x, y)[0]
+    if distance == 'euclidean':
+        return euclidean(x, y)
+    return hierarchical(x, y)
+
+
+@njit
+def get_weight(distance: float, kernel: str, pars: Dict[str, float]) -> float:
+    """Get smoothing weight.
+
+    Parameters
+    ----------
+    distance : nonnegative float
+        Distance between points.
+    kernel : str
+        Kernel function name.
+    pars : numba dict of {str: float}
+        Kernel function parameters.
+
+    Returns
+    -------
+    float
+        Smoothing weight.
+
+    """
+    if kernel == 'exponential':
+        return exponential(distance, pars)
+    if kernel == 'tricubic':
+        return tricubic(distance, pars)
+    return depth(distance, pars)

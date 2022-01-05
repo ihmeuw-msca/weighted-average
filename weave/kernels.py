@@ -47,7 +47,7 @@ def exponential(distance: float, pars: Dict[str, float]) -> float:
 
     Returns
     -------
-    float
+    nonnegative float
         Exponential smoothing weight.
 
     """
@@ -77,7 +77,7 @@ def tricubic(distance: float, pars: Dict[str, float]) -> float:
 
     Returns
     -------
-    float
+    nonnegative float
         Tricubic smoothing weight.
 
     """
@@ -115,7 +115,7 @@ def depth(distance: float, pars: Dict[str, float]) -> float:
 
     Returns
     -------
-    float
+    nonnegative float
         Depth smoothing weight.
 
     """
