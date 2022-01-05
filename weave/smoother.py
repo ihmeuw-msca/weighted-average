@@ -1,4 +1,4 @@
-# pylint: disable=C0103, R0914
+# pylint: disable=C0103, R0913, R0914
 """Smooth data across multiple dimensions using weighted averages.
 
 TODO
@@ -23,18 +23,6 @@ from weave.dimension import Dimension
 from weave.distance import continuous, euclidean, hierarchical
 from weave.kernels import exponential, depth, tricubic
 from weave.utils import as_list, flatten
-
-dist_dict = {
-    'continuous': continuous,
-    'euclidean': euclidean,
-    'hierarchical': hierarchical
-}
-
-kernel_dict = {
-    'exponential': exponential,
-    'depth': depth,
-    'tricubic': tricubic
-}
 
 
 class Smoother:
@@ -283,7 +271,7 @@ class Smoother:
         Parameters
         ----------
         dim_list : list of numpy.npdarray
-            Point locations across group dimensions.
+            Point locations across group dimension(s).
         idx_group : int
             Index of current dimension group.
         idx_fit : numpy.ndarray
@@ -304,15 +292,31 @@ class Smoother:
         # Calculate weights one dimension at a time
         for idx_dim, dim in enumerate(dim_list):
             x = dim[idx_x]
-            kernel = kernel_dict[self._dimensions[idx_group][idx_dim].kernel]
-            distance = dist_dict[self._dimensions[idx_group][idx_dim].distance]
             pars = tuple(self._dimensions[idx_group][idx_dim].pars.values())
 
             # Calculate weights one point at a time
             dim_weights = np.empty(n_fit)
             for idx_y in range(n_fit):
                 y = dim[idx_fit[idx_y]]
-                dim_weights[idx_y] = kernel(distance(x, y), *pars)
+
+                # Get distance
+                dist_name = self._dimensions[idx_group][idx_dim].distance
+                if dist_name == 'continuous':
+                    distance = continuous(x, y)
+                elif dist_name == 'euclidean':
+                    distance = euclidean(x, y)
+                else:  # hierarchical
+                    distance = hierarchical(x, y)
+
+                # Get weight
+                kernel_name = self._dimensions[idx_group][idx_dim].kernel
+                if kernel_name == 'exponential':
+                    dim_weights[idx_y] = exponential(distance, *pars)
+                elif kernel_name == 'tricubic':
+                    dim_weights[idx_y] = tricubic(distance, *pars)
+                else:  # depth
+                    dim_weights[idx_y] = depth(distance, *pars)
+
             weights *= dim_weights
 
         return weights/weights.sum()
