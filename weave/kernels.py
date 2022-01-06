@@ -1,4 +1,3 @@
-# pylint: disable=E0611
 """Calculate the smoothing weight for nearby point given current point.
 
 Kernel functions to calculate the smoothing weight for a nearby point
@@ -21,8 +20,9 @@ TODO:
 * STGPR has a different depth function than CODEm
 
 """
+from typing import Dict
+
 from numba import njit
-from numba.typed import Dict
 import numpy as np
 
 
@@ -37,7 +37,7 @@ def exponential(distance: float, pars: Dict[str, float]) -> float:
     ----------
     distance : nonnegative float
         Distance between points.
-    pars : numba dict of {str: float}
+    pars : dict of {str: float}
         Kernel function parameters.
 
     Kernel function parameters
@@ -65,7 +65,7 @@ def tricubic(distance: float, pars: Dict[str, float]) -> float:
     ----------
     distance : nonnegative float
         Distance between points.
-    pars : numba dict of {str: float}
+    pars : dict of {str: float}
         Kernel function parameters.
 
     Kernel function parameters
@@ -105,7 +105,7 @@ def depth(distance: float, pars: Dict[str, float]) -> float:
     ----------
     distance : nonnegative float
         Distance between points.
-    pars : numba dict of {str: float}
+    pars : dict of {str: float}
         Kernel function parameters.
 
     Kernel function parameters
