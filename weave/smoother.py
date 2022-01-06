@@ -1,4 +1,4 @@
-# pylint: disable=C0103, R0913, R0914
+# pylint: disable=C0103, E0611, R0913, R0914
 """Smooth data across multiple dimensions using weighted averages.
 
 TODO
@@ -16,6 +16,7 @@ Checks
 from typing import Dict, List, Tuple, Union
 
 from numba import jit, njit
+from numba.typed import List as TypedList
 import numpy as np
 from pandas import DataFrame
 
@@ -188,51 +189,24 @@ class Smoother:
         n_pred = len(idx_pred)
         smooth_cols = np.empty((n_pred, n_cols))
 
+        # Extract functions and parameters
+        kernel_list = TypedList([TypedList([dim.kernel for dim in group])
+                                for group in self._dimensions])
+        pars_list = TypedList([TypedList([dim.pars for dim in group])
+                              for group in self._dimensions])
+        dist_list = TypedList([TypedList([dim.distance for dim in group])
+                              for group in self._dimensions])
+
         # Calculate smoothed values one point at a time
         for idx_x in range(n_pred):
-            weights = self.get_weights(group_list, idx_fit, idx_pred[idx_x])
+            weights = get_weights(group_list, kernel_list, pars_list,
+                                  dist_list, idx_fit, idx_pred[idx_x])
 
             # Compute smoothed values one column at a time
             for idx_col in range(n_cols):
                 smooth_cols[idx_x, idx_col] = weights.dot(col_list[idx_col])
 
         return smooth_cols
-
-    @jit(forceobj=True)
-    def get_weights(self, group_list: List[List[np.ndarray]],
-                    idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
-        """Get smoothing weights for current point.
-
-        Parameters
-        ----------
-        group_list : list of list of numpy.ndarray
-            Point locations across dimension groups.
-        idx_fit : numpy.ndarray
-            Indices of nearby points in `group_list`.
-        idx_x : int
-            Index of current point in `group_list`.
-
-        Returns
-        -------
-        numpy.ndarray
-            Smoothing weights for current point.
-
-        """
-        # Initialize weight vector
-        weights = np.ones(len(idx_fit))
-
-        # Calculate weights one group at a time
-        for idx_group, dim_list in enumerate(group_list):
-            dist_list = [dim.distance for dim in self._dimensions[idx_group]]
-            kernel_list = [dim.kernel for dim in self._dimensions[idx_group]]
-            pars_list = [tuple(dim.pars.values())
-                         for dim in self._dimensions[idx_group]]
-            group_weights = get_group_weights(dim_list, dist_list, kernel_list,
-                                              pars_list, idx_fit, idx_x)
-            weights *= group_weights
-            weights /= weights.sum()
-
-        return weights
 
 
 def get_data(data: DataFrame, indicator: str, columns: List[str] = None) \
@@ -269,22 +243,65 @@ def get_data(data: DataFrame, indicator: str, columns: List[str] = None) \
 
 
 @njit
-def get_group_weights(dim_list: List[np.ndarray], dist_list: List[str],
-                      kernel_list: List[str],
+def get_weights(group_list: List[List[np.ndarray]],
+                kernel_list: List[List[str]],
+                pars_list: List[List[Dict[str, float]]],
+                dist_list: List[List[str]], idx_fit: np.ndarray, idx_x: int) \
+        -> np.ndarray:
+    """Get smoothing weights for current point.
+
+    Parameters
+    ----------
+    group_list : list of list of numpy.ndarray
+        Point locations across dimension groups.
+    kernel_list : list of list of str
+        Kernel function names for dimension groups.
+    pars_list : list of list of dict of {str: float}
+        Kernel function parameters for dimension groups.
+    dist_list : list of list of str
+        Distance function names for dimension groups.
+    idx_fit : numpy.ndarray
+        Indices of nearby points in `group_list`.
+    idx_x : int
+        Index of current point in `group_list`.
+
+    Returns
+    -------
+    numpy.ndarray
+        Smoothing weights for current point.
+
+    """
+    # Initialize weight vector
+    weights = np.ones(len(idx_fit))
+
+    # Calculate weights one group at a time
+    for idx_group, dim_list in enumerate(group_list):
+        group_weights = get_group_weights(dim_list, kernel_list[idx_group],
+                                          pars_list[idx_group],
+                                          dist_list[idx_group], idx_fit, idx_x)
+        weights *= group_weights
+        weights /= weights.sum()
+
+    return weights
+
+
+@njit
+def get_group_weights(dim_list: List[np.ndarray], kernel_list: List[str],
                       pars_list: List[Tuple[Union[int, float]]],
-                      idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
+                      dist_list: List[str], idx_fit: np.ndarray, idx_x: int) \
+        -> np.ndarray:
     """Get smoothing weights for current point and dimension group.
 
     Parameters
     ----------
     dim_list : list of numpy.npdarray
         Point locations across group dimension(s).
-    dist_list : list of str
-        Distance function names for group dimension(s).
     kernel_list : list of str
         Kernel function names for group dimension(s).
     pars_list : list of tuple of int or float
         Kernel function parameters for group dimension(s).
+    dist_list : list of str
+        Distance function names for group dimension(s).
     idx_fit : numpy.ndarray
         Indices of nearby points in `group_list`.
     idx_x : int
@@ -302,19 +319,40 @@ def get_group_weights(dim_list: List[np.ndarray], dist_list: List[str],
 
     # Calculate weights one dimension at a time
     for idx_dim, dim in enumerate(dim_list):
-        x = np.atleast_1d(np.array(dim[idx_x]))
+        x = get_point(dim, idx_x)
         pars = pars_list[idx_dim]
 
         # Calculate weights one point at a time
         dim_weights = np.empty_like(weights)
         for idx_y in range(n_fit):
-            y = np.atleast_1d(np.array(dim[idx_fit[idx_y]]))
-            distance = get_distance(x, y, dist_list[idx_dim])
-            dim_weights[idx_y] = get_weight(distance, kernel_list[idx_dim],
-                                            pars)
+            y = get_point(dim, idx_fit[idx_y])
+            dist = get_distance(x, y, dist_list[idx_dim])
+            dim_weights[idx_y] = get_weight(dist, kernel_list[idx_dim], pars)
         weights *= dim_weights
 
     return weights/weights.sum()
+
+
+@njit
+def get_point(dim: np.ndarray, idx_point: int) -> np.ndarray:
+    """Get point `x` or `y` as a vector.
+
+    Parameters
+    ----------
+    dim : 2D numpy.ndarray of float
+        ?
+    idx_point : int
+        Index of `x` or `y` in `dim`.
+
+    Returns
+    -------
+    1D numpy.ndarray of float
+        Point `x` or `y` as a vector.
+
+    """
+    if dim.shape[0] == 1:
+        return np.atleast_1d(np.array(dim[0][idx_point]))
+    return dim[idx_point]
 
 
 @njit
