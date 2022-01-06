@@ -8,7 +8,7 @@ function, and kernel function.
 from typing import Dict, List, Union
 import warnings
 
-from numba.typed import Dict as NumbaDict
+from numba.typed import Dict as TypedDict
 import numpy as np
 
 from weave.utils import as_list
@@ -204,7 +204,7 @@ class Dimension:
         else:  # 'depth'
             self.check_pars(pars, 'radius', 'pos_frac')
             pars = {'radius': pars['radius']}
-        self._pars = NumbaDict()
+        self._pars = TypedDict()
         for key in pars:
             self._pars[key] = float(pars[key])
 
