@@ -20,7 +20,7 @@ import numpy as np
 from pandas import DataFrame
 
 from weave.dimension import Dimension
-from weave.distance import continuous, euclidean, hierarchical
+from weave.distance import euclidean, hierarchical
 from weave.kernels import exponential, depth, tricubic
 from weave.utils import as_list, flatten
 
@@ -336,8 +336,6 @@ def get_distance(x: np.ndarray, y: np.ndarray, distance: str) -> float:
         Distance between `x` and `y`.
 
     """
-    if distance == 'continuous':
-        return continuous(x, y)[0]
     if distance == 'euclidean':
         return euclidean(x, y)
     return hierarchical(x, y)

@@ -13,7 +13,7 @@ from hypothesis.strategies import composite, integers, floats
 from hypothesis.extra.numpy import arrays
 import numpy as np
 
-from weave.distance import continuous, euclidean, hierarchical
+from weave.distance import euclidean, hierarchical
 
 # Hypothesis types
 my_integers = integers(min_value=-1e5, max_value=1e5)
@@ -30,7 +30,7 @@ def my_floats(draw):
 @composite
 def my_arrays(draw, n=2):
     """Return n vectors of float with matching lengths."""
-    m = draw(integers(min_value=2, max_value=5))
+    m = draw(integers(min_value=1, max_value=5))
     vec_list = [draw(arrays(float, m, elements=my_floats()))
                 for ii in range(n)]
     return vec_list
@@ -43,14 +43,6 @@ def property_1(distance):
     assert np.isfinite(distance)
     assert distance >= 0.0
     assert isinstance(distance, float)
-
-
-@settings(deadline=None)
-@given(my_floats(), my_floats())
-def test_continuous_type(x, y):
-    """Continuous output satisfies property 1."""
-    distance = continuous(x, y)
-    property_1(distance)
 
 
 @settings(deadline=None)
@@ -80,13 +72,6 @@ def property_2(x, y, distance):
         assert np.isclose(distance, 0.0, rtol=0)
 
 
-@given(my_floats(), my_floats())
-def test_continuous_zero(x, y):
-    """Continuous output satisfies property 2."""
-    distance = continuous(x, y)
-    property_2(x, y, distance)
-
-
 @given(my_arrays())
 def test_euclidean_zero(xy):
     """Euclidean output satisfies property 2."""
@@ -104,14 +89,6 @@ def test_hierarchical_zero(xy):
 
 
 # Property 3: Output is symmetric
-@given(my_floats(), my_floats())
-def test_continuous_symmetric(x, y):
-    """Continuous output satisfies property 3."""
-    distance_xy = continuous(x, y)
-    distance_yx = continuous(y, x)
-    assert np.isclose(distance_xy, distance_yx)
-
-
 @given(my_arrays())
 def test_euclidean_symmetric(xy):
     """Euclidean output satisfies property 3."""
@@ -136,15 +113,6 @@ def property_4(distance_xy, distance_xz, distance_zy):
     distance_xy = np.around(distance_xy, decimals=5)
     distance_xzy = np.around(distance_xz + distance_zy, decimals=5)
     assert distance_xy <= distance_xzy
-
-
-@given(my_floats(), my_floats(), my_floats())
-def test_continuous_triangle(x, y, z):
-    """Continuous output satisfies property 4."""
-    distance_xy = continuous(x, y)
-    distance_xz = continuous(x, z)
-    distance_zy = continuous(z, y)
-    property_4(distance_xy, distance_xz, distance_zy)
 
 
 @given(my_arrays(n=3))

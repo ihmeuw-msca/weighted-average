@@ -3,20 +3,18 @@
 Currently only testing a simple example for most cases, not testing
 other examples of valid input. Could do this with 'parametrize' or
 'hypothesis'. Examples of valid input:
-* 'dummy', 'exponential', None, radius=0.5
-* 'dummy', 'exponential', 'continuous', radius=0.5
-* ['dummy1', 'dummy2'], 'exponential', 'euclidean', radius=0.5
-* ['dummy1', 'dummy2'], 'exponential', 'hierarchical', radius=0.5
-* 'dummy', 'tricubic', None, radius=0.5, exponent=3
-* 'dummy', 'tricubic', 'continuous', radius=0.5, exponent=3
-* ['dummy1', 'dummy2'], 'tricubic', 'euclidean', radius=0.5, exponent=3
-* ['dummy1', 'dummy2'], 'tricubic', 'hierarchical', radius=0.5, exponent=3
-* ['dummy1', 'dummy2'], 'depth', None, radius=0.5
-* ['dummy1', 'dummy2'], 'depth', 'hierarchical', radius=0.5
-
-# Input format of pars has changed
-# What about input needing to be floats?
-# Can I convert if it's an int (not a bool)?
+* `kernel` == 'exponential'
+    - `dimension` in {'dummy', ['dummy1', 'dummy2']}
+    - `pars` == {'radius': 0.5}
+    - `distance` in {'euclidean', 'hierarchical', None}
+* `kernel == 'tricubic'
+    - `dimension` in {'dummy', ['dummy1', 'dummy2']}
+    - `pars` == {'radius': 0.5, 'exponent': 3}
+    - `distance` in {'euclidean', 'hierarchical', one}
+* `kernel == 'depth'
+    - `dimension` in {'dummy', ['dummy1', 'dummy2']}
+    - `pars` == {'radius': 0.5}
+    - `distance` in {'hierarchical', None}
 
 """
 import pytest
@@ -167,27 +165,15 @@ def test_distance_value():
         Dimension('dummy', 'exponential', pars, 'dummy')
 
 
-def test_exponential_distance_scalar_default():
-    """`distance` is set to 'continuous' if not supplied."""
-    dim = Dimension('dummy', 'exponential', pars)
-    assert dim.distance == 'continuous'
-
-
-def test_exponential_distance_vector_default():
+def test_exponential_distance_default():
     """`distance` is set to 'euclidean' if not supplied."""
-    dim = Dimension(['dummy1', 'dummy2'], 'exponential', pars)
+    dim = Dimension('dummy', 'exponential', pars)
     assert dim.distance == 'euclidean'
 
 
-def test_tricubic_distance_scalar_default():
-    """`distance` is set to 'continuous' if not supplied."""
-    dim = Dimension('dummy', 'tricubic', pars)
-    assert dim.distance == 'continuous'
-
-
-def test_tricubic_distance_vector_default():
+def test_tricubic_distance_default():
     """`distance` is set to 'euclidean' if not supplied."""
-    dim = Dimension(['dummy1', 'dummy2'], 'tricubic', pars)
+    dim = Dimension('dummy', 'tricubic', pars)
     assert dim.distance == 'euclidean'
 
 
@@ -217,32 +203,6 @@ def test_distance_warning_hierarchical():
     """
     with pytest.warns(UserWarning):
         Dimension(['dummy1', 'dummy2'], 'depth', pars, 'euclidean')
-
-
-@pytest.mark.filterwarnings('ignore:`dimension`')
-@pytest.mark.parametrize('kernel', ['exponential', 'tricubic'])
-def test_distance_changed_euclidean(kernel):
-    """`distance` is changed to 'euclidean'.
-
-    When `kernel` in {'exponential', 'tricubic'} and `dimension` is a
-    list of str, enforce `distance` != 'continuous'.
-
-    """
-    dim = Dimension(['dummy1', 'dummy2'], kernel, pars, 'continuous')
-    assert dim.distance == 'euclidean'
-
-
-@pytest.mark.parametrize('kernel', ['exponential', 'tricubic'])
-def test_distance_warning_euclidean(kernel):
-    """Warn when `distance` is changed to 'euclidean'.
-
-    When `kernel` in {'exponential', 'tricubic'} and `dimension` is a
-    list of str, enforce `distance` != 'continuous'. If `distance` is
-    changed, produce a warning.
-
-    """
-    with pytest.warns(UserWarning):
-        Dimension(['dummy1', 'dummy2'], kernel, pars, 'continuous')
 
 
 # Test getter behavior
@@ -299,31 +259,3 @@ def test_setter_distance_warning_hierarchical():
     with pytest.warns(UserWarning):
         dim = Dimension(['dummy1', 'dummy2'], 'exponential', pars)
         dim.kernel = 'depth'
-
-
-@pytest.mark.filterwarnings('ignore:`dimension`')
-@pytest.mark.parametrize('kernel', ['exponential', 'tricubic'])
-def test_setter_distance_changed_euclidean(kernel):
-    """`distance` is changed to 'euclidean'.
-
-    When `kernel` in {'exponential', 'tricubic'} and `dimension` is a
-    list of str, enforce `distance` != 'continuous'.
-
-    """
-    dim = Dimension(['dummy1', 'dummy2'], kernel, pars)
-    dim.distance = 'continuous'
-    assert dim.distance == 'euclidean'
-
-
-@pytest.mark.parametrize('kernel', ['exponential', 'tricubic'])
-def test_setter_distance_warning_euclidean(kernel):
-    """Warn when `distance` is changed to 'euclidean'.
-
-    When `kernel` in {'exponential', 'tricubic'} and `dimension` is a
-    list of str, enforce `distance` != 'continuous'. If `distance` is
-    changed, produce a warning.
-
-    """
-    with pytest.warns(UserWarning):
-        dim = Dimension(['dummy1', 'dummy2'], kernel, pars)
-        dim.distance = 'continuous'

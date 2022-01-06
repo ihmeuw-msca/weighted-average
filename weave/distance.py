@@ -16,26 +16,6 @@ import numpy as np
 
 
 @njit
-def continuous(x: float, y: float) -> float:
-    """Get continuous distance between `x` and `y`.
-
-    Parameters
-    ----------
-    x : float
-        Current point.
-    y : float
-        Nearby point.
-
-    Returns
-    -------
-    nonnegative float
-        Continuous distance between `x` and `y`.
-
-    """
-    return 1.0*np.abs(x - y)
-
-
-@njit
 def euclidean(x: np.ndarray, y: np.ndarray) -> float:
     """Get Euclidean distance between `x` and `y`.
 

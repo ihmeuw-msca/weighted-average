@@ -25,7 +25,7 @@ class Dimension:
         Kernel function name.
     pars : dict of {str: float}
         Kernel function parameters.
-    distance : {'continuous', 'euclidean', 'hierarchical'}
+    distance : {'euclidean', 'hierarchical'}
         Distance function name.
 
     """
@@ -43,16 +43,13 @@ class Dimension:
             Kernel function name.
         pars : dict of {str: int or float}
             Kernel function parameters.
-        distance : {'continuous', 'euclidean', 'hierarchical'}, optional
+        distance : {'euclidean', 'hierarchical'}, optional
             Distance function name.
 
         Distance function defaults
         --------------------------
         `kernel` : {'exponential', 'tricubic'}
-            `dimension` : str
-                `distance` : 'continuous'
-            `dimension` : list of str
-                `distance` : 'euclidean'
+            `distance` : 'euclidean'
         `kernel` : 'depth'
             `distance` : 'hierarchical'
 
@@ -155,9 +152,6 @@ class Dimension:
         UserWarning
             Attribute `pars` is deleted when `kernel` is reset, so
             `pars` must also be reset.
-        UserWarning
-            If current `distance` attribute is not a valid distance
-            function for `kernel`. Default `distance` used instead.
 
         """
         # Check type
@@ -232,7 +226,7 @@ class Dimension:
 
         Parameters
         ----------
-        distance : {'continuous', 'euclidean', 'hierarchical', None}
+        distance : {'euclidean', 'hierarchical', None}
             Distance function name.
 
         Raises
@@ -245,8 +239,7 @@ class Dimension:
         Warns
         -----
         UserWarning
-            If `distance` is not a valid distance function for current
-            `dimension` and `kernel` attributes. Default used instead.
+            If `kernel` == 'depth' but `distance` != 'hierarchical'.
 
         """
         # Set defaults
@@ -254,32 +247,23 @@ class Dimension:
             if self._kernel == 'depth':
                 distance = 'hierarchical'
             else:
-                if len(self._dimension) == 1:
-                    distance = 'continuous'
-                else:
-                    distance = 'euclidean'
+                distance = 'euclidean'
 
         # Check type
         if not isinstance(distance, str):
             raise TypeError('`distance` is not a str.')
 
         # Check value
-        if distance not in ('continuous', 'euclidean', 'hierarchical'):
+        if distance not in ('euclidean', 'hierarchical'):
             msg = '`distance` is not a valid distance function.'
             raise ValueError(msg)
 
-        # Check kernel and dimension
+        # Check kernel
         if self._kernel == 'depth' and distance != 'hierarchical':
             msg = "`kernel` == 'depth' but `distance` != 'hierarchical'. "
             msg += "Using 'hierarchical' instead."
             warnings.warn(msg)
             distance = 'hierarchical'
-        else:
-            if len(self._dimension) > 1 and distance == 'continuous':
-                msg = "`dimension` is a list of str but `distance` == "
-                msg += "'continuous'. Using 'euclidean' instead."
-                warnings.warn(msg)
-                distance = 'euclidean'
 
         self._distance = distance
 
