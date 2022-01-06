@@ -1,4 +1,4 @@
-# pylint: disable=C0103, E0611, R0913, R0914
+# pylint: disable=C0103, R0913, R0914
 """Smooth data across multiple dimensions using weighted averages.
 
 TODO
@@ -13,10 +13,9 @@ Checks
 * Anything else?
 
 """
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 from numba import jit, njit
-from numba.typed import Dict
 import numpy as np
 from pandas import DataFrame
 
