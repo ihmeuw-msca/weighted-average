@@ -4,10 +4,6 @@
 Dimension class to specify smoothing dimension column name(s), distance
 function, and kernel function.
 
-TODO:
-* Update tests
-* Convert all ints to floats
-
 """
 from typing import Dict, List, Union
 import warnings
