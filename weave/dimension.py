@@ -27,7 +27,7 @@ class Dimension:
         Dimension column name(s).
     kernel : {'exponential', 'tricubic', 'depth'}
         Kernel function name.
-    pars : numba dict of {str: float}
+    pars : dict of {str: float}
         Kernel function parameters.
     distance : {'continuous', 'euclidean', 'hierarchical'}
         Distance function name.
@@ -184,12 +184,12 @@ class Dimension:
             self.distance = self.distance
 
     @property
-    def pars(self) -> NumbaDict[str, float]:
+    def pars(self) -> Dict[str, float]:
         """Get kernel function parameters.
 
         Returns
         -------
-        numba dict of {str: float}
+        dict of {str: float}
             Kernel function parameters.
 
         """
