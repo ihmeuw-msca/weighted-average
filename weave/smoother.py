@@ -148,8 +148,8 @@ class Smoother:
         # Extract data from data frame
         group_list = [[data[dim.dimension].values for dim in group]
                       for group in self._dimensions]
-        idx_fit, col_list = self.get_data(data, fit, columns)
-        idx_pred, _ = self.get_data(data, predict)
+        idx_fit, col_list = get_data(data, fit, columns)
+        idx_pred, _ = get_data(data, predict)
 
         # Calculate smoothed values
         smooth_cols = self.smooth_data(group_list, col_list, idx_fit, idx_pred)
@@ -159,39 +159,6 @@ class Smoother:
         for idx_col, col in enumerate(columns):
             smooth_data[f"{col}_smooth"] = smooth_cols[:, idx_col]
         return smooth_data
-
-    @staticmethod
-    def get_data(data: DataFrame, indicator: str, columns: List[str] = None) \
-            -> Tuple[np.ndarray, Union[None, List[np.ndarray]]]:
-        """Get `fit` or `predict` data as numpy arrays.
-
-        Parameters
-        ----------
-        data : DataFrame
-            Input data structure.
-        indicator : str
-            Column name indicating either `fit` or `predict` data.
-        columns : list of str, optional
-            Column name(s) of values to smooth.
-
-        Returns
-        -------
-        numpy.ndarray
-            Indices of `fit` or `predict` points.
-        None or list of np.ndarray
-            None if `columns` is None. Otherwise, values to smooth.
-
-        """
-        if indicator is None:
-            idx_ind = np.arange(len(data))
-            col_list = None if columns is None \
-                else [data[col].values for col in columns]
-        else:
-            data_ind = data[indicator]
-            idx_ind = np.where(data_ind)[0]
-            col_list = None if columns is None \
-                else [data[data_ind][col].values for col in columns]
-        return idx_ind, col_list
 
     @jit(forceobj=True)
     def smooth_data(self, group_list: List[List[np.ndarray]],
@@ -266,6 +233,39 @@ class Smoother:
             weights /= weights.sum()
 
         return weights
+
+
+def get_data(data: DataFrame, indicator: str, columns: List[str] = None) \
+        -> Tuple[np.ndarray, Union[None, List[np.ndarray]]]:
+    """Get `fit` or `predict` data as numpy arrays.
+
+    Parameters
+    ----------
+    data : DataFrame
+        Input data structure.
+    indicator : str
+        Column name indicating either `fit` or `predict` data.
+    columns : list of str, optional
+        Column name(s) of values to smooth.
+
+    Returns
+    -------
+    numpy.ndarray
+        Indices of `fit` or `predict` points.
+    None or list of np.ndarray
+        None if `columns` is None. Otherwise, values to smooth.
+
+    """
+    if indicator is None:
+        idx_ind = np.arange(len(data))
+        col_list = None if columns is None \
+            else [data[col].values for col in columns]
+    else:
+        data_ind = data[indicator]
+        idx_ind = np.where(data_ind)[0]
+        col_list = None if columns is None \
+            else [data[data_ind][col].values for col in columns]
+    return idx_ind, col_list
 
 
 @njit
@@ -353,7 +353,7 @@ def get_weight(distance: float, kernel: str, pars: Dict[str, float]) -> float:
         Distance between points.
     kernel : str
         Kernel function name.
-    pars : numba dict of {str: float}
+    pars : dict of {str: float}
         Kernel function parameters.
 
     Returns
