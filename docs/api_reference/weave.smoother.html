@@ -1,0 +1,513 @@
+<!doctype html>
+<html class="no-js">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="weave.utils" href="weave.utils.html" /><link rel="prev" title="weave.kernels" href="weave.kernels.html" />
+
+    <meta name="generator" content="sphinx-4.3.2, furo 2022.01.02"/>
+        <title>weave.smoother - weave 0.1.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=df49af52631e7917044a9c21a57f7b83170a6dd0" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=fade93df149f7c5fedb3ff897f799dc7d283b420" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  --color-brand-primary: #008080;
+  --color-brand-content: #008080;
+  --color-problematic: #BF5844;
+  --color-background-secondary: #F8F8F8;
+  
+  }
+  body[data-theme="dark"] {
+    --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #6FD8D1;
+  --color-brand-content: #6FD8D1;
+  --color-problematic: #FA9F50;
+  --color-background-secondary: #202020;
+  
+  }
+  @media (prefers-color-scheme: dark) {
+    body:not([data-theme="light"]) {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #6FD8D1;
+  --color-brand-content: #6FD8D1;
+  --color-problematic: #FA9F50;
+  --color-background-secondary: #202020;
+  
+    }
+  }
+</style></head>
+  <body>
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" />
+      <line x1="4" y1="6" x2="20" y2="6" />
+      <line x1="10" y1="12" x2="20" y2="12" />
+      <line x1="6" y1="18" x2="20" y2="18" />
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">weave 0.1.0</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../_static/logo/logo-light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../_static/logo/logo-dark.png" alt="Dark Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">weave 0.1.0</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="weave.dimension.html">weave.dimension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="weave.distance.html">weave.distance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="weave.kernels.html">weave.kernels</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">weave.smoother</a></li>
+<li class="toctree-l2"><a class="reference internal" href="weave.utils.html">weave.utils</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="module-weave.smoother">
+<span id="weave-smoother"></span><h1>weave.smoother<a class="headerlink" href="#module-weave.smoother" title="Permalink to this headline">¶</a></h1>
+<p>Smooth data across multiple dimensions using weighted averages.</p>
+<p>TODO
+* Write checks and tests</p>
+<p>Checks
+* Check for duplicates in columns
+* Check for NaNs and Infs in data frame
+* Check columns, fit, predict in data frame
+* Anything else?</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="weave.smoother.Smoother">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">Smoother</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dimensions</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Smoother function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dimensions</strong> (<em>List</em><em>[</em><em>List</em><em>[</em><a class="reference internal" href="weave.dimension.html#weave.dimension.Dimension" title="weave.dimension.Dimension"><em>weave.dimension.Dimension</em></a><em>]</em><em>]</em>) – </p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="weave.smoother.Smoother.dimensions">
+<span class="sig-name descname"><span class="pre">dimensions</span></span><a class="headerlink" href="#weave.smoother.Smoother.dimensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Smoothing dimension(s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of list of Dimension</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="id0">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dimensions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="weave.dimension.html#weave.dimension.Dimension" title="weave.dimension.Dimension"><span class="pre">weave.dimension.Dimension</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get smoothing dimension(s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Smoothing dimension(s).</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list of list of Dimension</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="weave.smoother.Smoother.get_functions">
+<span class="sig-name descname"><span class="pre">get_functions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.get_functions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.get_functions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get kernel or distance function data by dimension group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>func</strong> (<em>{'kernel'</em><em>, </em><em>'pars'</em><em>, </em><em>'distance'}</em>) – Name of dimension attribute.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>list of list of {str or dict of {str</strong> – Kernel or distance function data by dimension group.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float}}</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="weave.smoother.Smoother.get_points">
+<span class="sig-name descname"><span class="pre">get_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.get_points"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.get_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get points by dimension group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>pandas.DataFrame</em>) – Input data structure.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Points by dimension group.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of list of numpy.ndarray of float</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="weave.smoother.get_columns">
+<span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">get_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_fit</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#get_columns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.get_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get values to smooth.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pandas.DataFrame</em>) – Input data structure.</p></li>
+<li><p><strong>columns</strong> (<em>str</em><em> or </em><em>list of str</em>) – Column name(s) of values to smooth.</p></li>
+<li><p><strong>idx_fit</strong> (<em>numpy.ndarray of int</em>) – Indices of <cite>fit</cite> points.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Values to smooth.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of str</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="weave.smoother.get_distance">
+<span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">get_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#get_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.get_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get distance between <cite>x</cite> and <cite>y</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>1D numpy.ndarray of float</em>) – Current point.</p></li>
+<li><p><strong>y</strong> (<em>1D numpy.ndarray of float</em>) – Nearby point.</p></li>
+<li><p><strong>distance</strong> (<em>str</em>) – Distance function name.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Distance between <cite>x</cite> and <cite>y</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>nonnegative float</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="weave.smoother.get_group_weights">
+<span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">get_group_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#get_group_weights"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.get_group_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get smoothing weights for current point and dimension group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dim_list</strong> (<em>list of numpy.npdarray</em>) – Point locations across group dimension(s).</p></li>
+<li><p><strong>kernel_list</strong> (<em>list of str</em>) – Kernel function names for group dimension(s).</p></li>
+<li><p><strong>pars_list</strong> (<em>list of tuple of int</em><em> or </em><em>float</em>) – Kernel function parameters for group dimension(s).</p></li>
+<li><p><strong>dist_list</strong> (<em>list of str</em>) – Distance function names for group dimension(s).</p></li>
+<li><p><strong>idx_fit</strong> (<em>numpy.ndarray of int</em>) – Indices of nearby points in <cite>group_list</cite>.</p></li>
+<li><p><strong>idx_x</strong> (<em>int</em>) – Index of current point in <cite>group_list</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Smoothing weights for current point and dimension group.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray of nonnegative float</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="weave.smoother.get_indices">
+<span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">get_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indicator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#get_indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.get_indices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get indices of <cite>fit</cite> or <cite>predict</cite> data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataFrame</em>) – Input data structure.</p></li>
+<li><p><strong>indicator</strong> (<em>str</em><em>, </em><em>optional</em>) – Column name indicating either <cite>fit</cite> or <cite>predict</cite> data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Indices of <cite>fit</cite> or <cite>predict</cite> points.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray of int</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="weave.smoother.get_point">
+<span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">get_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_point</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#get_point"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.get_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get point <cite>x</cite> or <cite>y</cite> as a vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dim</strong> (<em>2D numpy.ndarray of float</em>) – Point locations for a given dimension.</p></li>
+<li><p><strong>idx_point</strong> (<em>int</em>) – Index of <cite>x</cite> or <cite>y</cite> in <cite>dim</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Point <cite>x</cite> or <cite>y</cite> as a vector.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D numpy.ndarray of float</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="weave.smoother.get_weight">
+<span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">get_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#get_weight"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.get_weight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get smoothing weight.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>distance</strong> (<em>nonnegative float</em>) – Distance between points.</p></li>
+<li><p><strong>kernel</strong> (<em>str</em>) – Kernel function name.</p></li>
+<li><p><strong>pars</strong> (<em>dict of {str: float}</em>) – Kernel function parameters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Smoothing weight.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>nonnegative float</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="weave.smoother.get_weights">
+<span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">get_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#get_weights"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.get_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get smoothing weights for current point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group_list</strong> (<em>list of list of numpy.ndarray</em>) – Point locations across dimension groups.</p></li>
+<li><p><strong>kernel_list</strong> (<em>list of list of str</em>) – Kernel function names for dimension groups.</p></li>
+<li><p><strong>pars_list</strong> (<em>list of list of dict of {str: float}</em>) – Kernel function parameters for dimension groups.</p></li>
+<li><p><strong>dist_list</strong> (<em>list of list of str</em>) – Distance function names for dimension groups.</p></li>
+<li><p><strong>idx_fit</strong> (<em>numpy.ndarray of int</em>) – Indices of nearby points in <cite>group_list</cite>.</p></li>
+<li><p><strong>idx_x</strong> (<em>int</em>) – Index of current point in <cite>group_list</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Smoothing weights for current point.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray of nonnegative float</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="weave.smoother.smooth_data">
+<span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">smooth_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#smooth_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.smooth_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Smooth data across dimensions with weighted averages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point_list</strong> (<em>list of list of numpy.ndarray of float</em>) – Point locations by dimension group.</p></li>
+<li><p><strong>col_list</strong> (<em>list of numpy.ndarray of float</em>) – Values to smooth.</p></li>
+<li><p><strong>idx_fit</strong> (<em>numpy.ndarray of int</em>) – Indices of points to include in weighted averages.</p></li>
+<li><p><strong>idx_pred</strong> (<em>numpy.ndarray of int</em>) – Indices of points to predict smooth values.</p></li>
+<li><p><strong>kernel_list</strong> (<em>list of list of str</em>) – Kernel function names by dimension group.</p></li>
+<li><p><strong>pars_list</strong> (<em>list of list of dict of {str: float}</em>) – Kernel function parameters by dimension group.</p></li>
+<li><p><strong>dist_lsit</strong> (<em>list of list of str</em>) – Distance function names by dimension group.</p></li>
+<li><p><strong>dist_list</strong> (<em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Smoothed values.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray of float</p>
+</dd>
+</dl>
+</dd></dl>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="weave.utils.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">weave.utils</div>
+              </div>
+              <svg><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="weave.kernels.html">
+              <svg><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">weave.kernels</div>
+                
+              </div>
+            </a>
+        </div>
+
+        <div class="related-information">
+              Copyright &#169; 2021, IHME Math Sciences |
+          Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+          <a href="https://github.com/pradyunsg/furo">Furo theme</a>.
+            | <a class="muted-link" href="../_sources/api_reference/weave.smoother.rst.txt"
+               rel="nofollow">
+              Show Source
+            </a>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/scripts/furo.js"></script>
+    </body>
+</html>
