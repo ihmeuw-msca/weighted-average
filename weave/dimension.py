@@ -5,7 +5,7 @@ Dimension class to specify smoothing dimension column name(s), distance
 function, and kernel function.
 
 """
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 import warnings
 
 from numba.typed import Dict as TypedDict
@@ -31,8 +31,8 @@ class Dimension:
     """
 
     def __init__(self, dimension: Union[str, List[str]], kernel: str,
-                 pars: Dict[str, Union[int, float]], distance: str = None) \
-            -> None:
+                 pars: Dict[str, Union[int, float]],
+                 distance: Optional[str] = None) -> None:
         """Create smoothing dimension.
 
         Parameters
@@ -221,7 +221,7 @@ class Dimension:
         return self._distance
 
     @distance.setter
-    def distance(self, distance: Union[str, None]) -> None:
+    def distance(self, distance: Optional[str]) -> None:
         """Set distance function name.
 
         Parameters
