@@ -15,7 +15,6 @@ from typing import Dict, List, Tuple, Union
 
 from numba import njit
 from numba.typed import List as TypedList
-from numba.types import ListType, float64
 import numpy as np
 from pandas import DataFrame
 
@@ -179,10 +178,11 @@ class Smoother:
         """
         point_list = TypedList()
         for group in self._dimensions:
-            group_list = TypedList(lsttype=ListType(float64[:, :]))
+            group_list = TypedList()
             for dim in group:
-                dim_array = data[dim.dimension].values.astype(float)
-                group_list.append(np.atleast_2d(dim_array))
+                dim_array = np.atleast_2d(data[dim.dimension].values)
+                dim_array = np.ascontiguousarray(dim_array, dtype=float)
+                group_list.append(dim_array)
             point_list.append(group_list)
         return point_list
 
