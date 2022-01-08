@@ -1,4 +1,4 @@
-# pylint: disable=E0611, R0902
+# pylint: disable=E0611, R0902, R0913
 """Smoothing dimension specifications.
 
 Dimension class to specify smoothing dimension column name(s), distance
@@ -19,7 +19,9 @@ class Dimension:
 
     Attributes
     ----------
-    dimension : str or list of str
+    name : str
+        Dimension name.
+    columns : list of str
         Dimension column name(s).
     kernel : {'exponential', 'tricubic', 'depth'}
         Kernel function name.
@@ -30,14 +32,16 @@ class Dimension:
 
     """
 
-    def __init__(self, dimension: Union[str, List[str]], kernel: str,
+    def __init__(self, name: str, columns: Union[str, List[str]], kernel: str,
                  pars: Dict[str, Union[int, float]],
                  distance: Optional[str] = None) -> None:
         """Create smoothing dimension.
 
         Parameters
         ----------
-        dimension : str or list of str
+        name : str
+            Dimension name.
+        columns : str or list of str
             Dimension column name(s).
         kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
@@ -64,13 +68,53 @@ class Dimension:
             `radius` : float in (0, 1)
 
         """
-        self.dimension = dimension
+        self.name = name
+        self.columns = columns
         self.kernel = kernel
         self.pars = pars
         self.distance = distance
 
     @property
-    def dimension(self) -> Union[str, List[str]]:
+    def name(self) -> str:
+        """Get dimension name.
+
+        Returns
+        -------
+        str
+            Dimension name.
+
+        """
+        return self._name
+
+    @name.setter
+    def name(self, name: str) -> None:
+        """Set dimension name.
+
+        Parameters
+        ----------
+        name : str
+            Dimension name.
+
+        Raises
+        ------
+        AttributeError
+            If `name` has already been set.
+        TypeError
+            If `name` is not a str.
+
+        """
+        # Once set, `name` cannot be changed
+        if hasattr(self, 'name'):
+            raise AttributeError('`name` cannot be changed.')
+
+        # Check type
+        if not isinstance(name, str):
+            raise TypeError('`name` is not a str.')
+
+        self._name = name
+
+    @property
+    def columns(self) -> List[str]:
         """Get dimension column name(s).
 
         Returns
@@ -79,45 +123,43 @@ class Dimension:
             Dimension column name(s).
 
         """
-        if len(self._dimension) == 1:
-            return self._dimension[0]
-        return self._dimension
+        return self._columns
 
-    @dimension.setter
-    def dimension(self, dimension: Union[str, List[str]]) -> None:
+    @columns.setter
+    def columns(self, columns: Union[str, List[str]]) -> None:
         """Set dimension column name(s).
 
         Parameters
         ----------
-        dimension : str or list of str
+        columns : str or list of str
             Dimension column name(s).
 
         Raises
         ------
         AttributeError
-            If `dimension` has already been set.
+            If `columns` has already been set.
         TypeError
-            If `dimension` not a str or list of str.
+            If `columns` not a str or list of str.
         ValueError
-            If `dimension` contains duplicates.
+            If `columns` contains duplicates.
 
         """
-        # Once set, `dimension` cannot be changed
-        if hasattr(self, 'dimension'):
-            raise AttributeError('`dimension` cannot be changed.')
+        # Once set, `columns` cannot be changed
+        if hasattr(self, 'columns'):
+            raise AttributeError('`columns` cannot be changed.')
 
         # Check types
-        dimension = as_list(dimension)
-        if len(dimension) == 0:
-            raise TypeError('`dimension` is an empty list.')
-        if not all(isinstance(dim, str) for dim in dimension):
-            raise TypeError('`dimension` contains invalid type(s).')
+        columns = as_list(columns)
+        if len(columns) == 0:
+            raise TypeError('`columns` is an empty list.')
+        if not all(isinstance(dim, str) for dim in columns):
+            raise TypeError('`columns` contains invalid type(s).')
 
         # Check duplicates
-        if len(dimension) > len(set(dimension)):
-            raise ValueError('`dimension` contains duplicates.')
+        if len(columns) > len(set(columns)):
+            raise ValueError('`columns` contains duplicates.')
 
-        self._dimension = dimension
+        self._columns = columns
 
     @property
     def kernel(self) -> str:
