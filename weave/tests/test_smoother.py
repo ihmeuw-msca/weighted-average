@@ -18,15 +18,26 @@ def test_dimensions_type(dimensions):
         Smoother(dimensions)
 
 
-# Test duplicates in `dimensions`
-@pytest.mark.parametrize('dimension1', ['dummy1', ['dummy1', 'dummy2']])
-@pytest.mark.parametrize('dimension2', ['dummy1', ['dummy1', 'dummy2']])
 @pytest.mark.parametrize('kernel1', ['exponential', 'tricubic', 'depth'])
 @pytest.mark.parametrize('kernel2', ['exponential', 'tricubic', 'depth'])
-def test_duplicate_dimensions(dimension1, dimension2, kernel1, kernel2):
-    """Raise ValueError if duplicates in `dimensions`."""
+def test_duplicate_names(kernel1, kernel2):
+    """Raise ValueError if duplicate names in `dimensions`."""
     with pytest.raises(ValueError):
-        pars = {'radius': 0.4, 'exponent': 3}
-        dim1 = Dimension(dimension1, kernel1, pars)
-        dim2 = Dimension(dimension2, kernel2, pars)
+        pars = {'radius': 0.5, 'exponent': 3}
+        dim1 = Dimension('dummy', 'columns1', kernel1, pars)
+        dim2 = Dimension('dummy', 'columns2', kernel2, pars)
+        Smoother([[dim1, dim2]])
+
+
+# Test duplicate columns in `dimensions`
+@pytest.mark.parametrize('columns1', ['dummy1', ['dummy1', 'dummy2']])
+@pytest.mark.parametrize('columns2', ['dummy1', ['dummy1', 'dummy2']])
+@pytest.mark.parametrize('kernel1', ['exponential', 'tricubic', 'depth'])
+@pytest.mark.parametrize('kernel2', ['exponential', 'tricubic', 'depth'])
+def test_duplicate_columns(columns1, columns2, kernel1, kernel2):
+    """Raise ValueError if duplicate columns in `dimensions`."""
+    with pytest.raises(ValueError):
+        pars = {'radius': 0.5, 'exponent': 3}
+        dim1 = Dimension('dummy1', columns1, kernel1, pars)
+        dim2 = Dimension('dummy2', columns2, kernel2, pars)
         Smoother([[dim1, dim2]])

@@ -3,6 +3,8 @@
 
 TODO
 * Write checks and tests
+* Change dimension.dimension to dimension.columns
+* Check for duplicates in dimension names as well
 
 Checks
 * Check for duplicates in columns
@@ -94,9 +96,12 @@ class Smoother:
                 raise TypeError('`dimensions` contains invalid type(s).')
 
         # Check duplicates
-        dim_list = flatten([dim.dimension for dim in flatten(dimensions)])
-        if len(dim_list) > len(set(dim_list)):
-            raise ValueError('Duplicates found in `dimensions`.')
+        name_list = [dim.name for dim in flatten(dimensions)]
+        if len(name_list) > len(set(name_list)):
+            raise ValueError('Duplicate names found in `dimensions`.')
+        col_list = flatten([dim.columns for dim in flatten(dimensions)])
+        if len(col_list) > len(set(col_list)):
+            raise ValueError('Duplicate columns found in `dimensions`.')
 
         self._dimensions = dimensions
 
@@ -180,7 +185,7 @@ class Smoother:
         for group in self._dimensions:
             group_list = TypedList()
             for dim in group:
-                dim_array = np.atleast_2d(data[dim.dimension].values)
+                dim_array = np.atleast_2d(data[dim.columns].values)
                 dim_array = np.ascontiguousarray(dim_array, dtype=float)
                 group_list.append(dim_array)
             point_list.append(group_list)
