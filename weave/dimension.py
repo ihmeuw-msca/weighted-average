@@ -119,7 +119,7 @@ class Dimension:
 
         Returns
         -------
-        str or list of str
+        list of str
             Dimension column name(s).
 
         """
