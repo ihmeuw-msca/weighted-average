@@ -20,10 +20,12 @@ TODO:
 * STGPR has a different depth function than CODEm
 
 """
-from typing import Dict
+from typing import Dict, List, Union
 
 from numba import njit
 import numpy as np
+
+from weave.utils import as_list
 
 
 @njit
@@ -126,3 +128,59 @@ def depth(distance: float, pars: Dict[str, float]) -> float:
     if distance == 2.0:
         return (1.0 - pars['radius'])**2
     return 0.0
+
+
+def check_pars(pars: Dict[str, Union[int, float]],
+               names: Union[str, List[str]], types: Union[str, List[str]]) \
+        -> None:
+    """Check kernel parameter types and values.
+
+    Parameters
+    ----------
+    pars : dict of {str: int or float}
+        Kernel parameters
+    names : str or list of str
+        Parameter names.
+    types : str or list of str
+        Parameter types. Valid types are 'pos_num' or 'pos_frac'.
+
+    Raises
+    ------
+    KeyError
+        If `pars` is missing a kernel parameter.
+    TypeError
+        If a kernel parameter is an invalid type.
+    ValueError
+        If a kernel parameter is an invalid value.
+
+    """
+    names = as_list(names)
+    if isinstance(types, str):
+        types = [types]*len(names)
+
+    for idx_par, par_name in enumerate(names):
+        # Check key
+        if par_name not in pars:
+            raise KeyError(f"`{par_name}` is not in `pars`.")
+        par_val = pars[par_name]
+
+        if types[idx_par] == 'pos_num':
+            # Check type
+            is_bool = isinstance(par_val, bool)
+            is_int = isinstance(par_val, (int, np.integer))
+            is_float = isinstance(par_val, (float, np.floating))
+            if is_bool or not (is_int or is_float):
+                raise TypeError(f"`{par_name}` is not an int or float.")
+
+            # Check value
+            if par_val <= 0.0:
+                raise ValueError(f"`{par_name}` is not positive.")
+
+        else:  # 'pos_frac'
+            # Check type
+            if not isinstance(par_val, (float, np.floating)):
+                raise TypeError(f"`{par_name}` is not a float.")
+
+            # Check value
+            if par_val <= 0.0 or par_val >= 1.0:
+                raise ValueError(f"`{par_name}` is not in (0, 1).")

@@ -11,18 +11,26 @@ from hypothesis import given, settings
 from hypothesis.strategies import floats
 from numba.typed import Dict
 import numpy as np
+import pytest
 
-from weave.kernels import exponential, tricubic, depth
+from weave.kernels import exponential, tricubic, depth, check_pars
 
 # Hypothesis types
+my_pos = floats(min_value=0.0, max_value=1e5, allow_nan=False,
+                allow_infinity=False, allow_subnormal=False, exclude_min=True)
+my_nonpos = floats(min_value=-1e5, max_value=0.0, allow_nan=False,
+                   allow_infinity=False, allow_subnormal=False)
 my_nonneg = floats(min_value=0.0, max_value=1e5, allow_nan=False,
                    allow_infinity=False, allow_subnormal=False)
-my_pos = floats(min_value=0.0, max_value=1e5, allow_nan=False,
-                allow_infinity=False, allow_subnormal=False,
-                exclude_min=True)
 my_frac = floats(min_value=0.0, max_value=1.0, allow_nan=False,
-                 allow_infinity=False, allow_subnormal=False,
-                 exclude_min=True, exclude_max=True)
+                 allow_infinity=False, allow_subnormal=False, exclude_min=True,
+                 exclude_max=True)
+my_notfrac = floats(min_value=1.0, max_value=1e5, allow_nan=False,
+                    allow_infinity=False, allow_subnormal=False)
+
+# Lists of wrong types to test exceptions
+not_float = [1, 'dummy', True, None, [], (), {}]
+not_numeric = ['dummy', True, None, [], (), {}]
 
 
 # Property 1: Output is a real-valued, finite, nonnegative float
@@ -140,3 +148,52 @@ def test_different_super_region():
     pars['radius'] = 0.9
     weight = depth(distance, pars)
     assert np.isclose(weight, 0.0)
+
+
+# Test check_pars function
+@given(my_pos)
+def test_pars_missing(par_val):
+    """Raise KeyError if `pars` is missing a kernel parameter."""
+    with pytest.raises(KeyError):
+        pars = {'dummy': par_val}
+        check_pars(pars, 'radius', 'pos_num')
+
+
+@pytest.mark.parametrize('par_val', not_numeric)
+def test_pars_num(par_val):
+    """Raise TypeError if kernel parameter is not an int or float."""
+    with pytest.raises(TypeError):
+        pars = {'dummy': par_val}
+        check_pars(pars, 'dummy', 'pos_num')
+
+
+@pytest.mark.parametrize('par_val', not_float)
+def test_pars_float(par_val):
+    """Raise TypeError if kernel parameter is not a float."""
+    with pytest.raises(TypeError):
+        pars = {'dummy': par_val}
+        check_pars(pars, 'dummy', 'pos_frac')
+
+
+@given(my_nonpos)
+def test_pars_pos_num(par_val):
+    """Raise ValueError if kernel parameter is not positive."""
+    with pytest.raises(ValueError):
+        pars = {'dummy': par_val}
+        check_pars(pars, 'dummy', 'pos_num')
+
+
+@given(my_nonpos)
+def test_pars_pos_frac(par_val):
+    """Raise ValueError if kernel parameter is not positive."""
+    with pytest.raises(ValueError):
+        pars = {'dummy': par_val}
+        check_pars(pars, 'dummy', 'pos_frac')
+
+
+@given(my_notfrac)
+def test_pars_frac(par_val):
+    """Raise ValueError if kernel parameter is >= 1."""
+    with pytest.raises(ValueError):
+        pars = {'dummy': par_val}
+        check_pars(pars, 'dummy', 'pos_frac')
