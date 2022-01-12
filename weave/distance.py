@@ -11,6 +11,8 @@ In general, distance functions should satisfy the following properties:
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
 """
+from typing import Dict, Tuple
+
 from numba import njit
 import numpy as np
 
@@ -58,3 +60,35 @@ def hierarchical(x: np.ndarray, y: np.ndarray) -> float:
         if (x[:-ii] == y[:-ii]).all():
             return 1.0*ii
     return 1.0*len(x)
+
+
+def dictionary(x: np.ndarray, y: np.ndarray, pars: Dict[Tuple[float], float]) \
+        -> float:
+    """Get dictionary distance between `x` and `y`.
+
+    TODO:
+    * Description of input (initially scalar, but cast as vector for
+    numba reasons).
+    * Description of assumptions about pars.
+    * Better name for pars.
+
+    Parameters
+    ----------
+    x : 1D numpy.ndarray of float
+        Current point.
+    y : 1D numpy.ndarray of float
+        Nearby point.
+    pars : dict of {tuple of float: float}
+        RELATEDNESS-MATRIX - FIND BETTER NAME
+
+    Returns
+    -------
+    nonnegative float
+        Dictionary distance between `x` and `y`.
+
+    """
+    x = x[0]
+    y = y[0]
+    if x <= y:
+        return pars[(x, y)]
+    return pars[(y, x)]

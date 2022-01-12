@@ -2,6 +2,7 @@
 """Smooth data across multiple dimensions using weighted averages.
 
 TODO
+* Update functions for new `dictionary` distance function
 * Write checks and tests
 * Change dimension.dimension to dimension.columns
 * Check for duplicates in dimension names as well

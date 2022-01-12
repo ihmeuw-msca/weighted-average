@@ -4,6 +4,9 @@
 Dimension class to specify smoothing dimension column name(s), distance
 function, and kernel function.
 
+TODO:
+* Update methods and functions for new `dictionary` distance function
+
 """
 from typing import Dict, List, Optional, Union
 import warnings

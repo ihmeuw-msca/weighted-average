@@ -10,11 +10,14 @@ other examples of valid input. Could do this with 'parametrize' or
 * `kernel == 'tricubic'
     - `dimension` in {'dummy', ['dummy1', 'dummy2']}
     - `pars` == {'radius': 0.5, 'exponent': 3}
-    - `distance` in {'euclidean', 'hierarchical', one}
+    - `distance` in {'euclidean', 'hierarchical', None}
 * `kernel == 'depth'
     - `dimension` in {'dummy', ['dummy1', 'dummy2']}
     - `pars` == {'radius': 0.5}
     - `distance` in {'hierarchical', None}
+
+TODO:
+* Do we need to add or update tests for new `dictionary` distance?
 
 """
 import pytest
