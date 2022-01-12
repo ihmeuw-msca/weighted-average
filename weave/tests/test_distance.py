@@ -7,8 +7,8 @@ In general, distance functions should satisfy the following properties:
 3. d(x, y) == d(y, x) (symmetry)
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
-TODO:
-* Add tests for `dictionary` distance function
+Tests for `dictionary` distance function are not included because it is
+based on user-supplied values.
 
 """
 from hypothesis import given, settings
