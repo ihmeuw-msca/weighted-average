@@ -62,15 +62,17 @@ def hierarchical(x: np.ndarray, y: np.ndarray) -> float:
     return 1.0*len(x)
 
 
-def dictionary(x: np.ndarray, y: np.ndarray, pars: Dict[Tuple[float], float]) \
-        -> float:
+def dictionary(x: np.ndarray, y: np.ndarray,
+               distance_dict: Dict[Tuple[float], float]) -> float:
     """Get dictionary distance between `x` and `y`.
 
-    TODO:
-    * Description of input (initially scalar, but cast as vector for
-    numba reasons).
-    * Description of assumptions about pars.
-    * Better name for pars.
+    Dictionary `distance_dict` contains the distance between points `x`
+    and `y`. For type consistency among distance functions, `x` and `y`
+    are 1D numpy arrays of float, but they should contain a single
+    value (e.g., location ID). Dictionary keys are tuples of point
+    pairs `(x[0], y[0])`, and dictionary values are the corresponding
+    distances. Because distances are assumed to be symmetric, point
+    pairs are listed from smallest to largest, e.g., `x` <= `y`.
 
     Parameters
     ----------
@@ -78,8 +80,8 @@ def dictionary(x: np.ndarray, y: np.ndarray, pars: Dict[Tuple[float], float]) \
         Current point.
     y : 1D numpy.ndarray of float
         Nearby point.
-    pars : dict of {tuple of float: float}
-        RELATEDNESS-MATRIX - FIND BETTER NAME
+    distance_dict : dict of {tuple of float: float}
+        Dictionary of distances between points.
 
     Returns
     -------
@@ -90,5 +92,5 @@ def dictionary(x: np.ndarray, y: np.ndarray, pars: Dict[Tuple[float], float]) \
     x = x[0]
     y = y[0]
     if x <= y:
-        return pars[(x, y)]
-    return pars[(y, x)]
+        return distance_dict[(x, y)]
+    return distance_dict[(y, x)]
