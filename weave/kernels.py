@@ -123,9 +123,9 @@ def depth(distance: float, pars: Dict[str, float]) -> float:
     """
     if distance == 0.0:
         return pars['radius']
-    if distance == 1.0:
+    if distance <= 1.0:
         return pars['radius']*(1.0 - pars['radius'])
-    if distance == 2.0:
+    if distance <= 2.0:
         return (1.0 - pars['radius'])**2
     return 0.0
 
