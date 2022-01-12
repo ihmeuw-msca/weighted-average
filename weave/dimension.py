@@ -12,8 +12,8 @@ from typing import Dict, List, Optional, Union
 import warnings
 
 from numba.typed import Dict as TypedDict
-import numpy as np
 
+from weave.kernels import check_pars
 from weave.utils import as_list
 
 
@@ -28,7 +28,7 @@ class Dimension:
         Dimension column name(s).
     kernel : {'exponential', 'tricubic', 'depth'}
         Kernel function name.
-    pars : dict of {str: float}
+    kernel_pars : dict of {str: float}
         Kernel function parameters.
     distance : {'euclidean', 'hierarchical'}
         Distance function name.
@@ -36,7 +36,7 @@ class Dimension:
     """
 
     def __init__(self, name: str, columns: Union[str, List[str]], kernel: str,
-                 pars: Dict[str, Union[int, float]],
+                 kernel_pars: Dict[str, Union[int, float]],
                  distance: Optional[str] = None) -> None:
         """Create smoothing dimension.
 
@@ -48,7 +48,7 @@ class Dimension:
             Dimension column name(s).
         kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
-        pars : dict of {str: int or float}
+        kernel_pars : dict of {str: int or float}
             Kernel function parameters.
         distance : {'euclidean', 'hierarchical'}, optional
             Distance function name.
@@ -74,7 +74,7 @@ class Dimension:
         self.name = name
         self.columns = columns
         self.kernel = kernel
-        self.pars = pars
+        self.kernel_pars = kernel_pars
         self.distance = distance
 
     @property
@@ -195,8 +195,8 @@ class Dimension:
         Warns
         -----
         UserWarning
-            Attribute `pars` is deleted when `kernel` is reset, so
-            `pars` must also be reset.
+            Attribute `kernel_pars` is deleted when `kernel` is reset,
+            so `kernel_pars` must also be reset.
 
         """
         # Check type
@@ -208,18 +208,14 @@ class Dimension:
             raise ValueError('`kernel` is not a valid kernel function.')
 
         # Delete kernel parameters
-        if hasattr(self, 'pars'):
-            warnings.warn('`kernel` has changed; must reset `pars`.')
-            del self._pars
+        if hasattr(self, 'kernel_pars'):
+            warnings.warn('`kernel` has changed; must reset `kernel_pars`.')
+            del self._kernel_pars
 
         self._kernel = kernel
 
-        # Check distance
-        if hasattr(self, 'distance'):
-            self.distance = self.distance
-
     @property
-    def pars(self) -> Dict[str, float]:
+    def kernel_pars(self) -> Dict[str, float]:
         """Get kernel function parameters.
 
         Returns
@@ -228,30 +224,34 @@ class Dimension:
             Kernel function parameters.
 
         """
-        return self._pars
+        return self._kernel_pars
 
-    @pars.setter
-    def pars(self, pars: Dict[str, Union[int, float]]) -> None:
+    @kernel_pars.setter
+    def kernel_pars(self, kernel_pars: Dict[str, Union[int, float]]) -> None:
         """Set kernel function parameters.
 
         Parameters
         ----------
-        pars : dict of {str: int or float}
+        kernel_pars : dict of {str: int or float}
             Kernel function parameters.
 
         """
+        # Check parameter values
         if self._kernel == 'exponential':
-            self.check_pars(pars, 'radius', 'pos_num')
-            pars = {'radius': pars['radius']}
+            check_pars(kernel_pars, 'radius', 'pos_num')
+            kernel_pars = {'radius': kernel_pars['radius']}
         elif self._kernel == 'tricubic':
-            self.check_pars(pars, ['radius', 'exponent'], 'pos_num')
-            pars = {key: pars[key] for key in ['radius', 'exponent']}
+            check_pars(kernel_pars, ['radius', 'exponent'], 'pos_num')
+            kernel_pars = {key: kernel_pars[key]
+                           for key in ['radius', 'exponent']}
         else:  # 'depth'
-            self.check_pars(pars, 'radius', 'pos_frac')
-            pars = {'radius': pars['radius']}
-        self._pars = TypedDict()
-        for key in pars:
-            self._pars[key] = float(pars[key])
+            check_pars(kernel_pars, 'radius', 'pos_frac')
+            kernel_pars = {'radius': kernel_pars['radius']}
+
+        # Create numba dictionary
+        self._kernel_pars = TypedDict()
+        for key in kernel_pars:
+            self._kernel_pars[key] = float(kernel_pars[key])
 
     @property
     def distance(self) -> str:
@@ -281,11 +281,6 @@ class Dimension:
         ValueError
             If `distance` is not a valid distance function.
 
-        Warns
-        -----
-        UserWarning
-            If `kernel` == 'depth' but `distance` != 'hierarchical'.
-
         """
         # Set defaults
         if distance is None:
@@ -303,67 +298,4 @@ class Dimension:
             msg = '`distance` is not a valid distance function.'
             raise ValueError(msg)
 
-        # Check kernel
-        if self._kernel == 'depth' and distance != 'hierarchical':
-            msg = "`kernel` == 'depth' but `distance` != 'hierarchical'. "
-            msg += "Using 'hierarchical' instead."
-            warnings.warn(msg)
-            distance = 'hierarchical'
-
         self._distance = distance
-
-    @staticmethod
-    def check_pars(pars: Dict[str, Union[int, float]],
-                   names: Union[str, List[str]],
-                   types: Union[str, List[str]]) -> None:
-        """Check parameter types and values.
-
-        Parameters
-        ----------
-        pars : dict of {str: int or float}
-            Kernel parameters
-        names : str or list of str
-            Parameter names.
-        types : str or list of str
-            Parameter types. Valid types are 'pos_num' or 'pos_frac'.
-
-        Raises
-        ------
-        KeyError
-            If `pars` is missing a kernel parameter.
-        TypeError
-            If a kernel parameter is an invalid type.
-        ValueError
-            If a kernel parameter is an invalid value.
-
-        """
-        names = as_list(names)
-        if isinstance(types, str):
-            types = [types]*len(names)
-
-        for idx_par, par_name in enumerate(names):
-            # Check key
-            if par_name not in pars:
-                raise KeyError(f"`{par_name}` is not in `pars`.")
-            par_val = pars[par_name]
-
-            if types[idx_par] == 'pos_num':
-                # Check type
-                is_bool = isinstance(par_val, bool)
-                is_int = isinstance(par_val, (int, np.integer))
-                is_float = isinstance(par_val, (float, np.floating))
-                if is_bool or not (is_int or is_float):
-                    raise TypeError(f"`{par_name}` is not an int or float.")
-
-                # Check value
-                if par_val <= 0.0:
-                    raise ValueError(f"`{par_name}` is not positive.")
-
-            else:  # 'pos_frac'
-                # Check type
-                if not isinstance(par_val, (float, np.floating)):
-                    raise TypeError(f"`{par_name}` is not a float.")
-
-                # Check value
-                if par_val <= 0.0 or par_val >= 1.0:
-                    raise ValueError(f"`{par_name}` is not in (0, 1).")
