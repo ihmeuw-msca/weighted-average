@@ -83,7 +83,7 @@ def dictionary(x: np.ndarray, y: np.ndarray,
         Current point.
     y : 1D numpy.ndarray of float
         Nearby point.
-    distance_dict : dict of {tuple of float: float}
+    distance_dict : dict of {(float, float): float}
         Dictionary of distances between points.
 
     Returns
@@ -104,7 +104,7 @@ def check_dict(distance_dict: Dict[Tuple[float, float], float]) -> None:
 
     Parameters
     ----------
-    distance_dict : dict of {tuple of float: float}
+    distance_dict : dict of {(float, float): float}
         Dictionary of distances between points.
 
     Raises
