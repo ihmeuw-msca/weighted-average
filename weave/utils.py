@@ -1,6 +1,8 @@
 """General utility functions."""
 from typing import Any, List, Union
 
+import numpy as np
+
 
 def as_list(values: Union[Any, List[Any]]) -> List[Any]:
     """Cast `values` as list if not already.
@@ -42,3 +44,25 @@ def flatten(values: List[Union[Any, List[Any]]]) -> List[Any]:
     if isinstance(values[0], list):
         return flatten(values[0]) + flatten(values[1:])
     return values[:1] + flatten(values[1:])
+
+
+def is_numeric(value: Any) -> bool:
+    """Determine if `value` is an int or float.
+
+    Parameters
+    ----------
+    value : Any
+        Value to check.
+
+    Returns
+    -------
+    bool
+        If `value` is an int or float.
+
+    """
+    if isinstance(value, (int, np.integer)) and not isinstance(value, bool):
+        return True
+    if isinstance(value, (float, np.floating)):
+        if not (np.isnan(value) or np.isinf(value)):
+            return True
+    return False
