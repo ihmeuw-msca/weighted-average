@@ -110,7 +110,7 @@ def check_dict(distance_dict: Dict[Tuple[float, float], float]) -> None:
     Raises
     ------
     TypeError
-        If `distance_dict`, keys or values are an invalid type.
+        If `distance_dict`, keys, or values are an invalid type.
     ValueError
         If dictionary values are not all nonnegative.
 
