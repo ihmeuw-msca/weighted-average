@@ -150,7 +150,7 @@ def test_different_super_region():
     assert np.isclose(weight, 0.0)
 
 
-# Test check_pars function
+# Test `check_pars()`
 @given(my_pos)
 def test_pars_missing(par_val):
     """Raise KeyError if `pars` is missing a kernel parameter."""
