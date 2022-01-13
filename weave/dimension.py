@@ -5,16 +5,22 @@ Dimension class to specify smoothing dimension column name(s), distance
 function, and kernel function.
 
 TODO:
-* Update methods and functions for new `dictionary` distance function
+* Create new jitclass TypedDimension or something like that
+* Might need to let everyone have `distance_dict` attribute for numba
 
 """
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 import warnings
 
-from numba.typed import Dict as TypedDict
+from numba.typed import Dict as TypedDict, List as TypedList
+from numba.types import DictType, ListType, unicode_type, UniTuple, float64
 
+from weave.distance import check_dict
 from weave.kernels import check_pars
 from weave.utils import as_list
+
+DistanceDict = Dict[Tuple[float, float], float]
+TypedDistanceDict = DictType(UniTuple(float64, 2), float64)  # mypy error
 
 
 class Dimension:
@@ -30,14 +36,18 @@ class Dimension:
         Kernel function name.
     kernel_pars : dict of {str: float}
         Kernel function parameters.
-    distance : {'euclidean', 'hierarchical'}
+    distance : {'dictionary', 'euclidean', 'hierarchical'}
         Distance function name.
+    distance_dict : dict of {tuple of float: float}, optional
+        Dictionary of distances between points if `distance` ==
+        'dictionary'.
 
     """
 
     def __init__(self, name: str, columns: Union[str, List[str]], kernel: str,
                  kernel_pars: Dict[str, Union[int, float]],
-                 distance: Optional[str] = None) -> None:
+                 distance: Optional[str] = None,
+                 distance_dict: Optional[DistanceDict] = None) -> None:
         """Create smoothing dimension.
 
         Parameters
@@ -50,8 +60,11 @@ class Dimension:
             Kernel function name.
         kernel_pars : dict of {str: int or float}
             Kernel function parameters.
-        distance : {'euclidean', 'hierarchical'}, optional
+        distance : {'dictionary', 'euclidean', 'hierarchical'}, optional
             Distance function name.
+        distance_dict : dict of {(float, float): float}, optional
+            Dictionary of distance between points if `distance` ==
+            'dictionary'.
 
         Distance function defaults
         --------------------------
@@ -70,12 +83,20 @@ class Dimension:
         `kernel` : 'depth'
             `radius` : float in (0, 1)
 
+        Dictionary `distance_dict` contains the distance between points
+        `x` and `y`. Dictionary keys are tuples of point pairs
+        `(x, y)`, where `x` and `y` are floats (e.g., location IDs),
+        and dictionary values are the corresponding distances. Because
+        distances are assumed to be symmetric, point pairs are listed
+        from smallest to largest, e.g., `x` <= `y`.
+
         """
         self.name = name
         self.columns = columns
         self.kernel = kernel
         self.kernel_pars = kernel_pars
         self.distance = distance
+        self.distance_dict = distance_dict
 
     @property
     def name(self) -> str:
@@ -117,7 +138,7 @@ class Dimension:
         self._name = name
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> ListType(unicode_type):
         """Get dimension column name(s).
 
         Returns
@@ -162,7 +183,8 @@ class Dimension:
         if len(columns) > len(set(columns)):
             raise ValueError('`columns` contains duplicates.')
 
-        self._columns = columns
+        # Create numba list
+        self._columns = TypedList(columns)
 
     @property
     def kernel(self) -> str:
@@ -215,7 +237,7 @@ class Dimension:
         self._kernel = kernel
 
     @property
-    def kernel_pars(self) -> Dict[str, float]:
+    def kernel_pars(self) -> DictType(unicode_type, float64):
         """Get kernel function parameters.
 
         Returns
@@ -271,7 +293,7 @@ class Dimension:
 
         Parameters
         ----------
-        distance : {'euclidean', 'hierarchical', None}
+        distance : {'dictionary', 'euclidean', 'hierarchical', None}
             Distance function name.
 
         Raises
@@ -294,8 +316,39 @@ class Dimension:
             raise TypeError('`distance` is not a str.')
 
         # Check value
-        if distance not in ('euclidean', 'hierarchical'):
+        if distance not in ('dictionary', 'euclidean', 'hierarchical'):
             msg = '`distance` is not a valid distance function.'
             raise ValueError(msg)
 
         self._distance = distance
+
+    @property
+    def distance_dict(self) -> Optional[TypedDistanceDict]:
+        """Get dictionary of distances between points.
+
+        Returns
+        -------
+        dict of {(float, float): float}
+            Dictionary of distances between points.
+
+        """
+        return self._distance_dict
+
+    @distance_dict.setter
+    def distance_dict(self, distance_dict: Optional[DistanceDict]) -> None:
+        """Set dictionary of distances between points.
+
+        Parameters
+        ----------
+        distance_dict : dict of {(float, float): float}
+            Dictionary of distances between points.
+
+        """
+        if self._distance == 'dictionary':
+            check_dict(distance_dict)
+            self._distance_dict = TypedDict()
+            for key in distance_dict:
+                float_key = tuple(float(point) for point in key)
+                self._distance_dict[float_key] = float(distance_dict[key])
+        else:
+            self._distance_dict = None
