@@ -25,7 +25,7 @@ from typing import Dict, List, Union
 from numba import njit
 import numpy as np
 
-from weave.utils import as_list
+from weave.utils import as_list, is_numeric
 
 
 @njit
@@ -166,10 +166,7 @@ def check_pars(pars: Dict[str, Union[int, float]],
 
         if types[idx_par] == 'pos_num':
             # Check type
-            is_bool = isinstance(par_val, bool)
-            is_int = isinstance(par_val, (int, np.integer))
-            is_float = isinstance(par_val, (float, np.floating))
-            if is_bool or not (is_int or is_float):
+            if not is_numeric(par_val):
                 raise TypeError(f"`{par_name}` is not an int or float.")
 
             # Check value
