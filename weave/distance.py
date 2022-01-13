@@ -16,6 +16,8 @@ from typing import Dict, Tuple
 from numba import njit
 import numpy as np
 
+from weave.utils import is_numeric
+
 
 @njit
 def euclidean(x: np.ndarray, y: np.ndarray) -> float:
@@ -95,3 +97,32 @@ def dictionary(x: np.ndarray, y: np.ndarray,
     if x0 <= y0:
         return distance_dict[(x0, y0)]
     return distance_dict[(y0, x0)]
+
+
+def check_dict(distance_dict: Dict[Tuple[float, float], float]) -> None:
+    """Check dictionary keys and values.
+
+    Parameters
+    ----------
+    distance_dict : dict of {tuple of float: float}
+        Dictionary of distances between points.
+
+    Raises
+    ------
+    TypeError
+        If `distance_dict`, keys or values are an invalid type.
+    ValueError
+        If dictionary values are not all nonnegative.
+
+    """
+    # Check types
+    if not isinstance(distance_dict, dict):
+        raise TypeError('`distance_dict` is not a dict.')
+    if not all(isinstance(key, tuple) for key in distance_dict):
+        raise TypeError('`distance_dict` keys not all tuple.')
+    if not all(is_numeric(value) for value in distance_dict.values()):
+        raise TypeError('`distance_dict` values not all int or float.')
+
+    # Check values
+    if not all(value > 0.0 for value in distance_dict.values()):
+        raise ValueError('`distance_dict` contains negative values.')
