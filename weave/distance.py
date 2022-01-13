@@ -16,8 +16,6 @@ from typing import Dict, Tuple
 from numba import njit
 import numpy as np
 
-DistanceDict = Dict[Tuple[np.ndarray, np.ndarray], float]
-
 
 @njit
 def euclidean(x: np.ndarray, y: np.ndarray) -> float:
@@ -65,8 +63,8 @@ def hierarchical(x: np.ndarray, y: np.ndarray) -> float:
 
 
 @njit
-def dictionary(x: np.ndarray, y: np.ndarray, distance_dict: DistanceDict) \
-        -> float:
+def dictionary(x: np.ndarray, y: np.ndarray,
+               distance_dict: Dict[Tuple[float, float], float]) -> float:
     """Get dictionary distance between `x` and `y`.
 
     Dictionary `distance_dict` contains the distance between points `x`
@@ -92,8 +90,8 @@ def dictionary(x: np.ndarray, y: np.ndarray, distance_dict: DistanceDict) \
         Dictionary distance between `x` and `y`.
 
     """
-    x = x[0]
-    y = y[0]
-    if x <= y:
-        return distance_dict[(x, y)]
-    return distance_dict[(y, x)]
+    x0 = float(x[0])
+    y0 = float(y[0])
+    if x0 <= y0:
+        return distance_dict[(x0, y0)]
+    return distance_dict[(y0, x0)]
