@@ -10,6 +10,9 @@ In general, distance functions should satisfy the following properties:
 Tests for `dictionary` distance function are not included because it is
 based on user-supplied values.
 
+TODO:
+* Add tests for `dictionary_dict` type and values
+
 """
 from hypothesis import given, settings
 from hypothesis.strategies import composite, integers, floats

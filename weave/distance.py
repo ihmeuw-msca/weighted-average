@@ -11,12 +11,14 @@ In general, distance functions should satisfy the following properties:
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
 """
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 from numba import njit
 import numpy as np
 
 from weave.utils import is_numeric
+
+Numeric = Union[int, float]
 
 
 @njit
@@ -99,18 +101,20 @@ def dictionary(x: np.ndarray, y: np.ndarray,
     return distance_dict[(y0, x0)]
 
 
-def check_dict(distance_dict: Dict[Tuple[float, float], float]) -> None:
+def check_dict(distance_dict: Dict[Tuple[Numeric, Numeric], Numeric]) -> None:
     """Check dictionary keys and values.
 
     Parameters
     ----------
-    distance_dict : dict of {(float, float): float}
+    distance_dict : dict of {(int or float, int or float): int or float}
         Dictionary of distances between points.
 
     Raises
     ------
     TypeError
         If `distance_dict`, keys, or values are an invalid type.
+    ValueError
+        If dictionary keys are not all length 2.
     ValueError
         If dictionary values are not all nonnegative.
 
@@ -126,5 +130,7 @@ def check_dict(distance_dict: Dict[Tuple[float, float], float]) -> None:
         raise TypeError('`distance_dict` values not all int or float.')
 
     # Check values
+    if not all(len(key) == 2 for key in distance_dict):
+        raise TypeError('`distance_dict` keys are not all length 2.')
     if not all(value > 0.0 for value in distance_dict.values()):
         raise ValueError('`distance_dict` contains negative values.')
