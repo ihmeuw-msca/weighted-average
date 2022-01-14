@@ -122,6 +122,8 @@ def check_dict(distance_dict: Dict[Tuple[Numeric, Numeric], Numeric]) -> None:
     # Check types
     if not isinstance(distance_dict, dict):
         raise TypeError('`distance_dict` is not a dict.')
+    if len(distance_dict) == 0:
+        raise TypeError('`distance_dict` is an empty dict.')
     if not all(isinstance(key, tuple) for key in distance_dict):
         raise TypeError('`distance_dict` keys not all tuple.')
     if not all(is_numeric(point) for key in distance_dict for point in key):
@@ -130,7 +132,7 @@ def check_dict(distance_dict: Dict[Tuple[Numeric, Numeric], Numeric]) -> None:
         raise TypeError('`distance_dict` values not all int or float.')
 
     # Check values
-    if not all(len(key) == 2 for key in distance_dict):
+    if any(len(key) != 2 for key in distance_dict):
         raise TypeError('`distance_dict` keys are not all length 2.')
-    if not all(value > 0.0 for value in distance_dict.values()):
+    if any(value < 0.0 for value in distance_dict.values()):
         raise ValueError('`distance_dict` contains negative values.')
