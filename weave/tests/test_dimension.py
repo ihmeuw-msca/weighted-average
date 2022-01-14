@@ -17,9 +17,7 @@ other examples of valid input. Could do this with 'parametrize' or
     - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
 
 TODO:
-* Do we need to add or update tests for new `dictionary` distance?
-* Test that attributes are converted to numba types
-* More types are immutable, got rid of kernel_pars warning
+* Add tests for NumbaDimension
 
 """
 import pytest
