@@ -59,7 +59,7 @@ class Dimension:
             Dimension column name(s).
         kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
-        kernel_pars : dict of {str: int or float}
+        kernel_pars : dict of {str: numeric}
             Kernel function parameters.
         distance : {'dictionary', 'euclidean', 'hierarchical'}, optional
             Distance function name.
@@ -77,10 +77,10 @@ class Dimension:
         Kernel function parameters
         --------------------------
         `kernel` : 'exponential'
-            `radius` : positive int or float
+            `radius` : positive numeric
         `kernel` : 'tricubic'
-            `radius` : positive int or float
-            `exponent` : positive int or float
+            `radius` : positive numeric
+            `exponent` : positive numeric
         `kernel` : 'depth'
             `radius` : float in (0, 1)
 

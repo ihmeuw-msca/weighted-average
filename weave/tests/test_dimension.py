@@ -6,19 +6,20 @@ other examples of valid input. Could do this with 'parametrize' or
 * `kernel` == 'exponential'
     - `dimension` in {'dummy', ['dummy1', 'dummy2']}
     - `pars` == {'radius': 0.5}
-    - `distance` in {'euclidean', 'hierarchical', None}
+    - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
 * `kernel == 'tricubic'
     - `dimension` in {'dummy', ['dummy1', 'dummy2']}
     - `pars` == {'radius': 0.5, 'exponent': 3}
-    - `distance` in {'euclidean', 'hierarchical', None}
+    - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
 * `kernel == 'depth'
     - `dimension` in {'dummy', ['dummy1', 'dummy2']}
     - `pars` == {'radius': 0.5}
-    - `distance` in {'hierarchical', None}
+    - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
 
 TODO:
 * Do we need to add or update tests for new `dictionary` distance?
-* Remove requirement that depth must use hierarchical
+* Test that attributes are converted to numba types
+* More types are immutable, got rid of kernel_pars warning
 
 """
 import pytest
@@ -26,11 +27,17 @@ import pytest
 from weave.dimension import Dimension
 
 # Lists of wrong types to test exceptions
+# Cannot pass empty lists, tuples, or dictionaries
 not_float = [1, 'dummy', True, None, [], (), {}]
 not_numeric = ['dummy', True, None, [], (), {}]
 not_str = [1, 1.0, True, None, [], (), {}]
+not_tuple = [1, 1.0, 'dummy', True, None, [], (), {}]
 not_columns = not_str + [[value] for value in not_str]
+not_dict = [1, 1.0, True, None, [], (), {}]
+
+# Example kernel parameters and distance dictionary
 kernel_pars = {'radius': 0.5, 'exponent': 3}
+distance_dict = {(1.0, 1.0): 1.0}
 
 
 # Test constructor types
@@ -53,14 +60,6 @@ def test_kernel_type(kernel):
     """Raise TypeError if `kernel` is not a str."""
     with pytest.raises(TypeError):
         Dimension('dummy', 'dummy', kernel, kernel_pars)
-
-
-@pytest.mark.parametrize('distance', not_str)
-def test_distance_type(distance):
-    """Raise TypeError if `distance` is not a str."""
-    if distance is not None:
-        with pytest.raises(TypeError):
-            Dimension('dummy', 'dummy', 'exponential', kernel_pars, distance)
 
 
 @pytest.mark.parametrize('radius', not_numeric)
@@ -93,6 +92,55 @@ def test_depth_radius_type(radius):
     with pytest.raises(TypeError):
         bad_pars = {'radius': radius}
         Dimension('dummy', 'dummy', 'depth', bad_pars)
+
+
+@pytest.mark.parametrize('distance', not_str)
+def test_distance_type(distance):
+    """Raise TypeError if `distance` is not a str."""
+    if distance is not None:
+        with pytest.raises(TypeError):
+            Dimension('dummy', 'dummy', 'exponential', kernel_pars, distance)
+
+
+@pytest.mark.parametrize('bad_dict', not_dict)
+def test_distance_dict_type(bad_dict):
+    """Raise TypeError if `distance_dict` not a dict."""
+    if bad_dict is not None:
+        with pytest.raises(TypeError):
+            Dimension('dummy', 'dummy', 'exponential', kernel_pars,
+                      'dictionary', bad_dict)
+
+
+@pytest.mark.parametrize('key', not_tuple)
+@pytest.mark.parametrize('value', [1, 1.0])
+def test_distance_dict_key_type(key, value):
+    """Raise TypeError if `distance_dict` keys are not tuples."""
+    with pytest.raises(TypeError):
+        bad_dict = {key: value}
+        Dimension('dummy', 'dummy', 'exponential', kernel_pars, 'dictionary',
+                  bad_dict)
+
+
+@pytest.mark.parametrize('key1', not_numeric)
+@pytest.mark.parametrize('key2', not_numeric)
+@pytest.mark.parametrize('value', [1, 1.0])
+def test_distance_dict_key_element_type(key1, key2, value):
+    """Raise TypeError if `distance_dict` keys contain invalid values."""
+    with pytest.raises(TypeError):
+        bad_dict = {(key1, key2): value}
+        Dimension('dummy', 'dummy', 'exponential', kernel_pars, 'dictionary',
+                  bad_dict)
+
+
+@pytest.mark.parametrize('key1', [1, 1.0])
+@pytest.mark.parametrize('key2', [1, 1.0])
+@pytest.mark.parametrize('value', not_numeric)
+def test_distance_dict_value_type(key1, key2, value):
+    """Raise TypeError if `distance_dict` values not all int or float."""
+    with pytest.raises(TypeError):
+        bad_dict = {(key1, key2): value}
+        Dimension('dummy', 'dummy', 'exponential', kernel_pars, 'dictionary',
+                  bad_dict)
 
 
 # Test constructor values
@@ -205,6 +253,33 @@ def test_depth_distance_default():
     assert dim.distance == 'hierarchical'
 
 
+def test_dictionary_distance_dict():
+    """Raise ValueError if `distance_dict` if not passed."""
+    with pytest.raises(ValueError):
+        Dimension('dummy', 'dummy', 'exponential', kernel_pars, 'dictionary')
+
+
+@pytest.mark.parametrize('key', [(1, ), (1.0, ), (1, 2, 3), (1.0, 2.0, 3.0)])
+@pytest.mark.parametrize('value', [1, 1.0])
+def test_distance_dict_key_length(key, value):
+    """Raise ValueError if `distance_dict` keys not all length 2."""
+    with pytest.raises(ValueError):
+        bad_dict = {key: value}
+        Dimension('dummy', 'dummy', 'exponential', kernel_pars, 'dictionary',
+                  bad_dict)
+
+
+@pytest.mark.parametrize('key1', [1, 1.0])
+@pytest.mark.parametrize('key2', [1, 1.0])
+@pytest.mark.parametrize('value', [-1, -1.0])
+def test_distance_dict_value_nonnegative(key1, key2, value):
+    """Raise ValueError if `distance_dict` values not all nonnegative."""
+    with pytest.raises(ValueError):
+        bad_dict = {(key1, key2): value}
+        Dimension('dummy', 'dummy', 'exponential', kernel_pars, 'dictionary',
+                  bad_dict)
+
+
 # Test setter behavior
 def test_name_immutable():
     """Raise AttributeError if attempt to reset `name`."""
@@ -220,16 +295,23 @@ def test_columns_immutable():
         dim.columns = ['dummy1', 'dummy2']
 
 
-@pytest.mark.filterwarnings('ignore:`kernel`')
-def test_kernel_pars_deleted():
-    """Delete `pars` when `kernel` is changed."""
-    dim = Dimension('dummy', 'dummy', 'exponential', kernel_pars)
-    dim.kernel = 'tricubic'
-    assert hasattr(dim, 'pars') is False
-
-
-def test_kernel_pars_warning():
-    """Warn that `pars` deleted when `kernel` is changed."""
-    with pytest.warns(UserWarning):
+def test_kernel_immutable():
+    """Raise AttributeError if attempt to reset `kernel`."""
+    with pytest.raises(AttributeError):
         dim = Dimension('dummy', 'dummy', 'exponential', kernel_pars)
         dim.kernel = 'tricubic'
+
+
+def test_distance_immutable():
+    """Raise AttributeError if attempt to reset `distance`."""
+    with pytest.raises(AttributeError):
+        dim = Dimension('dummy', 'dummy', 'exponential', kernel_pars)
+        dim.distance = 'hierarchical'
+
+
+def test_distance_dict_immutable():
+    """Raise AttributeError if attempt to reset `distance_dict`."""
+    with pytest.raises(AttributeError):
+        dim = Dimension('dummy', 'dummy', 'exponential', kernel_pars,
+                        'dictionary', distance_dict)
+        dim.distance_dict = {(2.0, 2.0): 2.0}
