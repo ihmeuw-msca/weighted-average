@@ -10,19 +10,22 @@ In general, distance functions should satisfy the following properties:
 Tests for `dictionary` distance function are not included because it is
 based on user-supplied values.
 
-TODO:
-* Add tests for `dictionary_dict` type and values
-
 """
 from hypothesis import given, settings
 from hypothesis.strategies import composite, integers, floats
 from hypothesis.extra.numpy import arrays
 import numpy as np
+import pytest
 
-from weave.distance import euclidean, hierarchical
+from weave.distance import check_dict, euclidean, hierarchical
 
 # Hypothesis types
 my_integers = integers(min_value=-1e5, max_value=1e5)
+
+# Lists of wrong types to test exceptions
+not_numeric = ['dummy', True, None, [], (), {}]
+not_dict = [1, 1.0, 'dummy', True, None, [], ()]
+not_tuple = [1, 1.0, 'dummy', True, None, [], {}]
 
 
 @composite
@@ -168,3 +171,60 @@ def test_different_super_region():
     x = np.array([1., 2., 3.])
     y = np.array([4., 5., 6.])
     assert np.isclose(hierarchical(x, y), 3.)
+
+
+# Test `check_dict()`
+@pytest.mark.parametrize('distance_dict', not_dict)
+def test_dict_type(distance_dict):
+    """Raise TypeError if `distance_dict` is not a dict."""
+    with pytest.raises(TypeError):
+        check_dict(distance_dict)
+
+
+@pytest.mark.parametrize('key', not_tuple)
+@pytest.mark.parametrize('value', [1, 1.0])
+def test_key_type(key, value):
+    """Raise TypeError if keys are not all tuples."""
+    with pytest.raises(TypeError):
+        check_dict({key: value})
+
+
+@pytest.mark.parametrize('key1', not_numeric)
+@pytest.mark.parametrize('key2', not_numeric)
+@pytest.mark.parametrize('value', [1, 1.0])
+def test_key_element_type(key1, key2, value):
+    """Raise TypeError if key elements are not all int or float."""
+    with pytest.raises(TypeError):
+        check_dict({(key1, key2): value})
+
+
+@pytest.mark.parametrize('key1', [1, 1.0])
+@pytest.mark.parametrize('key2', [1, 1.0])
+@pytest.mark.parametrize('value', not_numeric)
+def test_value_type(key1, key2, value):
+    """Raise TypeError if values are not all int or float."""
+    with pytest.raises(TypeError):
+        check_dict({(key1, key2): value})
+
+
+def test_empty_dict():
+    """Raise ValueError if `distance_dict` is empty."""
+    with pytest.raises(ValueError):
+        check_dict({})
+
+
+@pytest.mark.parametrize('key', [(), (1, ), (1., ), (1, 2, 3), (1., 2., 3.)])
+@pytest.mark.parametrize('value', [1, 1.0])
+def test_key_length(key, value):
+    """Raise ValueError if keys are not all length 2."""
+    with pytest.raises(ValueError):
+        check_dict({key: value})
+
+
+@pytest.mark.parametrize('key1', [1, 1.0])
+@pytest.mark.parametrize('key2', [1, 1.0])
+@pytest.mark.parametrize('value', [-2, -2.0, -1, -1.0])
+def test_value_nonnegative(key1, key2, value):
+    """Raise ValueError if values are not all nonnegative."""
+    with pytest.raises(ValueError):
+        check_dict({(key1, key2): value})
