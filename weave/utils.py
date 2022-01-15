@@ -1,5 +1,8 @@
+# pylint: disable=E0611
 """General utility functions."""
 from typing import Any, List, Union
+
+from numba.typed import List as TypedList
 
 import numpy as np
 
@@ -37,13 +40,13 @@ def flatten(values: List[Union[Any, List[Any]]]) -> List[Any]:
         Flattened list.
 
     """
-    if not isinstance(values, list):
+    if not isinstance(values, (list, TypedList)):
         raise TypeError('`values` is not a list.')
     if len(values) == 0:
-        return values
-    if isinstance(values[0], list):
+        return list(values)
+    if isinstance(values[0], (list, TypedList)):
         return flatten(values[0]) + flatten(values[1:])
-    return values[:1] + flatten(values[1:])
+    return list(values[:1]) + flatten(values[1:])
 
 
 def is_numeric(value: Any) -> bool:
