@@ -114,11 +114,8 @@ def check_dict(distance_dict: Dict[Tuple[Numeric, Numeric], Numeric]) -> None:
     TypeError
         If `distance_dict`, keys, or values are an invalid type.
     ValueError
-        If `dictionary_dict` is empty.
-    ValueError
-        If dictionary keys are not all length 2.
-    ValueError
-        If dictionary values are not all nonnegative.
+        If `dictionary_dict` is empty, dictionary keys are not all
+        length 2, or if dictionary values are not all nonnegative.
 
     """
     # Check types
