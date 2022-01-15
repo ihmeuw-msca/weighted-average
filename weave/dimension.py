@@ -20,7 +20,7 @@ from weave.utils import as_list
 
 Numeric = Union[str, float]
 DistanceDict = Dict[Tuple[Numeric, Numeric], Numeric]
-TypedDistanceDict = TypedDict[UniTuple(float64, 2), float64]
+TypedDistanceDict = DictType(UniTuple(float64, 2), float64)
 
 
 class Dimension:
