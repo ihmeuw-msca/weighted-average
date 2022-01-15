@@ -5,7 +5,6 @@ Dimension class to specify smoothing dimension column name(s), distance
 function, and kernel function.
 
 TODO:
-* Write tests for new changes and new class
 * Fix mypy errors
 
 """
