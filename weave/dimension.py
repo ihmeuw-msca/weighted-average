@@ -138,7 +138,7 @@ class Dimension:
         self._name = name
 
     @property
-    def columns(self) -> TypedList[unicode_type]:
+    def columns(self) -> ListType(unicode_type):
         """Get dimension column name(s).
 
         Returns
@@ -231,7 +231,7 @@ class Dimension:
         self._kernel = kernel
 
     @property
-    def kernel_pars(self) -> TypedDict[unicode_type, float64]:
+    def kernel_pars(self) -> DictType(unicode_type, float64):
         """Get kernel function parameters.
 
         Returns
@@ -379,9 +379,9 @@ class Dimension:
            ('distance_dict', DictType(UniTuple(float64, 2), float64))])
 class TypedDimension:
     """class docstring"""
-    def __init__(self, name: unicode_type, columns: TypedList[unicode_type],
+    def __init__(self, name: unicode_type, columns: ListType(unicode_type),
                  kernel: unicode_type,
-                 kernel_pars: TypedDict[unicode_type, float64],
+                 kernel_pars: DictType(unicode_type, float64),
                  distance: unicode_type,
                  distance_dict: TypedDistanceDict) -> None:
         """Create smoothing dimension.
