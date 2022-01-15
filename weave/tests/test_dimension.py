@@ -17,7 +17,7 @@ other examples of valid input. Could do this with 'parametrize' or
     - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
 
 TODO:
-* Add tests for NumbaDimension
+* Add tests for TypedDimension
 
 """
 import pytest
@@ -25,13 +25,12 @@ import pytest
 from weave.dimension import Dimension
 
 # Lists of wrong types to test exceptions
-# Cannot pass empty lists, tuples, or dictionaries
 not_float = [1, 'dummy', True, None, [], (), {}]
 not_numeric = ['dummy', True, None, [], (), {}]
 not_str = [1, 1.0, True, None, [], (), {}]
-not_tuple = [1, 1.0, 'dummy', True, None, [], (), {}]
+not_tuple = [1, 1.0, 'dummy', True, None, [], {}]
 not_columns = not_str + [[value] for value in not_str]
-not_dict = [1, 1.0, True, None, [], (), {}]
+not_dict = [1, 1.0, 'dummy', True, None, [], ()]
 
 # Example kernel parameters and distance dictionary
 kernel_pars = {'radius': 0.5, 'exponent': 3}
@@ -49,8 +48,9 @@ def test_name_type(name):
 @pytest.mark.parametrize('columns', not_columns)
 def test_columns_type(columns):
     """Raise TypeError if `columns` is not a str or list of str."""
-    with pytest.raises(TypeError):
-        Dimension('dummy', columns, 'exponential', kernel_pars)
+    if columns != []:
+        with pytest.raises(TypeError):
+            Dimension('dummy', columns, 'exponential', kernel_pars)
 
 
 @pytest.mark.parametrize('kernel', not_str)
@@ -142,6 +142,12 @@ def test_distance_dict_value_type(key1, key2, value):
 
 
 # Test constructor values
+def test_columns_empty():
+    """Raise ValueError if `columns` is an empty list."""
+    with pytest.raises(ValueError):
+        Dimension('dummy', [], 'exponential', kernel_pars)
+
+
 def test_columns_duplicates():
     """Raise ValueError if duplicates found in `columns`."""
     with pytest.raises(ValueError):
@@ -257,7 +263,14 @@ def test_dictionary_distance_dict():
         Dimension('dummy', 'dummy', 'exponential', kernel_pars, 'dictionary')
 
 
-@pytest.mark.parametrize('key', [(1, ), (1.0, ), (1, 2, 3), (1.0, 2.0, 3.0)])
+def test_dictionary_empty():
+    """Raise ValueError if `distance_dict` is an empty dict."""
+    with pytest.raises(ValueError):
+        Dimension('dummy', 'dummy', 'exponential', kernel_pars, 'dictionary',
+                  {})
+
+
+@pytest.mark.parametrize('key', [(), (1, ), (1., ), (1, 2, 3), (1., 2., 3.)])
 @pytest.mark.parametrize('value', [1, 1.0])
 def test_distance_dict_key_length(key, value):
     """Raise ValueError if `distance_dict` keys not all length 2."""

@@ -166,7 +166,7 @@ class Dimension:
         TypeError
             If `columns` not a str or list of str.
         ValueError
-            If `columns` contains duplicates.
+            If `columns` is an empty list or contains duplicates.
 
         """
         # Once set, `columns` cannot be changed
@@ -175,12 +175,12 @@ class Dimension:
 
         # Check types
         columns = as_list(columns)
-        if len(columns) == 0:
-            raise TypeError('`columns` is an empty list.')
         if not all(isinstance(col, str) for col in columns):
             raise TypeError('`columns` contains invalid types.')
 
-        # Check duplicates
+        # Check values
+        if len(columns) == 0:
+            raise ValueError('`columns` is an empty list.')
         if len(columns) > len(set(columns)):
             raise ValueError('`columns` contains duplicates.')
 
