@@ -1,13 +1,20 @@
-"""Tests for smoother function."""
+"""Tests for smoother function.
+
+TODO:
+* TypeError to ValueError for empty lists
+* So many other things...
+
+"""
 import pytest
 
 from weave.dimension import Dimension
 from weave.smoother import Smoother
 
 # Lists of wrong types to test exceptions
-value_list = [1, 1.0, 'dummy', True, None, [], (), {}]
-value_list += [[value] for value in value_list]
-not_dimensions = value_list + [[value] for value in value_list]
+value_list = [1, 1.0, 'dummy', True, None, (), {}]
+not_dimensions = value_list + \
+                 [[value] for value in value_list] + \
+                 [[[value]] for value in value_list]
 
 
 # Test constructor types
@@ -15,6 +22,14 @@ not_dimensions = value_list + [[value] for value in value_list]
 def test_dimensions_type(dimensions):
     """Raise TypeError if invalid type for `dimensions`."""
     with pytest.raises(TypeError):
+        Smoother(dimensions)
+
+
+# Test constructor values
+@pytest.mark.parametrize('dimensions', [[], [[]]])
+def test_dimensions_values(dimensions):
+    """Raise ValueError if `dimensions` is/contains an empty list."""
+    with pytest.raises(ValueError):
         Smoother(dimensions)
 
 
@@ -29,7 +44,6 @@ def test_duplicate_names(kernel1, kernel2):
         Smoother([[dim1, dim2]])
 
 
-# Test duplicate columns in `dimensions`
 @pytest.mark.parametrize('columns1', ['dummy1', ['dummy1', 'dummy2']])
 @pytest.mark.parametrize('columns2', ['dummy1', ['dummy1', 'dummy2']])
 @pytest.mark.parametrize('kernel1', ['exponential', 'tricubic', 'depth'])
