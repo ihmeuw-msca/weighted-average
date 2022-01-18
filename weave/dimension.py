@@ -63,7 +63,7 @@ class Dimension:
         distance : {'dictionary', 'euclidean', 'hierarchical'}, optional
             Distance function name.
         distance_dict : dict of {(numeric, numeric): numeric}, optional
-            Dictionary of distance between points if
+            Dictionary of distances between points if
             `distance` == 'dictionary'.
 
         Distance function defaults
@@ -399,7 +399,7 @@ class TypedDimension:
         distance : {'dictionary', 'euclidean', 'hierarchical'}
             Distance function name.
         distance_dict : dict of {(float, float): float}
-            Dictionary of distance between points if
+            Dictionary of distances between points if
             `distance` == 'dictionary'.
 
         """
