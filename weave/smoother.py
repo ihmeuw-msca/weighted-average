@@ -192,7 +192,7 @@ class Smoother:
             point_list.append(group_list)
         return point_list
 
-    def get_groups(self) -> List[List[TypedDimension]]:
+    def get_groups(self) -> TypedList[TypedList[TypedDimension]]:
         """Get smoothing dimensions cast as jitclass objects.
 
         Returns
@@ -209,8 +209,8 @@ class Smoother:
                                            dim.kernel_pars, dim.distance,
                                            dim.distance_dict)
                 dim_list.append(typed_dim)
-            group_list.append(dim_list)
-        return group_list
+            group_list.append(TypedList(dim_list))
+        return TypedList(group_list)
 
 
 def get_indices(data: DataFrame, indicator: str = None) -> np.ndarray:
