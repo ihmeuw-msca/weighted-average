@@ -1,7 +1,7 @@
 # pylint: disable=E0611, R0902, R0903, R0913
 """Smoothing dimension specifications.
 
-Dimension class to specify smoothing dimension column name(s), distance
+Dimension class to specify smoothing dimension column names, distance
 function, and kernel function.
 
 TODO:
@@ -31,7 +31,7 @@ class Dimension:
     name : str
         Dimension name.
     columns : list of str
-        Dimension column name(s).
+        Dimension column names.
     kernel : {'exponential', 'tricubic', 'depth'}
         Kernel function name.
     kernel_pars : dict of {str: float}
@@ -55,7 +55,7 @@ class Dimension:
         name : str
             Dimension name.
         columns : str or list of str
-            Dimension column name(s).
+            Dimension column names.
         kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
         kernel_pars : dict of {str: numeric}
@@ -139,24 +139,24 @@ class Dimension:
 
     @property
     def columns(self) -> ListType(unicode_type):
-        """Get dimension column name(s).
+        """Get dimension column names.
 
         Returns
         -------
         list of str
-            Dimension column name(s).
+            Dimension column names.
 
         """
         return self._columns
 
     @columns.setter
     def columns(self, columns: Union[str, List[str]]) -> None:
-        """Set dimension column name(s).
+        """Set dimension column names.
 
         Parameters
         ----------
         columns : str or list of str
-            Dimension column name(s).
+            Dimension column names.
 
         Raises
         ------
@@ -391,7 +391,7 @@ class TypedDimension:
         name : str
             Dimension name.
         columns : list of str
-            Dimension column name(s).
+            Dimension column names.
         kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
         kernel_pars : dict of {str: float}
