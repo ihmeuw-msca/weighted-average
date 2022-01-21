@@ -373,7 +373,7 @@ def get_group_weights(dim_list: List[TypedDimension],
             dim_weights[idx_y] = get_weight(dist, dim.kernel, dim.kernel_pars)
         weights *= dim_weights
 
-    return weights/weights.sum()
+    return weights
 
 
 @njit
