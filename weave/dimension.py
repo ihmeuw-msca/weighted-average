@@ -6,6 +6,9 @@ function, and kernel function.
 
 TODO:
 * Fix mypy errors
+* Get rid of numba types in Dimension, only in TypedDimension
+* kernel_pars can have int or bool
+* Fix type hints and docstrings
 
 """
 from typing import Dict, List, Optional, Tuple, Union
@@ -82,6 +85,15 @@ class Dimension:
             `exponent` : positive numeric
         `kernel` : 'depth'
             `radius` : float in (0, 1)
+            `normalize` : bool, optional
+
+        Kernel parameter `normalize` (used only with `depth` kernel)
+        indicates that dimension weights should be normalized in groups
+        based on `depth` kernel values before final normalization. For
+        example, in the CODEm framework, the product of age and time
+        weights are normalized in groups based on location hierarchy
+        before being multiplied by location weights, then these results
+        are normalized across all groups. Default is True.
 
         Dictionary `distance_dict` contains the distance between points
         `x` and `y`. Dictionary keys are tuples of point pairs
@@ -261,8 +273,12 @@ class Dimension:
             kernel_pars = {key: kernel_pars[key]
                            for key in ['radius', 'exponent']}
         else:  # 'depth'
-            check_pars(kernel_pars, 'radius', 'pos_frac')
-            kernel_pars = {'radius': kernel_pars['radius']}
+            if 'normalize' not in kernel_pars:
+                kernel_pars['normalize'] = True
+            check_pars(kernel_pars, ['radius', 'normalize'],
+                       ['pos_frac', 'bool'])
+            kernel_pars = {key: kernel_pars[key]
+                           for key in ['radius', 'normalize']}
 
         # Create numba dictionary
         self._kernel_pars = TypedDict()
@@ -318,6 +334,9 @@ class Dimension:
         # Check value
         if distance not in ('dictionary', 'euclidean', 'hierarchical'):
             msg = '`distance` is not a valid distance function.'
+            raise ValueError(msg)
+        if distance == 'dictionary' and len(self._columns) > 1:
+            msg = 'Too many column names for `dictionary` distance.'
             raise ValueError(msg)
 
         self._distance = distance

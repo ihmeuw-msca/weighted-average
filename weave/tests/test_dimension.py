@@ -13,7 +13,7 @@ other examples of valid input. Could do this with 'parametrize' or
     - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
 * `kernel == 'depth'
     - `dimension` in {'dummy', ['dummy1', 'dummy2']}
-    - `pars` == {'radius': 0.5}
+    - `pars` == {'radius': 0.5, 'normalize': True}
     - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
 
 TODO:
@@ -28,12 +28,13 @@ from weave.dimension import Dimension
 not_float = [1, 'dummy', True, None, [], (), {}]
 not_numeric = ['dummy', True, None, [], (), {}]
 not_str = [1, 1.0, True, None, [], (), {}]
+not_bool = [1, 1.0, 'dummy', None, [], (), {}]
 not_tuple = [1, 1.0, 'dummy', True, None, [], {}]
 not_columns = not_str + [[value] for value in not_str]
 not_dict = [1, 1.0, 'dummy', True, None, [], ()]
 
 # Example kernel parameters and distance dictionary
-kernel_pars = {'radius': 0.5, 'exponent': 3}
+kernel_pars = {'radius': 0.5, 'exponent': 3, 'normalize': True}
 distance_dict = {(1.0, 1.0): 1.0}
 
 
@@ -89,6 +90,14 @@ def test_depth_radius_type(radius):
     """Raise TypeError if `radius` is not a float."""
     with pytest.raises(TypeError):
         bad_pars = {'radius': radius}
+        Dimension('dummy', 'dummy', 'depth', bad_pars)
+
+
+@pytest.mark.parametrize('normalize', not_bool)
+def test_depth_normalize_type(normalize):
+    """Raise TypeError if `normalize` is not a bool."""
+    with pytest.raises(TypeError):
+        bad_pars = {'radius': 0.5, 'normalize': not_bool}
         Dimension('dummy', 'dummy', 'depth', bad_pars)
 
 
@@ -208,7 +217,7 @@ def test_tricubic_exponent_value(exponent):
 def test_depth_radius_exist():
     """Raise KeyError if `radius` is not passed."""
     with pytest.raises(KeyError):
-        bad_pars = {'dummy', 100}
+        bad_pars = {'dummy': 100}
         Dimension('dummy', ['dummy1', 'dummy2'], 'depth', bad_pars)
 
 
@@ -218,6 +227,12 @@ def test_depth_radius_value(radius):
     with pytest.raises(ValueError):
         bad_pars = {'radius': radius, 'exponent': 3}
         Dimension('dummy', ['dummy1', 'dummy2'], 'depth', bad_pars)
+
+
+def test_depth_normalize_default():
+    """`normalize` set to True if not supplied."""
+    dim = Dimension('dummy', 'dummy', 'depth', {'radius': 0.5})
+    assert dim.kernel_pars['normalize'] is True
 
 
 @pytest.mark.parametrize('kernel', ['exponential', 'tricubic'])
@@ -255,6 +270,13 @@ def test_depth_distance_default():
     """`distance` is set to 'hierarchical' if not supplied."""
     dim = Dimension('dummy', ['dummy1', 'dummy2'], 'depth', kernel_pars)
     assert dim.distance == 'hierarchical'
+
+
+def test_dictionary_columns_one():
+    """Raise ValueError if length of `columns` > 1."""
+    with pytest.raises(ValueError):
+        Dimension('dummy', ['dummy1', 'dummy2'], 'dictionary', kernel_pars,
+                  distance_dict)
 
 
 def test_dictionary_distance_dict():
