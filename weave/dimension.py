@@ -6,9 +6,6 @@ function, and kernel function.
 
 TODO:
 * Fix mypy errors
-* Get rid of numba types in Dimension, only in TypedDimension
-* kernel_pars can have int or bool
-* Fix type hints and docstrings
 
 """
 from typing import Dict, List, Optional, Tuple, Union
