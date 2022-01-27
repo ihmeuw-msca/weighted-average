@@ -142,7 +142,7 @@ def check_pars(pars: Dict[str, Union[int, float]],
     names : str or list of str
         Parameter names.
     types : str or list of str
-        Parameter types. Valid types are 'pos_num' or 'pos_frac'.
+        Parameter types. Valid types are 'pos_num', 'pos_frac', 'bool'.
 
     Raises
     ------
@@ -173,7 +173,7 @@ def check_pars(pars: Dict[str, Union[int, float]],
             if par_val <= 0.0:
                 raise ValueError(f"`{par_name}` is not positive.")
 
-        else:  # 'pos_frac'
+        elif types[idx_par] == 'pos_frac':
             # Check type
             if not isinstance(par_val, (float, np.floating)):
                 raise TypeError(f"`{par_name}` is not a float.")
@@ -181,3 +181,8 @@ def check_pars(pars: Dict[str, Union[int, float]],
             # Check value
             if par_val <= 0.0 or par_val >= 1.0:
                 raise ValueError(f"`{par_name}` is not in (0, 1).")
+
+        else:  # 'bool'
+            # Check type
+            if not isinstance(par_val, bool):
+                raise TypeError(f"`{par_name}` is not a bool.")

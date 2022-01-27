@@ -31,6 +31,7 @@ my_notfrac = floats(min_value=1.0, max_value=1e5, allow_nan=False,
 # Lists of wrong types to test exceptions
 not_float = [1, 'dummy', True, None, [], (), {}]
 not_numeric = ['dummy', True, None, [], (), {}]
+not_bool = [1, 1.0, 'dummy', None, [], (), {}]
 
 
 # Property 1: Output is a real-valued, finite, nonnegative float
@@ -173,6 +174,14 @@ def test_pars_float(par_val):
     with pytest.raises(TypeError):
         pars = {'dummy': par_val}
         check_pars(pars, 'dummy', 'pos_frac')
+
+
+@pytest.mark.parametrize('par_val', not_bool)
+def test_pars_bool(par_val):
+    """Raise TypeError if kernel parameter is not a bool."""
+    with pytest.raises(TypeError):
+        pars = {'dummy': par_val}
+        check_pars(pars, 'dummy', 'bool')
 
 
 @given(my_nonpos)
