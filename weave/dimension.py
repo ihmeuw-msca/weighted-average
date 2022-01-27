@@ -14,16 +14,15 @@ TODO:
 from typing import Dict, List, Optional, Tuple, Union
 
 from numba.experimental import jitclass
-from numba.typed import Dict as TypedDict, List as TypedList
 from numba.types import DictType, float64, ListType, unicode_type, UniTuple
 
 from weave.distance import check_dict
 from weave.kernels import check_pars
 from weave.utils import as_list
 
-Numeric = Union[str, float]
+Numeric = Union[int, float]
+Pars = Union[Numeric, bool]
 DistanceDict = Dict[Tuple[Numeric, Numeric], Numeric]
-TypedDistanceDict = DictType(UniTuple(float64, 2), float64)
 
 
 class Dimension:
@@ -37,19 +36,18 @@ class Dimension:
         Dimension column names.
     kernel : {'exponential', 'tricubic', 'depth'}
         Kernel function name.
-    kernel_pars : dict of {str: float}
+    kernel_pars : dict of {str: numeric or bool}
         Kernel function parameters.
     distance : {'dictionary', 'euclidean', 'hierarchical'}
         Distance function name.
-    distance_dict : dict of {(float, float): float}
-        Dictionary of distances between points if
-        `distance` == 'dictionary'.
+    distance_dict : dict of {(numeric, numeric): numeric}
+        Dictionary of distances between points if `distance` is
+        'dictionary'.
 
     """
 
     def __init__(self, name: str, columns: Union[str, List[str]], kernel: str,
-                 kernel_pars: Dict[str, Numeric],
-                 distance: Optional[str] = None,
+                 kernel_pars: Dict[str, Pars], distance: Optional[str] = None,
                  distance_dict: Optional[DistanceDict] = None) -> None:
         """Create smoothing dimension.
 
@@ -61,13 +59,13 @@ class Dimension:
             Dimension column names.
         kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
-        kernel_pars : dict of {str: numeric}
+        kernel_pars : dict of {str: numeric or bool}
             Kernel function parameters.
         distance : {'dictionary', 'euclidean', 'hierarchical'}, optional
             Distance function name.
         distance_dict : dict of {(numeric, numeric): numeric}, optional
-            Dictionary of distances between points if
-            `distance` == 'dictionary'.
+            Dictionary of distances between points if `distance` is
+            'dictionary'.
 
         Distance function defaults
         --------------------------
@@ -150,7 +148,7 @@ class Dimension:
         self._name = name
 
     @property
-    def columns(self) -> ListType(unicode_type):
+    def columns(self) -> List[str]:
         """Get dimension column names.
 
         Returns
@@ -195,7 +193,7 @@ class Dimension:
         if len(columns) > len(set(columns)):
             raise ValueError('`columns` contains duplicates.')
 
-        self._columns = TypedList(columns)
+        self._columns = columns
 
     @property
     def kernel(self) -> str:
@@ -243,24 +241,24 @@ class Dimension:
         self._kernel = kernel
 
     @property
-    def kernel_pars(self) -> DictType(unicode_type, float64):
+    def kernel_pars(self) -> Dict[str, Pars]:
         """Get kernel function parameters.
 
         Returns
         -------
-        dict of {str: float}
+        dict of {str: numeric or bool}
             Kernel function parameters.
 
         """
         return self._kernel_pars
 
     @kernel_pars.setter
-    def kernel_pars(self, kernel_pars: Dict[str, Numeric]) -> None:
+    def kernel_pars(self, kernel_pars: Dict[str, Pars]) -> None:
         """Set kernel function parameters.
 
         Parameters
         ----------
-        kernel_pars : dict of {str: numeric}
+        kernel_pars : dict of {str: numeric or bool}
             Kernel function parameters.
 
         """
@@ -280,10 +278,7 @@ class Dimension:
             kernel_pars = {key: kernel_pars[key]
                            for key in ['radius', 'normalize']}
 
-        # Create numba dictionary
-        self._kernel_pars = TypedDict()
-        for key in kernel_pars:
-            self._kernel_pars[key] = float(kernel_pars[key])
+        self._kernel_pars = kernel_pars
 
     @property
     def distance(self) -> str:
@@ -342,12 +337,12 @@ class Dimension:
         self._distance = distance
 
     @property
-    def distance_dict(self) -> TypedDistanceDict:
+    def distance_dict(self) -> DistanceDict:
         """Get dictionary of distances between points.
 
         Returns
         -------
-        dict of {(float, float): float}
+        dict of {(numeric, numeric): numeric}
             Dictionary of distances between points.
 
         """
@@ -367,27 +362,21 @@ class Dimension:
         AttributeError
             If `distance_dict` has already been set.
         ValueError
-            If `distance` == 'dictionary' but `distance_dict` is None.
+            If `distance` is 'dictionary' but `distance_dict` is None.
 
         """
         # Once set, `distance_dict` cannot be changed
         if hasattr(self, 'distance_dict'):
             raise AttributeError('`distance_dict` cannot be changed.')
 
-        # Create numba dictionary
-        self._distance_dict = TypedDict.empty(
-            key_type=UniTuple(float64, 2),
-            value_type=float64
-        )
+        # Check values
         if self._distance == 'dictionary':
             if distance_dict is None:
-                msg = "`distance` == 'dictionary', "
-                msg += "but `distance_dict` is None."
+                msg = "`distance` is 'dictionary', "
+                msg += 'but `distance_dict` is None.'
                 raise ValueError(msg)
             check_dict(distance_dict)
-            for key in distance_dict:
-                float_key = tuple(float(point) for point in key)
-                self._distance_dict[float_key] = float(distance_dict[key])
+            self._distance_dict = distance_dict
 
 
 @jitclass([('name', unicode_type),
@@ -402,7 +391,8 @@ class TypedDimension:
                  kernel: unicode_type,
                  kernel_pars: DictType(unicode_type, float64),
                  distance: unicode_type,
-                 distance_dict: TypedDistanceDict) -> None:
+                 distance_dict: DictType(UniTuple(float64, 2), float64)) \
+            -> None:
         """Create smoothing dimension.
 
         Parameters
@@ -418,8 +408,8 @@ class TypedDimension:
         distance : {'dictionary', 'euclidean', 'hierarchical'}
             Distance function name.
         distance_dict : dict of {(float, float): float}
-            Dictionary of distances between points if
-            `distance` == 'dictionary'.
+            Dictionary of distances between points if `distance` is
+            'dictionary'.
 
         """
         self.name = name
