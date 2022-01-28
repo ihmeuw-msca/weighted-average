@@ -4,6 +4,7 @@
 TODO
 * Write checks and tests
 * Fix mypy errors
+* Type hints not consistent with numba types
 * Change list of lists, group weights, and normalization scheme
 
 Checks
@@ -37,77 +38,65 @@ class Smoother:
 
     Attributes
     ----------
-    dimensions : list of list of Dimension
+    dimensions : list of Dimension
         Smoothing dimensions.
 
     """
 
-    def __init__(self, dimensions: List[List[Dimension]]) -> None:
+    def __init__(self, dimensions: Union[Dimension, List[Dimension]]) -> None:
         """Create smoother function.
-
-        Dimension weights are aggregated in the order and groupings
-        present in `dimensions`. For example, if `dimensions` is
-        [['age', 'year'], ['location']], then age and year weights will
-        be multiplied and normalized, then the result will be
-        multiplied by location weights and normalized.
 
         Parameters
         ----------
-        dimensions : list of list of Dimension
+        dimensions : Dimension or list of Dimension
             Smoothing dimensions.
 
         """
         self.dimensions = dimensions
 
     @property
-    def dimensions(self) -> List[List[Dimension]]:
+    def dimensions(self) -> List[Dimension]:
         """Get smoothing dimensions.
 
         Returns
         -------
-        list of list of Dimension
+        list of Dimension
             Smoothing dimensions.
 
         """
         return self._dimensions
 
     @dimensions.setter
-    def dimensions(self, dimensions: List[List[Dimension]]) -> None:
+    def dimensions(self, dimensions: Union[Dimension, List[Dimension]]) \
+            -> None:
         """Set smoothing dimensions.
 
         Parameters
         ----------
-        dimensions : list of list of Dimension
+        dimensions : Dimension or list of Dimension
             Smoothing dimensions.
 
         Raises
         ------
         TypeError
-            If `dimensions` is not a list of list of Dimension.
+            If `dimensions` is not a list of Dimension.
         ValueError
             If `dimensions` is an empty list, contains an empty list,
             or contains duplicate names or columns.
 
         """
         # Check types
-        if not isinstance(dimensions, list):
-            raise TypeError('`dimensions` is not a list.')
-        if not all(isinstance(group, list) for group in dimensions):
+        dimensions = as_list(dimensions)
+        if not all(isinstance(dim, Dimension) for dim in dimensions):
             raise TypeError('`dimensions` contains invalid types.')
-        for group in dimensions:
-            if not all(isinstance(dim, Dimension) for dim in group):
-                raise TypeError('`dimensions` contains invalid types.')
 
         # Check values
         if len(dimensions) == 0:
             raise ValueError('`dimensions` is an empty list.')
-        for group in dimensions:
-            if len(group) == 0:
-                raise ValueError('`dimensions` contains an empty list.')
-        name_list = [dim.name for dim in flatten(dimensions)]
+        name_list = [dim.name for dim in dimensions]
         if len(name_list) > len(set(name_list)):
             raise ValueError('Duplicate names found in `dimensions`.')
-        col_list = flatten([dim.columns for dim in flatten(dimensions)])
+        col_list = flatten([dim.columns for dim in dimensions])
         if len(col_list) > len(set(col_list)):
             raise ValueError('Duplicate columns found in `dimensions`.')
 
@@ -161,10 +150,10 @@ class Smoother:
         idx_pred = get_indices(data, predict)
         col_list = get_columns(data, columns, idx_fit)
         point_list = self.get_points(data)
-        group_list = self.get_groups()
+        dim_list = self.get_typed_dimensions()
 
         # Calculate smoothed values
-        cols_smooth = smooth_data(group_list, point_list, col_list, idx_fit,
+        cols_smooth = smooth_data(dim_list, point_list, col_list, idx_fit,
                                   idx_pred)
 
         # Construct smoothed data frame
@@ -173,8 +162,8 @@ class Smoother:
             data_smooth[f"{col}_smooth"] = cols_smooth[:, idx_col]
         return data_smooth
 
-    def get_points(self, data: DataFrame) -> List[List[np.ndarray]]:
-        """Get point locations by dimension group.
+    def get_points(self, data: DataFrame) -> List[np.ndarray]:
+        """Get point locations by dimension.
 
         Parameters
         ----------
@@ -183,48 +172,85 @@ class Smoother:
 
         Returns
         -------
-        list of list of numpy.ndarray of float
-            Point locations by dimension group.
+        list of numpy.ndarray of float
+            Point locations by dimension.
 
         """
         point_list = TypedList()
-        for group in self._dimensions:
-            group_list = TypedList()
-            for dim in group:
-                dim_array = np.atleast_2d(data[dim.columns].values)
-                dim_array = np.ascontiguousarray(dim_array, dtype=float)
-                group_list.append(dim_array)
-            point_list.append(group_list)
+        for dim in self._dimensions:
+            dim_array = np.atleast_2d(data[dim.columns].values)
+            dim_array = np.ascontiguousarray(dim_array, dtype=float)
+            point_list.append(dim_array)
         return point_list
 
-    def get_groups(self) -> List[List[TypedDimension]]:
+    def get_typed_dimensions(self) -> List[TypedDimension]:
         """Get smoothing dimensions cast as jitclass objects.
 
         Returns
         -------
-        list of list of TypedDimension
+        list of TypedDimension
             Smoothing dimensions cast as jitclass objects.
 
         """
-        group_list = TypedList()
-        for group in self._dimensions:
-            dim_list = TypedList()
-            for dim in group:
-                # Get typed version of attributes
-                columns = TypedList(dim.columns)
-                kernel_pars = get_typed_pars(dim.kernel_pars)
-                if hasattr(dim, 'distance_dict'):
-                    distance_dict = get_typed_dict(dim.distance_dict)
-                else:
-                    distance_dict = get_typed_dict()
+        dim_list = TypedList()
+        for dim in self._dimensions:
+            # Get typed version of attributes
+            columns = TypedList(dim.columns)
+            kernel_pars = get_typed_pars(dim.kernel_pars)
+            if hasattr(dim, 'distance_dict'):
+                distance_dict = get_typed_dict(dim.distance_dict)
+            else:
+                distance_dict = get_typed_dict()
 
-                # Create typed dimension
-                typed_dim = TypedDimension(dim.name, columns, dim.kernel,
-                                           kernel_pars, dim.distance,
-                                           distance_dict)
-                dim_list.append(typed_dim)
-            group_list.append(dim_list)
-        return group_list
+            # Create typed dimension
+            typed_dim = TypedDimension(dim.name, columns, dim.kernel,
+                                       kernel_pars, dim.distance,
+                                       distance_dict)
+            dim_list.append(typed_dim)
+        return dim_list
+
+
+def get_indices(data: DataFrame, indicator: str = None) -> np.ndarray:
+    """Get indices of `fit` or `predict` data.
+
+    Parameters
+    ----------
+    data : DataFrame
+        Input data structure.
+    indicator : str, optional
+        Column name indicating either `fit` or `predict` data.
+
+    Returns
+    -------
+    numpy.ndarray of int
+        Indices of `fit` or `predict` points.
+
+    """
+    if indicator is None:
+        return np.arange(len(data))
+    return np.where(data[indicator])[0]
+
+
+def get_columns(data: DataFrame, columns: Union[str, List[str]],
+                idx_fit: np.ndarray) -> List[str]:
+    """Get values to smooth.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        Input data structure.
+    columns : str or list of str
+        Column names of values to smooth.
+    idx_fit : numpy.ndarray of int
+        Indices of `fit` points.
+
+    Returns
+    -------
+    list of str
+        Values to smooth.
+
+    """
+    return TypedList(data[col].values[idx_fit] for col in as_list(columns))
 
 
 def get_typed_pars(kernel_pars: Dict[str, Pars]) \
@@ -275,61 +301,18 @@ def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
     return typed_dict
 
 
-def get_indices(data: DataFrame, indicator: str = None) -> np.ndarray:
-    """Get indices of `fit` or `predict` data.
-
-    Parameters
-    ----------
-    data : DataFrame
-        Input data structure.
-    indicator : str, optional
-        Column name indicating either `fit` or `predict` data.
-
-    Returns
-    -------
-    numpy.ndarray of int
-        Indices of `fit` or `predict` points.
-
-    """
-    if indicator is None:
-        return np.arange(len(data))
-    return np.where(data[indicator])[0]
-
-
-def get_columns(data: DataFrame, columns: Union[str, List[str]],
-                idx_fit: np.ndarray) -> List[str]:
-    """Get values to smooth.
-
-    Parameters
-    ----------
-    data : pandas.DataFrame
-        Input data structure.
-    columns : str or list of str
-        Column names of values to smooth.
-    idx_fit : numpy.ndarray of int
-        Indices of `fit` points.
-
-    Returns
-    -------
-    list of str
-        Values to smooth.
-
-    """
-    return TypedList(data[col].values[idx_fit] for col in as_list(columns))
-
-
 @njit
-def smooth_data(group_list: List[List[TypedDimension]],
-                point_list: List[List[np.ndarray]], col_list: List[np.ndarray],
-                idx_fit: np.ndarray, idx_pred: np.ndarray) -> np.ndarray:
+def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
+                col_list: List[np.ndarray], idx_fit: np.ndarray,
+                idx_pred: np.ndarray) -> np.ndarray:
     """Smooth data across dimensions with weighted averages.
 
     Parameters
     ----------
-    group_list : list of list of TypedDimension
-        Smoothing dimensions by dimension group.
-    point_list : list of list of numpy.ndarray of float
-        Point locations by dimension group.
+    dim_list : list of TypedDimension
+        Smoothing dimensions.
+    point_list : list of numpy.ndarray of float
+        Point locations by dimension.
     col_list : list of numpy.ndarray of float
         Values to smooth.
     idx_fit : numpy.ndarray of int
@@ -350,7 +333,7 @@ def smooth_data(group_list: List[List[TypedDimension]],
 
     # Calculate smoothed values one point at a time
     for idx_x in range(n_pred):
-        weights = get_weights(group_list, point_list, idx_fit, idx_pred[idx_x])
+        weights = get_weights(dim_list, point_list, idx_fit, idx_pred[idx_x])
 
         # Compute smoothed values one column at a time
         for idx_col in range(n_cols):
@@ -360,17 +343,16 @@ def smooth_data(group_list: List[List[TypedDimension]],
 
 
 @njit
-def get_weights(group_list: List[List[TypedDimension]],
-                point_list: List[List[np.ndarray]], idx_fit: np.ndarray,
-                idx_x: int) -> np.ndarray:
+def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
+                idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
     """Get smoothing weights for current point.
 
     Parameters
     ----------
-    group_list : list of list of TypedDimension
-        Smoothing dimensions by dimension group.
-    point_list : list of list of numpy.ndarray
-        Point locations by dimension group.
+    dim_list : list of TypedDimension
+        Smoothing dimensions.
+    point_list : list of numpy.ndarray
+        Point locations by dimension.
     idx_fit : numpy.ndarray of int
         Indices of nearby points to include in weighted averages.
     idx_x : int
@@ -385,28 +367,32 @@ def get_weights(group_list: List[List[TypedDimension]],
     # Initialize weight vector
     weights = np.ones(len(idx_fit))
 
-    # Calculate weights one group at a time
-    for idx_group, dim_list in enumerate(group_list):
-        group_weights = get_group_weights(dim_list, point_list[idx_group],
-                                          idx_fit, idx_x)
-        weights *= group_weights
-        weights /= weights.sum()
+    # Calculate weights one dimension at at a time
+    for idx_dim, dim in enumerate(dim_list):
+        dim_weights = get_dim_weights(dim, point_list[idx_dim], idx_fit, idx_x)
 
-    return weights
+        # Optional normalize by subgroup
+        if dim.kernel == 'depth' and dim.kernel_pars['normalize'] == 1.0:
+            for weight in list(set(dim_weights)):
+                idx_weight = np.where(dim_weights == weight)[0]
+                weights[idx_weight] *= weight/weights[idx_weight].sum()
+        else:
+            weights *= dim_weights
+
+    return weights/weights.sum()
 
 
 @njit
-def get_group_weights(dim_list: List[TypedDimension],
-                      point_list: List[np.ndarray], idx_fit: np.ndarray,
-                      idx_x: int) -> np.ndarray:
-    """Get smoothing weights for current point and dimension group.
+def get_dim_weights(dimension: TypedDimension, points: np.ndarray,
+                    idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
+    """Get smoothing weights for current point and dimension.
 
     Parameters
     ----------
-    dim_list : list of list of TypedDimension
-        Smoothing dimensions for current dimension group.
-    point_list : list of numpy.npdarray
-        Point locations for current dimension group.
+    dimension : TypedDimension
+        Current smoothing dimension.
+    points : numpy.ndarray
+        Point locations for current dimension.
     idx_fit : numpy.ndarray of int
         Indices of nearby points to include in weighted averages.
     idx_x : int
@@ -415,25 +401,20 @@ def get_group_weights(dim_list: List[TypedDimension],
     Returns
     -------
     numpy.ndarray of nonnegative float
-        Smoothing weights for current point and dimension group.
+        Smoothing weights for current point and dimension.
 
     """
     # Initialize weight vector
     n_fit = len(idx_fit)
-    weights = np.ones(n_fit)
+    weights = np.empty(n_fit)
 
-    # Calculate weights one dimension at a time
-    for idx_dim, dim in enumerate(dim_list):
-        x = get_point(point_list[idx_dim], idx_x)
-
-        # Calculate weights one point at a time
-        dim_weights = np.empty_like(weights)
-        for idx_y in range(n_fit):
-            y = get_point(point_list[idx_dim], idx_fit[idx_y])
-            dist = get_distance(x, y, dim.distance, dim.distance_dict)
-            dim_weights[idx_y] = get_weight(dist, dim.kernel, dim.kernel_pars)
-        weights *= dim_weights
-
+    # Calculate weights one point at a time
+    x = get_point(points, idx_x)
+    for idx_y in range(n_fit):
+        y = get_point(points, idx_fit[idx_y])
+        dist = get_distance(x, y, dimension.distance, dimension.distance_dict)
+        weights[idx_y] = get_weight(dist, dimension.kernel,
+                                    dimension.kernel_pars)
     return weights
 
 
