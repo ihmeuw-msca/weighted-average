@@ -3,7 +3,8 @@
 
 TODO
 * Write checks and tests
-* Type hints consistency (e.g., numba version or not)
+* Fix mypy errors
+* Change list of lists, group weights, and normalization scheme
 
 Checks
 * Check for duplicates in columns
@@ -12,11 +13,11 @@ Checks
 * Anything else?
 
 """
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from numba import njit
-from numba.typed import List as TypedList
-from numba.types import DictType, float64, UniTuple
+from numba.typed import Dict as TypedDict, List as TypedList
+from numba.types import DictType, float64, unicode_type, UniTuple
 import numpy as np
 from pandas import DataFrame
 
@@ -25,6 +26,9 @@ from weave.distance import dictionary, euclidean, hierarchical
 from weave.kernels import exponential, depth, tricubic
 from weave.utils import as_list, flatten
 
+Numeric = Union[int, float]
+Pars = Union[Numeric, bool]
+DistanceDict = Dict[Tuple[Numeric, Numeric], Numeric]
 TypedDistanceDict = DictType(UniTuple(float64, 2), float64)
 
 
@@ -42,7 +46,7 @@ class Smoother:
         """Create smoother function.
 
         Dimension weights are aggregated in the order and groupings
-        present in `dimensions`. For example, if `dimensions` ==
+        present in `dimensions`. For example, if `dimensions` is
         [['age', 'year'], ['location']], then age and year weights will
         be multiplied and normalized, then the result will be
         multiplied by location weights and normalized.
@@ -206,12 +210,69 @@ class Smoother:
         for group in self._dimensions:
             dim_list = TypedList()
             for dim in group:
-                typed_dim = TypedDimension(dim.name, dim.columns, dim.kernel,
-                                           dim.kernel_pars, dim.distance,
-                                           dim.distance_dict)
+                # Get typed version of attributes
+                columns = TypedList(dim.columns)
+                kernel_pars = get_typed_pars(dim.kernel_pars)
+                if hasattr(dim, 'distance_dict'):
+                    distance_dict = get_typed_dict(dim.distance_dict)
+                else:
+                    distance_dict = get_typed_dict()
+
+                # Create typed dimension
+                typed_dim = TypedDimension(dim.name, columns, dim.kernel,
+                                           kernel_pars, dim.distance,
+                                           distance_dict)
                 dim_list.append(typed_dim)
             group_list.append(dim_list)
         return group_list
+
+
+def get_typed_pars(kernel_pars: Dict[str, Pars]) \
+        -> DictType(unicode_type, float64):
+    """Get typed version of `kernel_pars`.
+
+    Parameters
+    ----------
+    kernel_pars : dict of {str: numeric or bool}
+        Kernel function parameters.
+
+    Returns
+    -------
+    dict of {str: float}
+        Typed version of `kernel_pars`.
+
+    """
+    typed_pars = TypedDict()
+    for key in kernel_pars:
+        typed_pars[key] = float(kernel_pars[key])
+    return typed_pars
+
+
+def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
+        -> TypedDistanceDict:
+    """Get typed version of `distance_dict`.
+
+    Parameters
+    ----------
+    distance_dict : dict of {(numeric, numeric): numeric}
+        Dictionary of distances between points if `distance` is
+        'dictionary'.
+
+    Returns
+    -------
+    dict of {(float, float): float}
+        Typed version of `distance_dict`.
+
+    """
+    typed_dict = TypedDict.empty(
+        key_type=UniTuple(float64, 2),
+        value_type=float64
+    )
+    if distance_dict is not None:
+        for key in distance_dict:
+            float_key = tuple(float(point) for point in key)
+            typed_dict[float_key] = float(distance_dict[key])
+    return typed_dict
 
 
 def get_indices(data: DataFrame, indicator: str = None) -> np.ndarray:
