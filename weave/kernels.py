@@ -18,18 +18,20 @@ In general, kernel functions should satisfy the following properties:
 TODO:
 * Generalize depth function to include more levels (e.g., sub-national)
 * STGPR has a different depth function than CODEm
+* Change docstrings based on vectorization
+* Change tests based on vectorization
 
 """
 from typing import Dict, List, Union
 
-from numba import njit
+from numba import njit, vectorize
 import numpy as np
 
 from weave.utils import as_list, is_numeric
 
 
 @njit
-def exponential(distance: float, pars: Dict[str, float]) -> float:
+def exponential(distance: float, radius: float) -> float:
     """Get exponential smoothing weight.
 
     k_r(x, y) = 1/exp(d(x, y)/r)
@@ -53,11 +55,11 @@ def exponential(distance: float, pars: Dict[str, float]) -> float:
         Exponential smoothing weight.
 
     """
-    return 1.0/np.exp(distance/pars['radius'])
+    return 1.0/np.exp(distance/radius)
 
 
 @njit
-def tricubic(distance: float, pars: Dict[str, float]) -> float:
+def tricubic(distance: float, radius: float, exponent: float) -> float:
     """Get tricubic smoothing weight.
 
     k_r(x, y) = max(0, (1 - (d(x, y)/r)^s)^3)
@@ -83,11 +85,11 @@ def tricubic(distance: float, pars: Dict[str, float]) -> float:
         Tricubic smoothing weight.
 
     """
-    return max(0.0, (1.0 - (distance/pars['radius'])**pars['exponent'])**3)
+    return np.maximum(0.0, (1.0 - (distance/radius)**exponent)**3)
 
 
-@njit
-def depth(distance: float, pars: Dict[str, float]) -> float:
+@vectorize(['float64(float64, float64)'])
+def depth(distance: float, radius: float) -> float:
     """Get depth smoothing weight.
 
     If distance == 0 (same country):
@@ -122,11 +124,11 @@ def depth(distance: float, pars: Dict[str, float]) -> float:
 
     """
     if distance == 0.0:
-        return pars['radius']
+        return radius
     if distance <= 1.0:
-        return pars['radius']*(1.0 - pars['radius'])
+        return radius*(1.0 - radius)
     if distance <= 2.0:
-        return (1.0 - pars['radius'])**2
+        return (1.0 - radius)**2
     return 0.0
 
 
