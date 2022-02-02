@@ -6,6 +6,7 @@ TODO
 * Fix mypy errors
 * Type hints not consistent with numba types
 * Check tests for Dimension vs. list of Dimension
+* Change docstrings and tests for vectorization
 
 Checks
 * Check for duplicates in columns
@@ -367,7 +368,10 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
 
     # Calculate weights one dimension at at a time
     for idx_dim, dim in enumerate(dim_list):
-        dim_weights = get_dim_weights(dim, point_list[idx_dim], idx_fit, idx_x)
+        dim_points = point_list[idx_dim]
+        dim_dists = get_distance(dim_points[idx_x], dim_points[idx_fit],
+                                 dim.distance, dim.distance_dict)
+        dim_weights = get_weight(dim_dists, dim.kernel, dim.kernel_pars)
 
         # Optional normalize by subgroup
         if dim.kernel == 'depth' and dim.kernel_pars['normalize'] == 1.0:
@@ -378,64 +382,6 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
             weights *= dim_weights
 
     return weights/weights.sum()
-
-
-@njit
-def get_dim_weights(dimension: TypedDimension, points: np.ndarray,
-                    idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
-    """Get smoothing weights for current point and dimension.
-
-    Parameters
-    ----------
-    dimension : TypedDimension
-        Current smoothing dimension.
-    points : numpy.ndarray
-        Point locations for current dimension.
-    idx_fit : numpy.ndarray of int
-        Indices of nearby points to include in weighted averages.
-    idx_x : int
-        Index of current point to predict smoothed values.
-
-    Returns
-    -------
-    numpy.ndarray of nonnegative float
-        Smoothing weights for current point and dimension.
-
-    """
-    # Initialize weight vector
-    n_fit = len(idx_fit)
-    weights = np.empty(n_fit)
-
-    # Calculate weights one point at a time
-    x = get_point(points, idx_x)
-    for idx_y in range(n_fit):
-        y = get_point(points, idx_fit[idx_y])
-        dist = get_distance(x, y, dimension.distance, dimension.distance_dict)
-        weights[idx_y] = get_weight(dist, dimension.kernel,
-                                    dimension.kernel_pars)
-    return weights
-
-
-@njit
-def get_point(dim: np.ndarray, idx_point: int) -> np.ndarray:
-    """Get point `x` or `y` as a vector.
-
-    Parameters
-    ----------
-    dim : 2D numpy.ndarray of float
-        Point locations for a given dimension.
-    idx_point : int
-        Index of `x` or `y` in `dim`.
-
-    Returns
-    -------
-    1D numpy.ndarray of float
-        Point `x` or `y` as a vector.
-
-    """
-    if dim.shape[0] == 1:
-        return np.atleast_1d(np.array(dim[0][idx_point]))
-    return dim[idx_point]
 
 
 @njit
@@ -487,7 +433,7 @@ def get_weight(distance: float, kernel: str, pars: Dict[str, float]) -> float:
 
     """
     if kernel == 'exponential':
-        return exponential(distance, pars)
+        return exponential(distance, pars['radius'])
     if kernel == 'tricubic':
-        return tricubic(distance, pars)
-    return depth(distance, pars)
+        return tricubic(distance, pars['radius'], pars['exponent'])
+    return depth(distance, pars['radius'])
