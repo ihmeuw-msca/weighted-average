@@ -10,6 +10,10 @@ In general, distance functions should satisfy the following properties:
 3. d(x, y) == d(y, x) (symmetry)
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
+TODO
+* Change docstrings based on vectorization
+* Didn't know how to vectorize hierarchical or dictionary
+
 """
 from typing import Dict, Tuple, Union
 
@@ -38,7 +42,7 @@ def euclidean(x: np.ndarray, y: np.ndarray) -> float:
         Euclidean distance between `x` and `y`.
 
     """
-    return 1.0*np.linalg.norm(x - y)
+    return 1.0*np.linalg.norm(x - y, axis=0)
 
 
 @njit
@@ -58,12 +62,21 @@ def hierarchical(x: np.ndarray, y: np.ndarray) -> float:
         Hierarchical distance between `x` and `y`.
 
     """
-    if (x == y).all():
-        return 0.0
-    for ii in range(1, len(x)):
-        if (x[:-ii] == y[:-ii]).all():
-            return 1.0*ii
-    return 1.0*len(x)
+    # Distance from one nearby point
+    def get_distance(x, y):
+        if (x == y).all():
+            return 0.0
+        for ii in range(1, len(x)):
+            if (x[:-ii] == y[:-ii]).all():
+                return 1.0*ii
+        return 1.0*len(x)
+
+    # Distance from all nearby points
+    distance = np.empty(len(y))
+    for ii, yi in enumerate(y):
+        distance[ii] = get_distance(x, yi)
+
+    return distance
 
 
 @njit
@@ -94,11 +107,19 @@ def dictionary(x: np.ndarray, y: np.ndarray,
         Dictionary distance between `x` and `y`.
 
     """
-    x0 = float(x[0])
-    y0 = float(y[0])
-    if x0 <= y0:
-        return distance_dict[(x0, y0)]
-    return distance_dict[(y0, x0)]
+    # Distance from one nearby point
+    def get_distance(x, y):
+        x0 = float(x[0])
+        y0 = float(y[0])
+        if x0 <= y0:
+            return distance_dict[(x0, y0)]
+        return distance_dict[(y0, x0)]
+
+    # Distance from all nearby points
+    distance = np.empty(len(y))
+    for ii, yi in enumerate(y):
+        distance[ii] = get_distance(x, yi)
+    return distance
 
 
 def check_dict(distance_dict: Dict[Tuple[Numeric, Numeric], Numeric]) -> None:
