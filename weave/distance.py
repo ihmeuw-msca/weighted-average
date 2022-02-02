@@ -18,7 +18,7 @@ TODO
 """
 from typing import Dict, Tuple, Union
 
-from numba import njit
+from numba import njit, guvectorize
 import numpy as np
 
 from weave.utils import is_numeric
@@ -26,26 +26,25 @@ from weave.utils import is_numeric
 Numeric = Union[int, float]
 
 
-@njit
-def euclidean(x: np.ndarray, y: np.ndarray) -> float:
+@guvectorize(['float64[:],float64[:,:],float64[:]'], '(n),(m,n)->(m)')
+def euclidean(x: np.ndarray, y: np.ndarray, z: np.ndarray) -> np.ndarray:
     """Get Euclidean distance between `x` and `y`.
 
     Parameters
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    y : 1D numpy.ndarray of float
-        Nearby point.
+    y : 2D numpy.ndarray of float
+        Nearby points.
 
     Returns
     -------
-    nonnegative float
+    numpy.ndarray of nonnegative float
         Euclidean distance between `x` and `y`.
 
     """
-    if len(x) == 1:
-        return 1.0*np.abs(x - y)
-    return 1.0*np.linalg.norm(x - y, axis=0)
+    for ii, yi in enumerate(y):
+        z[ii] = 1.0*np.linalg.norm(x - yi)
 
 
 @njit
