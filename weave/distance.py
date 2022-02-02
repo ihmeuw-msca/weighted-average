@@ -12,6 +12,7 @@ In general, distance functions should satisfy the following properties:
 
 TODO
 * Change docstrings based on vectorization
+* Change tests based on vectorization
 * Didn't know how to vectorize hierarchical or dictionary
 
 """
@@ -42,6 +43,8 @@ def euclidean(x: np.ndarray, y: np.ndarray) -> float:
         Euclidean distance between `x` and `y`.
 
     """
+    if len(x) == 1:
+        return 1.0*np.abs(x - y)
     return 1.0*np.linalg.norm(x - y, axis=0)
 
 
