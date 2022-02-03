@@ -10,6 +10,9 @@ In general, distance functions should satisfy the following properties:
 3. d(x, y) == d(y, x) (symmetry)
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
+TODO:
+* Change tests based on vectorization
+
 """
 from typing import Dict, Tuple, Union
 

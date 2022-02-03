@@ -18,7 +18,7 @@ In general, kernel functions should satisfy the following properties:
 TODO:
 * Generalize depth function to include more levels (e.g., sub-national)
 * STGPR has a different depth function than CODEm
-* Change tests based on vectorization
+* Change tests based on vectorization and arguments
 
 """
 from typing import Dict, List, Union
