@@ -377,11 +377,12 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
         if dim.kernel == 'depth' and dim.kernel_pars['normalize'] == 1.0:
             for weight in list(set(dim_weights)):
                 idx_weight = np.where(dim_weights == weight)[0]
-                weights[idx_weight] *= weight/weights[idx_weight].sum()
+                if weights[idx_weight].sum() != 0.0:
+                    weights[idx_weight] *= weight/weights[idx_weight].sum()
         else:
             weights *= dim_weights
 
-    return weights/weights.sum()
+        return weights/weights.sum()  # what if ALL weights are zero?
 
 
 @njit
@@ -406,20 +407,16 @@ def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
         Distances between `x` and `y`.
 
     """
-    dist_vec = np.empty(len(y))
-    for ii, yi in enumerate(y):
-        if distance == 'dictionary':
-            dist_vec[ii] = dictionary(x, yi, distance_dict)
-        elif distance == 'euclidean':
-            dist_vec[ii] = euclidean(x, yi)
-        else:  # hierarchical
-            dist_vec[ii] = hierarchical(x, yi)
-    return dist_vec
+    if distance == 'dictionary':
+        return dictionary(x, y, distance_dict)
+    if distance == 'euclidean':
+        return euclidean(x, y)
+    return hierarchical(x, y)
 
 
 @njit
-def get_dim_weights(distance: float, kernel: str, pars: Dict[str, float]) \
-        -> np.ndarray:
+def get_dim_weights(distance: np.ndarray, kernel: str,
+                    pars: Dict[str, float]) -> np.ndarray:
     """Get smoothing weights.
 
     Parameters
