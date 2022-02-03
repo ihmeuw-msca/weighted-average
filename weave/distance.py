@@ -10,15 +10,10 @@ In general, distance functions should satisfy the following properties:
 3. d(x, y) == d(y, x) (symmetry)
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
-TODO
-* Change docstrings based on vectorization
-* Change tests based on vectorization
-* Didn't know how to vectorize hierarchical or dictionary
-
 """
 from typing import Dict, Tuple, Union
 
-from numba import njit, guvectorize
+from numba import njit
 import numpy as np
 
 from weave.utils import is_numeric
@@ -26,25 +21,24 @@ from weave.utils import is_numeric
 Numeric = Union[int, float]
 
 
-@guvectorize(['float64[:],float64[:,:],float64[:]'], '(n),(m,n)->(m)')
-def euclidean(x: np.ndarray, y: np.ndarray, z: np.ndarray) -> np.ndarray:
+@njit
+def euclidean(x: np.ndarray, y: np.ndarray) -> float:
     """Get Euclidean distance between `x` and `y`.
 
     Parameters
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    y : 2D numpy.ndarray of float
-        Nearby points.
+    y : 1D numpy.ndarray of float
+        Nearby point.
 
     Returns
     -------
-    numpy.ndarray of nonnegative float
+    nonnegative float
         Euclidean distance between `x` and `y`.
 
     """
-    for ii, yi in enumerate(y):
-        z[ii] = 1.0*np.linalg.norm(x - yi)
+    return 1.0*np.linalg.norm(x - y)
 
 
 @njit
@@ -64,21 +58,12 @@ def hierarchical(x: np.ndarray, y: np.ndarray) -> float:
         Hierarchical distance between `x` and `y`.
 
     """
-    # Distance from one nearby point
-    def get_distance(x, y):
-        if (x == y).all():
-            return 0.0
-        for ii in range(1, len(x)):
-            if (x[:-ii] == y[:-ii]).all():
-                return 1.0*ii
-        return 1.0*len(x)
-
-    # Distance from all nearby points
-    distance = np.empty(len(y))
-    for ii, yi in enumerate(y):
-        distance[ii] = get_distance(x, yi)
-
-    return distance
+    if (x == y).all():
+        return 0.0
+    for ii in range(1, len(x)):
+        if (x[:-ii] == y[:-ii]).all():
+            return 1.0*ii
+    return 1.0*len(x)
 
 
 @njit
@@ -109,19 +94,11 @@ def dictionary(x: np.ndarray, y: np.ndarray,
         Dictionary distance between `x` and `y`.
 
     """
-    # Distance from one nearby point
-    def get_distance(x, y):
-        x0 = float(x[0])
-        y0 = float(y[0])
-        if x0 <= y0:
-            return distance_dict[(x0, y0)]
-        return distance_dict[(y0, x0)]
-
-    # Distance from all nearby points
-    distance = np.empty(len(y))
-    for ii, yi in enumerate(y):
-        distance[ii] = get_distance(x, yi)
-    return distance
+    x0 = float(x[0])
+    y0 = float(y[0])
+    if x0 <= y0:
+        return distance_dict[(x0, y0)]
+    return distance_dict[(y0, x0)]
 
 
 def check_dict(distance_dict: Dict[Tuple[Numeric, Numeric], Numeric]) -> None:
