@@ -369,9 +369,9 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
     # Calculate weights one dimension at at a time
     for idx_dim, dim in enumerate(dim_list):
         dim_points = point_list[idx_dim]
-        dim_dists = get_distance(dim_points[idx_x], dim_points[idx_fit],
-                                 dim.distance, dim.distance_dict)
-        dim_weights = get_weight(dim_dists, dim.kernel, dim.kernel_pars)
+        dim_dists = get_dim_distances(dim_points[idx_x], dim_points[idx_fit],
+                                      dim.distance, dim.distance_dict)
+        dim_weights = get_dim_weights(dim_dists, dim.kernel, dim.kernel_pars)
 
         # Optional normalize by subgroup
         if dim.kernel == 'depth' and dim.kernel_pars['normalize'] == 1.0:
@@ -385,16 +385,16 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
 
 
 @njit
-def get_distance(x: np.ndarray, y: np.ndarray, distance: str,
-                 distance_dict: TypedDistanceDict) -> float:
-    """Get distance between `x` and `y`.
+def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
+                      distance_dict: TypedDistanceDict) -> np.ndarray:
+    """Get distances between `x` and `y`.
 
     Parameters
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    y : 1D numpy.ndarray of float
-        Nearby point.
+    y : 2D numpy.ndarray of float
+        Nearby points.
     distance : str
         Distance function name.
     distance_dict : dict of {(float, float): float}
@@ -402,24 +402,29 @@ def get_distance(x: np.ndarray, y: np.ndarray, distance: str,
 
     Returns
     -------
-    nonnegative float
-        Distance between `x` and `y`.
+    1D numpy.ndarray of nonnegative float
+        Distances between `x` and `y`.
 
     """
-    if distance == 'dictionary':
-        return dictionary(x, y, distance_dict)
-    if distance == 'euclidean':
-        return euclidean(x, y)
-    return hierarchical(x, y)
+    dist_vec = np.empty(len(y))
+    for ii, yi in enumerate(y):
+        if distance == 'dictionary':
+            dist_vec[ii] = dictionary(x, yi, distance_dict)
+        elif distance == 'euclidean':
+            dist_vec[ii] = euclidean(x, yi)
+        else:  # hierarchical
+            dist_vec[ii] = hierarchical(x, yi)
+    return dist_vec
 
 
 @njit
-def get_weight(distance: float, kernel: str, pars: Dict[str, float]) -> float:
-    """Get smoothing weight.
+def get_dim_weights(distance: float, kernel: str, pars: Dict[str, float]) \
+        -> np.ndarray:
+    """Get smoothing weights.
 
     Parameters
     ----------
-    distance : nonnegative float
+    distance : 1D numpy.ndarray of nonnegative float
         Distance between points.
     kernel : str
         Kernel function name.
@@ -428,8 +433,8 @@ def get_weight(distance: float, kernel: str, pars: Dict[str, float]) -> float:
 
     Returns
     -------
-    nonnegative float
-        Smoothing weight.
+    1D numpy.ndarray of nonnegative float
+        Smoothing weights.
 
     """
     if kernel == 'exponential':
