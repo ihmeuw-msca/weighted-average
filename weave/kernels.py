@@ -18,7 +18,6 @@ In general, kernel functions should satisfy the following properties:
 TODO:
 * Generalize depth function to include more levels (e.g., sub-national)
 * STGPR has a different depth function than CODEm
-* Change docstrings based on vectorization
 * Change tests based on vectorization
 
 """
@@ -31,49 +30,40 @@ from weave.utils import as_list, is_numeric
 
 
 @njit
-def exponential(distance: float, radius: float) -> float:
-    """Get exponential smoothing weight.
+def exponential(distance: np.ndarray, radius: float) -> np.ndarray:
+    """Get exponential smoothing weights.
 
     k_r(x, y) = 1/exp(d(x, y)/r)
     CODEm: r = 1/omega
 
     Parameters
     ----------
-    distance : nonnegative float
-        Distance between points.
-    pars : dict of {str: float}
-        Kernel function parameters.
-
-    Kernel function parameters
-    --------------------------
+    distance : 1D numpy.ndarray of nonnegative float
+        Distances between points.
     radius : positive float
         Kernel radius.
 
     Returns
     -------
-    nonnegative float
-        Exponential smoothing weight.
+    1D np.ndarray of nonnegative float
+        Exponential smoothing weights.
 
     """
     return 1.0/np.exp(distance/radius)
 
 
 @njit
-def tricubic(distance: float, radius: float, exponent: float) -> float:
-    """Get tricubic smoothing weight.
+def tricubic(distance: np.ndarray, radius: float, exponent: float) \
+        -> np.ndarray:
+    """Get tricubic smoothing weights.
 
     k_r(x, y) = max(0, (1 - (d(x, y)/r)^s)^3)
     CODEm: s = lambda, r = max(x - x_min, x_max - x) + 1
 
     Parameters
     ----------
-    distance : nonnegative float
-        Distance between points.
-    pars : dict of {str: float}
-        Kernel function parameters.
-
-    Kernel function parameters
-    --------------------------
+    distance : 1D numpy.ndarray of nonnegative float
+        Distances between points.
     radius : positive float
         Kernel radius.
     exponent : positive float
@@ -81,16 +71,16 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
 
     Returns
     -------
-    nonnegative float
-        Tricubic smoothing weight.
+    1D numpy.ndarray of nonnegative float
+        Tricubic smoothing weights.
 
     """
     return np.maximum(0.0, (1.0 - (distance/radius)**exponent)**3)
 
 
-@vectorize(['float64(float64, float64)'])
-def depth(distance: float, radius: float) -> float:
-    """Get depth smoothing weight.
+@vectorize(['float64(float64,float64)'])
+def depth(distance: np.ndarray, radius: float) -> np.ndarray:
+    """Get depth smoothing weights.
 
     If distance == 0 (same country):
         weight = radius
@@ -107,20 +97,15 @@ def depth(distance: float, radius: float) -> float:
 
     Parameters
     ----------
-    distance : nonnegative float
-        Distance between points.
-    pars : dict of {str: float}
-        Kernel function parameters.
-
-    Kernel function parameters
-    --------------------------
+    distance : 1D numpy.ndarray of nonnegative float
+        Distances between points.
     radius : float in (0, 1)
         Kernel radius.
 
     Returns
     -------
-    nonnegative float
-        Depth smoothing weight.
+    1D numpy.ndarray of nonnegative float
+        Depth smoothing weights.
 
     """
     if distance == 0.0:
