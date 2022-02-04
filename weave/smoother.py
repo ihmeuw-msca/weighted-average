@@ -138,6 +138,7 @@ class Smoother:
         """
         # Extract data
         check_args(data, columns, fit, predict, loop)
+        self.check_data(data, columns, fit, predict)
         idx_fit = get_indices(data, fit)
         idx_pred = get_indices(data, predict)
         cols = get_columns(data, columns, idx_fit)
@@ -154,6 +155,47 @@ class Smoother:
             data_smooth[f"{col}_smooth"] = cols_smooth[:, idx_col]
 
         return data_smooth
+
+    def check_data(self, data: DataFrame, columns: Union[str, List[str]],
+                   fit: Optional[str], predict: Optional[str]) -> None:
+        """Check input data.
+
+        Parameters
+        ----------
+        data : DataFrame
+            Input data structure.
+        columns : str or list of str
+            Column names of values to smooth.
+        fit : str or None
+            Column name indicating points to include in weighted
+            averages.
+        predict : str or None
+            Column name indicating points to predict smoothed values.
+
+        Raises
+        ------
+        KeyError
+            If `dimensions.columns`, `columns`, `fit`, or `predict` not
+            in `data`.
+        ValueError
+            If `data` contains NaNs or Infs.
+
+        """
+        # Check keys
+        if not all(col in data for dim in self._dimensions for col in dim):
+            raise KeyError('`dimensions.columns` not in `data`.')
+        if not all(column in data for column in columns):
+            raise KeyError('`columns` not in `data`.')
+        if fit not in data:
+            raise KeyError('`fit` not in `data`.')
+        if predict not in data:
+            raise KeyError('`predict` not in `data`.')
+
+        # Check values
+        if data.isna().any(None):
+            raise ValueError('`data` contains NaNs.')
+        if np.isinf(data).any(None):
+            raise ValueError('`data` contains Infs.')
 
     def get_points(self, data: DataFrame) -> List[np.ndarray]:
         """Get point locations by dimension.
@@ -228,10 +270,7 @@ def check_args(data: DataFrame, columns: Union[str, List[str]],
     TypeError
         If `smoother` arguments contain invalid types.
     ValueError
-        If `columns` is an empty list or contains duplicates, or if
-        `data` contains NaNs or Infs.
-    KeyError
-        If `columns`, `fit`, or `predict` not in `data`.
+        If `columns` is an empty list or contains duplicates.
 
     """
     # Check types
@@ -252,18 +291,6 @@ def check_args(data: DataFrame, columns: Union[str, List[str]],
         raise ValueError('`columns` is an empty list.')
     if len(columns) > len(set(columns)):
         raise ValueError('`columns` contains duplicates.')
-    if data.isna().any(None):
-        raise ValueError('`data` contains NaNs.')
-    if np.isinf(data).any(None):
-        raise ValueError('`data` contains Infs.')
-
-    # Check Keys
-    if not all(column in data for column in columns):
-        raise KeyError('`columns` not in `data`.')
-    if fit not in data:
-        raise KeyError('`fit` not in `data`.')
-    if predict not in data:
-        raise KeyError('`predict` not in `data`.')
 
 
 def get_indices(data: DataFrame, indicator: str = None) -> np.ndarray:
