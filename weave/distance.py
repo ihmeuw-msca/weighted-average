@@ -10,6 +10,16 @@ In general, distance functions should satisfy the following properties:
 3. d(x, y) == d(y, x) (symmetry)
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
+Notes
+-----
+* `euclidean` could be vectorized using the `axis` argument for
+  `np.linalg.norm`, but this is not recognized in numba
+* `hierarchical` could potentially be vectorized using numba's
+  `guvectorize` or numpy's `vectorize` (but the latter isn't recognized
+  by numba)
+* `dictionary` can't be vectorized using numba's `guvectorize` because
+  of the dictionary argument, but we could try numpy's `vectorize`
+
 """
 from typing import Dict, Tuple, Union
 
@@ -22,54 +32,72 @@ Numeric = Union[int, float]
 
 
 @njit
-def euclidean(x: np.ndarray, y: np.ndarray) -> float:
-    """Get Euclidean distance between `x` and `y`.
+def euclidean(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Get Euclidean distances between `x` and `y`.
 
     Parameters
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    y : 1D numpy.ndarray of float
-        Nearby point.
+    y : 2D numpy.ndarray of float
+        Nearby points.
 
     Returns
     -------
-    nonnegative float
-        Euclidean distance between `x` and `y`.
+    1D numpy.ndarray of nonnegative float
+        Euclidean distances between `x` and `y`.
 
     """
-    return 1.0*np.linalg.norm(x - y)
+    # Scalars
+    if len(x) == 1:
+        return 1.0*np.abs(x - y).flatten()
+
+    # Vectors
+    distance = np.empty(len(y))
+    for ii, yi in enumerate(y):
+        distance[ii] = 1.0*np.linalg.norm(x - yi)
+
+    return distance
 
 
 @njit
-def hierarchical(x: np.ndarray, y: np.ndarray) -> float:
-    """Get hierarchical distance between `x` and `y`.
+def hierarchical(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Get hierarchical distances between `x` and `y`.
 
     Parameters
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    y : 1D numpy.ndarray of float
-        Nearby point.
+    y : 2D numpy.ndarray of float
+        Nearby points.
 
     Returns
     -------
-    nonnegative float
-        Hierarchical distance between `x` and `y`.
+    1D numpy.ndarray of nonnegative float
+        Hierarchical distances between `x` and `y`.
 
     """
-    if (x == y).all():
-        return 0.0
-    for ii in range(1, len(x)):
-        if (x[:-ii] == y[:-ii]).all():
-            return 1.0*ii
-    return 1.0*len(x)
+    # Get distance from one nearby point
+    def get_distance(x, yi):
+        if (x == yi).all():
+            return 0.0
+        for ii in range(1, len(x)):
+            if (x[:-ii] == yi[:-ii]).all():
+                return 1.0*ii
+        return 1.0*len(x)
+
+    # Get distance between all nearby points
+    distance = np.empty(len(y))
+    for ii, yi in enumerate(y):
+        distance[ii] = get_distance(x, yi)
+
+    return distance
 
 
 @njit
 def dictionary(x: np.ndarray, y: np.ndarray,
-               distance_dict: Dict[Tuple[float, float], float]) -> float:
-    """Get dictionary distance between `x` and `y`.
+               distance_dict: Dict[Tuple[float, float], float]) -> np.ndarray:
+    """Get dictionary distances between `x` and `y`.
 
     Dictionary `distance_dict` contains the distance between points `x`
     and `y`. For type consistency among distance functions, `x` and `y`
@@ -83,22 +111,31 @@ def dictionary(x: np.ndarray, y: np.ndarray,
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    y : 1D numpy.ndarray of float
-        Nearby point.
+    y : 2D numpy.ndarray of float
+        Nearby points.
     distance_dict : dict of {(float, float): float}
         Dictionary of distances between points.
 
     Returns
     -------
-    nonnegative float
-        Dictionary distance between `x` and `y`.
+    1D numpy.ndarray of nonnegative float
+        Dictionary distances between `x` and `y`.
 
     """
-    x0 = float(x[0])
-    y0 = float(y[0])
-    if x0 <= y0:
-        return distance_dict[(x0, y0)]
-    return distance_dict[(y0, x0)]
+    # Get distance from one nearby point
+    def get_distance(x, yi):
+        x0 = float(x[0])
+        y0 = float(yi[0])
+        if x0 <= y0:
+            return distance_dict[(x0, y0)]
+        return distance_dict[(y0, x0)]
+
+    # Get distance from all nearby points
+    distance = np.empty(len(y))
+    for ii, yi in enumerate(y):
+        distance[ii] = get_distance(x, yi)
+
+    return distance
 
 
 def check_dict(distance_dict: Dict[Tuple[Numeric, Numeric], Numeric]) -> None:

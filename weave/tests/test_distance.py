@@ -59,7 +59,7 @@ def property_1(distance):
 def test_euclidean_type(xy):
     """Euclidean output satisfies property 1."""
     x, y = xy
-    distance = euclidean(x, y)
+    distance = euclidean(x, np.atleast_2d(y))[0]
     property_1(distance)
 
 
@@ -68,7 +68,7 @@ def test_euclidean_type(xy):
 def test_hierarchical_type(xy):
     """Hierarchical output satisfies property 1."""
     x, y = xy
-    distance = hierarchical(x, y)
+    distance = hierarchical(x, np.atleast_2d(y))[0]
     property_1(distance)
 
 
@@ -85,7 +85,7 @@ def property_2(x, y, distance):
 def test_euclidean_zero(xy):
     """Euclidean output satisfies property 2."""
     x, y = xy
-    distance = euclidean(x, y)
+    distance = euclidean(x, np.atleast_2d(y))[0]
     property_2(x, y, distance)
 
 
@@ -93,7 +93,7 @@ def test_euclidean_zero(xy):
 def test_hierarchical_zero(xy):
     """Hierarchical output satisfies property 2."""
     x, y = xy
-    distance = hierarchical(x, y)
+    distance = hierarchical(x, np.atleast_2d(y))[0]
     property_2(x, y, distance)
 
 
@@ -102,8 +102,8 @@ def test_hierarchical_zero(xy):
 def test_euclidean_symmetric(xy):
     """Euclidean output satisfies property 3."""
     x, y = xy
-    distance_xy = euclidean(x, y)
-    distance_yx = euclidean(y, x)
+    distance_xy = euclidean(x, np.atleast_2d(y))[0]
+    distance_yx = euclidean(y, np.atleast_2d(x))[0]
     assert np.isclose(distance_xy, distance_yx)
 
 
@@ -111,8 +111,8 @@ def test_euclidean_symmetric(xy):
 def test_hierarchical_symmetric(xy):
     """Hierarchical output satisfies property 3."""
     x, y = xy
-    distance_xy = hierarchical(x, y)
-    distance_yx = hierarchical(y, x)
+    distance_xy = hierarchical(x, np.atleast_2d(y))[0]
+    distance_yx = hierarchical(y, np.atleast_2d(x))[0]
     assert np.isclose(distance_xy, distance_yx)
 
 
@@ -128,9 +128,9 @@ def property_4(distance_xy, distance_xz, distance_zy):
 def test_euclidean_triangle(xyz):
     """Euclidean output satisfies property 4."""
     x, y, z = xyz
-    distance_xy = euclidean(x, y)
-    distance_xz = euclidean(x, z)
-    distance_zy = euclidean(z, y)
+    distance_xy = euclidean(x, np.atleast_2d(y))[0]
+    distance_xz = euclidean(x, np.atleast_2d(z))[0]
+    distance_zy = euclidean(z, np.atleast_2d(y))[0]
     property_4(distance_xy, distance_xz, distance_zy)
 
 
@@ -138,39 +138,56 @@ def test_euclidean_triangle(xyz):
 def test_hierarchical_triangle(xyz):
     """Hierarchical output satisfies property 4."""
     x, y, z = xyz
-    distance_xy = hierarchical(x, y)
-    distance_xz = hierarchical(x, z)
-    distance_zy = hierarchical(z, y)
+    distance_xy = hierarchical(x, np.atleast_2d(y))[0]
+    distance_xz = hierarchical(x, np.atleast_2d(z))[0]
+    distance_zy = hierarchical(z, np.atleast_2d(y))[0]
     property_4(distance_xy, distance_xz, distance_zy)
+
+
+# Test output shape
+@given(my_arrays(n=3))
+def test_euclidean_shape(xyz):
+    """Euclidean output is length `y`."""
+    x, y, z = xyz
+    distance = euclidean(x, np.array([y, z]))
+    assert distance.shape == (2,)
+
+
+@given(my_arrays(n=3))
+def test_hierarchical_shape(xyz):
+    """Hierarchical output is length `y`."""
+    x, y, z = xyz
+    distance = hierarchical(x, np.array([y, z]))
+    assert distance.shape == (2,)
 
 
 # Test specific output values
 def test_same_country():
     """Test hierarchical distance with same country."""
     x = np.array([1., 2., 3.])
-    y = np.array([1., 2., 3.])
-    assert np.isclose(hierarchical(x, y), 0.)
+    y = np.array([[1., 2., 3.]])
+    assert np.isclose(hierarchical(x, y)[0], 0.)
 
 
 def test_same_region():
     """Test hierarchical distance with same region."""
     x = np.array([1., 2., 3.])
-    y = np.array([1., 2., 4.])
-    assert np.isclose(hierarchical(x, y), 1.)
+    y = np.array([[1., 2., 4.]])
+    assert np.isclose(hierarchical(x, y)[0], 1.)
 
 
 def test_same_super_region():
     """Test hierarchical distance with same super region."""
     x = np.array([1., 2., 3.])
-    y = np.array([1., 4., 5.])
-    assert np.isclose(hierarchical(x, y), 2.)
+    y = np.array([[1., 4., 5.]])
+    assert np.isclose(hierarchical(x, y)[0], 2.)
 
 
 def test_different_super_region():
     """Test hierarchical distance with different super regions."""
     x = np.array([1., 2., 3.])
-    y = np.array([4., 5., 6.])
-    assert np.isclose(hierarchical(x, y), 3.)
+    y = np.array([[4., 5., 6.]])
+    assert np.isclose(hierarchical(x, y)[0], 3.)
 
 
 # Test `check_dict()`

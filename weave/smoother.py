@@ -5,7 +5,8 @@ TODO
 * Write checks and tests
 * Fix mypy errors
 * Type hints not consistent with numba types
-* Change list of lists, group weights, and normalization scheme
+* Check tests for Dimension vs. list of Dimension
+* Change docstrings and tests for vectorization
 
 Checks
 * Check for duplicates in columns
@@ -148,12 +149,12 @@ class Smoother:
         # Extract data
         idx_fit = get_indices(data, fit)
         idx_pred = get_indices(data, predict)
-        col_list = get_columns(data, columns, idx_fit)
+        cols = get_columns(data, columns, idx_fit)
         point_list = self.get_points(data)
         dim_list = self.get_typed_dimensions()
 
         # Calculate smoothed values
-        cols_smooth = smooth_data(dim_list, point_list, col_list, idx_fit,
+        cols_smooth = smooth_data(dim_list, point_list, cols, idx_fit,
                                   idx_pred)
 
         # Construct smoothed data frame
@@ -232,7 +233,7 @@ def get_indices(data: DataFrame, indicator: str = None) -> np.ndarray:
 
 
 def get_columns(data: DataFrame, columns: Union[str, List[str]],
-                idx_fit: np.ndarray) -> List[str]:
+                idx_fit: np.ndarray) -> np.ndarray:
     """Get values to smooth.
 
     Parameters
@@ -246,11 +247,12 @@ def get_columns(data: DataFrame, columns: Union[str, List[str]],
 
     Returns
     -------
-    list of str
+    numpy.ndarray of float
         Values to smooth.
 
     """
-    return TypedList(data[col].values[idx_fit] for col in as_list(columns))
+    return np.array([data[col].values[idx_fit] for col in as_list(columns)],
+                    dtype=float)
 
 
 def get_typed_pars(kernel_pars: Dict[str, Pars]) \
@@ -303,8 +305,8 @@ def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
 
 @njit
 def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
-                col_list: List[np.ndarray], idx_fit: np.ndarray,
-                idx_pred: np.ndarray) -> np.ndarray:
+                cols: np.ndarray, idx_fit: np.ndarray, idx_pred: np.ndarray) \
+        -> np.ndarray:
     """Smooth data across dimensions with weighted averages.
 
     Parameters
@@ -313,7 +315,7 @@ def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
         Smoothing dimensions.
     point_list : list of numpy.ndarray of float
         Point locations by dimension.
-    col_list : list of numpy.ndarray of float
+    cols : numpy.ndarray of float
         Values to smooth.
     idx_fit : numpy.ndarray of int
         Indices of points to include in weighted averages.
@@ -322,24 +324,21 @@ def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
 
     Returns
     -------
-    np.ndarray of float
+    numpy.ndarray of float
         Smoothed values.
 
     """
     # Initialize smoothed values
-    n_cols = len(col_list)
+    n_cols = len(cols)
     n_pred = len(idx_pred)
-    smooth_cols = np.empty((n_pred, n_cols))
+    cols_smooth = np.empty((n_pred, n_cols))
 
     # Calculate smoothed values one point at a time
     for idx_x in range(n_pred):
         weights = get_weights(dim_list, point_list, idx_fit, idx_pred[idx_x])
+        cols_smooth[idx_x, :] = cols.dot(weights)
 
-        # Compute smoothed values one column at a time
-        for idx_col in range(n_cols):
-            smooth_cols[idx_x, idx_col] = weights.dot(col_list[idx_col])
-
-    return smooth_cols
+    return cols_smooth
 
 
 @njit
@@ -369,88 +368,34 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
 
     # Calculate weights one dimension at at a time
     for idx_dim, dim in enumerate(dim_list):
-        dim_weights = get_dim_weights(dim, point_list[idx_dim], idx_fit, idx_x)
+        dim_points = point_list[idx_dim]
+        dim_dists = get_dim_distances(dim_points[idx_x], dim_points[idx_fit],
+                                      dim.distance, dim.distance_dict)
+        dim_weights = get_dim_weights(dim_dists, dim.kernel, dim.kernel_pars)
 
         # Optional normalize by subgroup
         if dim.kernel == 'depth' and dim.kernel_pars['normalize'] == 1.0:
             for weight in list(set(dim_weights)):
                 idx_weight = np.where(dim_weights == weight)[0]
-                weights[idx_weight] *= weight/weights[idx_weight].sum()
+                if weights[idx_weight].sum() != 0.0:
+                    weights[idx_weight] *= weight/weights[idx_weight].sum()
         else:
             weights *= dim_weights
 
-    return weights/weights.sum()
+        return weights/weights.sum()  # what if ALL weights are zero?
 
 
 @njit
-def get_dim_weights(dimension: TypedDimension, points: np.ndarray,
-                    idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
-    """Get smoothing weights for current point and dimension.
-
-    Parameters
-    ----------
-    dimension : TypedDimension
-        Current smoothing dimension.
-    points : numpy.ndarray
-        Point locations for current dimension.
-    idx_fit : numpy.ndarray of int
-        Indices of nearby points to include in weighted averages.
-    idx_x : int
-        Index of current point to predict smoothed values.
-
-    Returns
-    -------
-    numpy.ndarray of nonnegative float
-        Smoothing weights for current point and dimension.
-
-    """
-    # Initialize weight vector
-    n_fit = len(idx_fit)
-    weights = np.empty(n_fit)
-
-    # Calculate weights one point at a time
-    x = get_point(points, idx_x)
-    for idx_y in range(n_fit):
-        y = get_point(points, idx_fit[idx_y])
-        dist = get_distance(x, y, dimension.distance, dimension.distance_dict)
-        weights[idx_y] = get_weight(dist, dimension.kernel,
-                                    dimension.kernel_pars)
-    return weights
-
-
-@njit
-def get_point(dim: np.ndarray, idx_point: int) -> np.ndarray:
-    """Get point `x` or `y` as a vector.
-
-    Parameters
-    ----------
-    dim : 2D numpy.ndarray of float
-        Point locations for a given dimension.
-    idx_point : int
-        Index of `x` or `y` in `dim`.
-
-    Returns
-    -------
-    1D numpy.ndarray of float
-        Point `x` or `y` as a vector.
-
-    """
-    if dim.shape[0] == 1:
-        return np.atleast_1d(np.array(dim[0][idx_point]))
-    return dim[idx_point]
-
-
-@njit
-def get_distance(x: np.ndarray, y: np.ndarray, distance: str,
-                 distance_dict: TypedDistanceDict) -> float:
-    """Get distance between `x` and `y`.
+def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
+                      distance_dict: TypedDistanceDict) -> np.ndarray:
+    """Get distances between `x` and `y`.
 
     Parameters
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    y : 1D numpy.ndarray of float
-        Nearby point.
+    y : 2D numpy.ndarray of float
+        Nearby points.
     distance : str
         Distance function name.
     distance_dict : dict of {(float, float): float}
@@ -458,8 +403,8 @@ def get_distance(x: np.ndarray, y: np.ndarray, distance: str,
 
     Returns
     -------
-    nonnegative float
-        Distance between `x` and `y`.
+    1D numpy.ndarray of nonnegative float
+        Distances between `x` and `y`.
 
     """
     if distance == 'dictionary':
@@ -470,12 +415,13 @@ def get_distance(x: np.ndarray, y: np.ndarray, distance: str,
 
 
 @njit
-def get_weight(distance: float, kernel: str, pars: Dict[str, float]) -> float:
-    """Get smoothing weight.
+def get_dim_weights(distance: np.ndarray, kernel: str,
+                    pars: Dict[str, float]) -> np.ndarray:
+    """Get smoothing weights.
 
     Parameters
     ----------
-    distance : nonnegative float
+    distance : 1D numpy.ndarray of nonnegative float
         Distance between points.
     kernel : str
         Kernel function name.
@@ -484,12 +430,12 @@ def get_weight(distance: float, kernel: str, pars: Dict[str, float]) -> float:
 
     Returns
     -------
-    nonnegative float
-        Smoothing weight.
+    1D numpy.ndarray of nonnegative float
+        Smoothing weights.
 
     """
     if kernel == 'exponential':
-        return exponential(distance, pars)
+        return exponential(distance, pars['radius'])
     if kernel == 'tricubic':
-        return tricubic(distance, pars)
-    return depth(distance, pars)
+        return tricubic(distance, pars['radius'], pars['exponent'])
+    return depth(distance, pars['radius'])

@@ -18,60 +18,52 @@ In general, kernel functions should satisfy the following properties:
 TODO:
 * Generalize depth function to include more levels (e.g., sub-national)
 * STGPR has a different depth function than CODEm
+* CODEm has different tricubic radius
 
 """
 from typing import Dict, List, Union
 
-from numba import njit
+from numba import njit, vectorize
 import numpy as np
 
 from weave.utils import as_list, is_numeric
 
 
 @njit
-def exponential(distance: float, pars: Dict[str, float]) -> float:
-    """Get exponential smoothing weight.
+def exponential(distance: np.ndarray, radius: float) -> np.ndarray:
+    """Get exponential smoothing weights.
 
     k_r(x, y) = 1/exp(d(x, y)/r)
     CODEm: r = 1/omega
 
     Parameters
     ----------
-    distance : nonnegative float
-        Distance between points.
-    pars : dict of {str: float}
-        Kernel function parameters.
-
-    Kernel function parameters
-    --------------------------
+    distance : 1D numpy.ndarray of nonnegative float
+        Distances between points.
     radius : positive float
         Kernel radius.
 
     Returns
     -------
-    nonnegative float
-        Exponential smoothing weight.
+    1D np.ndarray of nonnegative float
+        Exponential smoothing weights.
 
     """
-    return 1.0/np.exp(distance/pars['radius'])
+    return 1.0/np.exp(distance/radius)
 
 
 @njit
-def tricubic(distance: float, pars: Dict[str, float]) -> float:
-    """Get tricubic smoothing weight.
+def tricubic(distance: np.ndarray, radius: float, exponent: float) \
+        -> np.ndarray:
+    """Get tricubic smoothing weights.
 
     k_r(x, y) = max(0, (1 - (d(x, y)/r)^s)^3)
     CODEm: s = lambda, r = max(x - x_min, x_max - x) + 1
 
     Parameters
     ----------
-    distance : nonnegative float
-        Distance between points.
-    pars : dict of {str: float}
-        Kernel function parameters.
-
-    Kernel function parameters
-    --------------------------
+    distance : 1D numpy.ndarray of nonnegative float
+        Distances between points.
     radius : positive float
         Kernel radius.
     exponent : positive float
@@ -79,24 +71,24 @@ def tricubic(distance: float, pars: Dict[str, float]) -> float:
 
     Returns
     -------
-    nonnegative float
-        Tricubic smoothing weight.
+    1D numpy.ndarray of nonnegative float
+        Tricubic smoothing weights.
 
     """
-    return max(0.0, (1.0 - (distance/pars['radius'])**pars['exponent'])**3)
+    return np.maximum(0.0, (1.0 - (distance/radius)**exponent)**3)
 
 
-@njit
-def depth(distance: float, pars: Dict[str, float]) -> float:
-    """Get depth smoothing weight.
+@vectorize(['float64(float64,float64)'])
+def depth(distance: np.ndarray, radius: float) -> np.ndarray:
+    """Get depth smoothing weights.
 
     If distance == 0 (same country):
         weight = radius
-    If distance == 1 (same region):
+    If distance in (0, 1] (same region):
         weight = radius*(1 - radius)
-    If distance == 2 (same super-region):
+    If distance in (1, 2] (same super-region):
         weight = (1 - radius)^2
-    If distance >= 3 (different super-region):
+    If distance > 2 (different super-region):
         weight = 0
 
     Need to generalize for more levels (e.g., sub-national).
@@ -105,28 +97,23 @@ def depth(distance: float, pars: Dict[str, float]) -> float:
 
     Parameters
     ----------
-    distance : nonnegative float
-        Distance between points.
-    pars : dict of {str: float}
-        Kernel function parameters.
-
-    Kernel function parameters
-    --------------------------
+    distance : 1D numpy.ndarray of nonnegative float
+        Distances between points.
     radius : float in (0, 1)
         Kernel radius.
 
     Returns
     -------
-    nonnegative float
-        Depth smoothing weight.
+    1D numpy.ndarray of nonnegative float
+        Depth smoothing weights.
 
     """
     if distance == 0.0:
-        return pars['radius']
+        return radius
     if distance <= 1.0:
-        return pars['radius']*(1.0 - pars['radius'])
+        return radius*(1.0 - radius)
     if distance <= 2.0:
-        return (1.0 - pars['radius'])**2
+        return (1.0 - radius)**2
     return 0.0
 
 

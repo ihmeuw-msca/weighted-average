@@ -9,7 +9,6 @@ In general, kernel functions should satisfy the following properties:
 """
 from hypothesis import given, settings
 from hypothesis.strategies import floats
-from numba.typed import Dict
 import numpy as np
 import pytest
 
@@ -47,9 +46,7 @@ def property_1(weight):
 @given(my_nonneg, my_pos)
 def test_exponential_type(distance, radius):
     """Exponential output satisfies property 1."""
-    pars = Dict()
-    pars['radius'] = radius
-    weight = exponential(distance, pars)
+    weight = exponential(distance, radius)
     property_1(weight)
 
 
@@ -57,10 +54,7 @@ def test_exponential_type(distance, radius):
 @given(my_nonneg, my_pos, my_pos)
 def test_tricubic_type(distance, radius, exponent):
     """Tricubic output satisfies property 1."""
-    pars = Dict()
-    pars['radius'] = radius
-    pars['exponent'] = exponent
-    weight = tricubic(distance, pars)
+    weight = tricubic(distance, radius, exponent)
     property_1(weight)
 
 
@@ -68,9 +62,7 @@ def test_tricubic_type(distance, radius, exponent):
 @given(my_nonneg, my_frac)
 def test_depth_type(distance, radius):
     """Depth output satisfies property 1."""
-    pars = Dict()
-    pars['radius'] = radius
-    weight = depth(distance, pars)
+    weight = depth(distance, radius)
     property_1(weight)
 
 
@@ -86,31 +78,24 @@ def property_2(distance_a, distance_b, weight_a, weight_b):
 @given(my_nonneg, my_nonneg, my_pos)
 def test_exponential_direction(distance_a, distance_b, radius):
     """Exponential output satisfies property 2."""
-    pars = Dict()
-    pars['radius'] = radius
-    weight_a = exponential(distance_a, pars)
-    weight_b = exponential(distance_b, pars)
+    weight_a = exponential(distance_a, radius)
+    weight_b = exponential(distance_b, radius)
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 
 @given(my_nonneg, my_nonneg, my_pos, my_pos)
 def test_tricubic_direction(distance_a, distance_b, radius, exponent):
     """Tricubic output satisfies property 2."""
-    pars = Dict()
-    pars['radius'] = radius
-    pars['exponent'] = exponent
-    weight_a = tricubic(distance_a, pars)
-    weight_b = tricubic(distance_b, pars)
+    weight_a = tricubic(distance_a, radius, exponent)
+    weight_b = tricubic(distance_b, radius, exponent)
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 
 @given(my_nonneg, my_nonneg, my_pos)
 def test_depth_direction(distance_a, distance_b, radius):
     """Depth output satisfies property 2."""
-    pars = Dict()
-    pars['radius'] = radius
-    weight_a = depth(distance_a, pars)
-    weight_b = depth(distance_b, pars)
+    weight_a = depth(distance_a, radius)
+    weight_b = depth(distance_b, radius)
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 
@@ -118,36 +103,32 @@ def test_depth_direction(distance_a, distance_b, radius):
 def test_same_country():
     """Test depth kernel with same country."""
     distance = 0
-    pars = Dict()
-    pars['radius'] = 0.9
-    weight = depth(distance, pars)
+    radius = 0.9
+    weight = depth(distance, radius)
     assert np.isclose(weight, 0.9)
 
 
 def test_same_region():
     """Test depth kernel with same region."""
     distance = 1
-    pars = Dict()
-    pars['radius'] = 0.9
-    weight = depth(distance, pars)
+    radius = 0.9
+    weight = depth(distance, radius)
     assert np.isclose(weight, 0.09)
 
 
 def test_same_super_region():
     """Test depth kernel with same super region."""
     distance = 2
-    pars = Dict()
-    pars['radius'] = 0.9
-    weight = depth(distance, pars)
+    radius = 0.9
+    weight = depth(distance, radius)
     assert np.isclose(weight, 0.01)
 
 
 def test_different_super_region():
     """Test depth kernel with different super regions."""
     distance = 3
-    pars = Dict()
-    pars['radius'] = 0.9
-    weight = depth(distance, pars)
+    radius = 0.9
+    weight = depth(distance, radius)
     assert np.isclose(weight, 0.0)
 
 
