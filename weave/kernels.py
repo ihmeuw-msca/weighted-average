@@ -18,7 +18,7 @@ In general, kernel functions should satisfy the following properties:
 TODO:
 * Generalize depth function to include more levels (e.g., sub-national)
 * STGPR has a different depth function than CODEm
-* Change tests based on vectorization and arguments
+* CODEm has different tricubic radius
 
 """
 from typing import Dict, List, Union
@@ -84,11 +84,11 @@ def depth(distance: np.ndarray, radius: float) -> np.ndarray:
 
     If distance == 0 (same country):
         weight = radius
-    If distance == 1 (same region):
+    If distance in (0, 1] (same region):
         weight = radius*(1 - radius)
-    If distance == 2 (same super-region):
+    If distance in (1, 2] (same super-region):
         weight = (1 - radius)^2
-    If distance >= 3 (different super-region):
+    If distance > 2 (different super-region):
         weight = 0
 
     Need to generalize for more levels (e.g., sub-national).
