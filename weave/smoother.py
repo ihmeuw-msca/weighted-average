@@ -14,6 +14,7 @@ from numba.typed import Dict as TypedDict, List as TypedList  # type: ignore
 from numba.types import float64, UniTuple  # type: ignore
 import numpy as np
 from pandas import DataFrame  # type: ignore
+from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
 from weave.dimension import Dimension, TypedDimension
 from weave.distance import dictionary, euclidean, hierarchical
@@ -177,19 +178,36 @@ class Smoother:
         KeyError
             If `dimensions.columns`, `columns`, `fit`, or `predict` not
             in `data`.
+        TypeError
+            If `dimensions.columns`, `columns`, `fit`, or `predict` in
+            `data` contain invalid types.
         ValueError
             If `data` contains NaNs or Infs.
 
         """
         # Check keys
-        if not all(col in data for dim in self._dimensions for col in dim):
-            raise KeyError('`dimensions.columns` not in `data`.')
+        if not all(col in data for dim in self._dimensions
+                   for col in dim.columns):
+            raise KeyError('Not all `dimensions.columns` in `data`.')
         if not all(column in data for column in columns):
-            raise KeyError('`columns` not in `data`.')
-        if fit not in data:
+            raise KeyError('Not all `columns` in `data`.')
+        if fit is not None and fit not in data:
             raise KeyError('`fit` not in `data`.')
-        if predict not in data:
+        if predict is not None and predict not in data:
             raise KeyError('`predict` not in `data`.')
+
+        # Check types
+        if not all(is_numeric_dtype(data[col] for dim in self._dimensions
+                                    for col in dim.columns)):
+            raise TypeError('Not all `dimensions.columns` data int or float.')
+        if not all(is_numeric_dtype(data[col] for col in columns)):
+            raise TypeError('Not all `columns` data int or float.')
+        if fit is not None:
+            if not is_bool_dtype(data[fit]):
+                raise TypeError('`fit` data is not bool.')
+        if predict is not None:
+            if not is_bool_dtype(data[predict]):
+                raise TypeError('`predict` data is not bool.')
 
         # Check values
         if data.isna().any(None):
