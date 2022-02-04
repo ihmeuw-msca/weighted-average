@@ -3,8 +3,6 @@
 
 TODO
 * Write checks and tests
-* Fix mypy errors
-* Type hints not consistent with numba types
 * Check tests for Dimension vs. list of Dimension?
 * Change tests for vectorization?
 * Compile with two points first
@@ -19,21 +17,20 @@ Checks
 """
 from typing import Dict, List, Optional, Tuple, Union
 
-from numba import njit
-from numba.typed import Dict as TypedDict, List as TypedList
-from numba.types import DictType, float64, unicode_type, UniTuple
+from numba import njit  # type: ignore
+from numba.typed import Dict as TypedDict, List as TypedList  # type: ignore
+from numba.types import float64, UniTuple  # type: ignore
 import numpy as np
-from pandas import DataFrame
+from pandas import DataFrame  # type: ignore
 
 from weave.dimension import Dimension, TypedDimension
 from weave.distance import dictionary, euclidean, hierarchical
 from weave.kernels import exponential, depth, tricubic
 from weave.utils import as_list, flatten
 
-Numeric = Union[int, float]
-Pars = Union[Numeric, bool]
-DistanceDict = Dict[Tuple[Numeric, Numeric], Numeric]
-TypedDistanceDict = DictType(UniTuple(float64, 2), float64)
+number = Union[int, float]
+pars = Union[number, bool]
+DistanceDict = Dict[Tuple[number, number], number]
 
 
 class Smoother:
@@ -55,7 +52,7 @@ class Smoother:
             Smoothing dimensions.
 
         """
-        self.dimensions = dimensions
+        self.dimensions = dimensions  # type: ignore
 
     @property
     def dimensions(self) -> List[Dimension]:
@@ -264,13 +261,12 @@ def get_columns(data: DataFrame, columns: Union[str, List[str]],
                     dtype=float).T
 
 
-def get_typed_pars(kernel_pars: Dict[str, Pars]) \
-        -> DictType(unicode_type, float64):
+def get_typed_pars(kernel_pars: Dict[str, pars]) -> Dict[str, float]:
     """Get typed version of `kernel_pars`.
 
     Parameters
     ----------
-    kernel_pars : dict of {str: numeric or bool}
+    kernel_pars : dict of {str: number or bool}
         Kernel function parameters.
 
     Returns
@@ -286,12 +282,12 @@ def get_typed_pars(kernel_pars: Dict[str, Pars]) \
 
 
 def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
-        -> TypedDistanceDict:
+        -> Dict[Tuple[float, float], float]:
     """Get typed version of `distance_dict`.
 
     Parameters
     ----------
-    distance_dict : dict of {(numeric, numeric): numeric}
+    distance_dict : dict of {(number, number): number}
         Dictionary of distances between points if `distance` is
         'dictionary'.
 
@@ -410,7 +406,8 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
 
 @njit
 def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
-                      distance_dict: TypedDistanceDict) -> np.ndarray:
+                      distance_dict: Dict[Tuple[float, float], float]) \
+        -> np.ndarray:
     """Get distances between `x` and `y`.
 
     Parameters
@@ -439,7 +436,7 @@ def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
 
 @njit
 def get_dim_weights(distance: np.ndarray, kernel: str,
-                    pars: Dict[str, float]) -> np.ndarray:
+                    kernel_pars: Dict[str, float]) -> np.ndarray:
     """Get smoothing weights.
 
     Parameters
@@ -448,7 +445,7 @@ def get_dim_weights(distance: np.ndarray, kernel: str,
         Distances between points.
     kernel : str
         Kernel function name.
-    pars : dict of {str: float}
+    kernel_pars : dict of {str: float}
         Kernel function parameters.
 
     Returns
@@ -458,7 +455,8 @@ def get_dim_weights(distance: np.ndarray, kernel: str,
 
     """
     if kernel == 'exponential':
-        return exponential(distance, pars['radius'])
+        return exponential(distance, kernel_pars['radius'])
     if kernel == 'tricubic':
-        return tricubic(distance, pars['radius'], pars['exponent'])
-    return depth(distance, pars['radius'])
+        return tricubic(distance, kernel_pars['radius'],
+                        kernel_pars['exponent'])
+    return depth(distance, kernel_pars['radius'])

@@ -1,25 +1,23 @@
-# pylint: disable=E0611, R0902, R0903, R0913
+# pylint: disable=C0103, E0611, R0902, R0903, R0913
 """Smoothing dimension specifications.
 
 Dimension class to specify smoothing dimension column names, distance
 function, and kernel function.
 
-TODO:
-* Fix mypy errors
-
 """
 from typing import Dict, List, Optional, Tuple, Union
 
-from numba.experimental import jitclass
-from numba.types import DictType, float64, ListType, unicode_type, UniTuple
+from numba.experimental import jitclass  # type: ignore
+from numba.types import DictType, ListType, UniTuple  # type: ignore
+from numba.types import float64, unicode_type  # type: ignore
 
 from weave.distance import check_dict
 from weave.kernels import check_pars
 from weave.utils import as_list
 
-Numeric = Union[int, float]
-Pars = Union[Numeric, bool]
-DistanceDict = Dict[Tuple[Numeric, Numeric], Numeric]
+number = Union[int, float]
+pars = Union[number, bool]
+DistanceDict = Dict[Tuple[number, number], number]
 
 
 class Dimension:
@@ -33,18 +31,18 @@ class Dimension:
         Dimension column names.
     kernel : {'exponential', 'tricubic', 'depth'}
         Kernel function name.
-    kernel_pars : dict of {str: numeric or bool}
+    kernel_pars : dict of {str: number or bool}
         Kernel function parameters.
     distance : {'dictionary', 'euclidean', 'hierarchical'}
         Distance function name.
-    distance_dict : dict of {(numeric, numeric): numeric}
+    distance_dict : dict of {(number, number): number}
         Dictionary of distances between points if `distance` is
         'dictionary'.
 
     """
 
     def __init__(self, name: str, columns: Union[str, List[str]], kernel: str,
-                 kernel_pars: Dict[str, Pars], distance: Optional[str] = None,
+                 kernel_pars: Dict[str, pars], distance: Optional[str] = None,
                  distance_dict: Optional[DistanceDict] = None) -> None:
         """Create smoothing dimension.
 
@@ -56,11 +54,11 @@ class Dimension:
             Dimension column names.
         kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
-        kernel_pars : dict of {str: numeric or bool}
+        kernel_pars : dict of {str: number or bool}
             Kernel function parameters.
         distance : {'dictionary', 'euclidean', 'hierarchical'}, optional
             Distance function name.
-        distance_dict : dict of {(numeric, numeric): numeric}, optional
+        distance_dict : dict of {(number, number): number}, optional
             Dictionary of distances between points if `distance` is
             'dictionary'.
 
@@ -74,10 +72,10 @@ class Dimension:
         Kernel function parameters
         --------------------------
         `kernel` : 'exponential'
-            `radius` : positive numeric
+            `radius` : positive number
         `kernel` : 'tricubic'
-            `radius` : positive numeric
-            `exponent` : positive numeric
+            `radius` : positive number
+            `exponent` : positive number
         `kernel` : 'depth'
             `radius` : float in (0, 1)
             `normalize` : bool, optional
@@ -99,11 +97,11 @@ class Dimension:
 
         """
         self.name = name
-        self.columns = columns
+        self.columns = columns  # type: ignore
         self.kernel = kernel
-        self.kernel_pars = kernel_pars
-        self.distance = distance
-        self.distance_dict = distance_dict
+        self.kernel_pars = kernel_pars  # type: ignore
+        self.distance = distance  # type: ignore
+        self.distance_dict = distance_dict  # type: ignore
 
     @property
     def name(self) -> str:
@@ -238,24 +236,24 @@ class Dimension:
         self._kernel = kernel
 
     @property
-    def kernel_pars(self) -> Dict[str, Pars]:
+    def kernel_pars(self) -> Dict[str, pars]:
         """Get kernel function parameters.
 
         Returns
         -------
-        dict of {str: numeric or bool}
+        dict of {str: number or bool}
             Kernel function parameters.
 
         """
         return self._kernel_pars
 
     @kernel_pars.setter
-    def kernel_pars(self, kernel_pars: Dict[str, Pars]) -> None:
+    def kernel_pars(self, kernel_pars: Dict[str, pars]) -> None:
         """Set kernel function parameters.
 
         Parameters
         ----------
-        kernel_pars : dict of {str: numeric or bool}
+        kernel_pars : dict of {str: number or bool}
             Kernel function parameters.
 
         """
@@ -339,7 +337,7 @@ class Dimension:
 
         Returns
         -------
-        dict of {(numeric, numeric): numeric}
+        dict of {(number, number): number}
             Dictionary of distances between points.
 
         """
@@ -351,7 +349,7 @@ class Dimension:
 
         Parameters
         ----------
-        distance_dict : dict of {(numeric, numeric): numeric}
+        distance_dict : dict of {(number, number): number}
             Dictionary of distances between points.
 
         Raises
@@ -384,12 +382,9 @@ class Dimension:
            ('distance_dict', DictType(UniTuple(float64, 2), float64))])
 class TypedDimension:
     """class docstring"""
-    def __init__(self, name: unicode_type, columns: ListType(unicode_type),
-                 kernel: unicode_type,
-                 kernel_pars: DictType(unicode_type, float64),
-                 distance: unicode_type,
-                 distance_dict: DictType(UniTuple(float64, 2), float64)) \
-            -> None:
+    def __init__(self, name: str, columns: List[str], kernel: str,
+                 kernel_pars: Dict[str, float], distance: str,
+                 distance_dict: Dict[Tuple[float, float], float]) -> None:
         """Create smoothing dimension.
 
         Parameters

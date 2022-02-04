@@ -49,7 +49,7 @@ def flatten(values: List[Union[Any, List[Any]]]) -> List[Any]:
     return list(values[:1]) + flatten(values[1:])
 
 
-def is_numeric(value: Any) -> bool:
+def is_number(value: Any) -> bool:
     """Determine if `value` is an int or float.
 
     Parameters

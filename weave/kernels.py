@@ -15,55 +15,56 @@ In general, kernel functions should satisfy the following properties:
 2. k(x, y) <= k(x', y') if d(x, y) > d(x', y')
    k(x, y) >= k(x', y') if d(x, y) < d(x', y')
 
+Notes:
+* STGPR has a different depth function than CODEm and weave
+* CODEm has a different tricubic radius than weave
+
 TODO:
 * Generalize depth function to include more levels (e.g., sub-national)
-* STGPR has a different depth function than CODEm
-* CODEm has different tricubic radius
 
 """
 from typing import Dict, List, Union
 
-from numba import njit, vectorize
+from numba import njit, vectorize  # type: ignore
 import numpy as np
 
-from weave.utils import as_list, is_numeric
+from weave.utils import as_list, is_number
 
 
 @njit
-def exponential(distance: np.ndarray, radius: float) -> np.ndarray:
-    """Get exponential smoothing weights.
+def exponential(distance: float, radius: float) -> float:
+    """Get exponential smoothing weight.
 
     k_r(x, y) = 1/exp(d(x, y)/r)
     CODEm: r = 1/omega
 
     Parameters
     ----------
-    distance : 1D numpy.ndarray of nonnegative float
-        Distances between points.
+    distance : nonnegative float
+        Distance between points.
     radius : positive float
         Kernel radius.
 
     Returns
     -------
-    1D np.ndarray of nonnegative float
-        Exponential smoothing weights.
+    nonnegative float
+        Exponential smoothing weight.
 
     """
     return 1.0/np.exp(distance/radius)
 
 
 @njit
-def tricubic(distance: np.ndarray, radius: float, exponent: float) \
-        -> np.ndarray:
-    """Get tricubic smoothing weights.
+def tricubic(distance: float, radius: float, exponent: float) -> float:
+    """Get tricubic smoothing weight.
 
     k_r(x, y) = max(0, (1 - (d(x, y)/r)^s)^3)
     CODEm: s = lambda, r = max(x - x_min, x_max - x) + 1
 
     Parameters
     ----------
-    distance : 1D numpy.ndarray of nonnegative float
-        Distances between points.
+    distance : nonnegative float
+        Distance between points.
     radius : positive float
         Kernel radius.
     exponent : positive float
@@ -71,16 +72,16 @@ def tricubic(distance: np.ndarray, radius: float, exponent: float) \
 
     Returns
     -------
-    1D numpy.ndarray of nonnegative float
-        Tricubic smoothing weights.
+    nonnegative float
+        Tricubic smoothing weight.
 
     """
     return np.maximum(0.0, (1.0 - (distance/radius)**exponent)**3)
 
 
 @vectorize(['float64(float64,float64)'])
-def depth(distance: np.ndarray, radius: float) -> np.ndarray:
-    """Get depth smoothing weights.
+def depth(distance: float, radius: float) -> float:
+    """Get depth smoothing weight.
 
     If distance == 0 (same country):
         weight = radius
@@ -91,21 +92,17 @@ def depth(distance: np.ndarray, radius: float) -> np.ndarray:
     If distance > 2 (different super-region):
         weight = 0
 
-    Need to generalize for more levels (e.g., sub-national).
-    STGPR and CODEm have differnet versions. This function uses the
-    CODEm version.
-
     Parameters
     ----------
-    distance : 1D numpy.ndarray of nonnegative float
-        Distances between points.
+    distance : nonnegative float
+        Distance between points.
     radius : float in (0, 1)
         Kernel radius.
 
     Returns
     -------
-    1D numpy.ndarray of nonnegative float
-        Depth smoothing weights.
+    nonnegative float
+        Depth smoothing weight.
 
     """
     if distance == 0.0:
@@ -153,7 +150,7 @@ def check_pars(pars: Dict[str, Union[int, float]],
 
         if types[idx_par] == 'pos_num':
             # Check type
-            if not is_numeric(par_val):
+            if not is_number(par_val):
                 raise TypeError(f"`{par_name}` is not an int or float.")
 
             # Check value

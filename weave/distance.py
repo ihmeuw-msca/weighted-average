@@ -10,25 +10,15 @@ In general, distance functions should satisfy the following properties:
 3. d(x, y) == d(y, x) (symmetry)
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
-Notes
------
-* `euclidean` could be vectorized using the `axis` argument for
-  `np.linalg.norm`, but this is not recognized in numba
-* `hierarchical` could potentially be vectorized using numba's
-  `guvectorize` or numpy's `vectorize` (but the latter isn't recognized
-  by numba)
-* `dictionary` can't be vectorized using numba's `guvectorize` because
-  of the dictionary argument, but we could try numpy's `vectorize`
-
 """
 from typing import Dict, Tuple, Union
 
-from numba import njit
+from numba import njit  # type: ignore
 import numpy as np
 
-from weave.utils import is_numeric
+from weave.utils import is_number
 
-Numeric = Union[int, float]
+number = Union[int, float]
 
 
 @njit
@@ -138,12 +128,12 @@ def dictionary(x: np.ndarray, y: np.ndarray,
     return distance
 
 
-def check_dict(distance_dict: Dict[Tuple[Numeric, Numeric], Numeric]) -> None:
+def check_dict(distance_dict: Dict[Tuple[number, number], number]) -> None:
     """Check dictionary keys and values.
 
     Parameters
     ----------
-    distance_dict : dict of {(numeric, numeric): numeric}
+    distance_dict : dict of {(number, number): number}
         Dictionary of distances between points.
 
     Raises
@@ -160,9 +150,9 @@ def check_dict(distance_dict: Dict[Tuple[Numeric, Numeric], Numeric]) -> None:
         raise TypeError('`distance_dict` is not a dict.')
     if not all(isinstance(key, tuple) for key in distance_dict):
         raise TypeError('`distance_dict` keys not all tuple.')
-    if not all(is_numeric(point) for key in distance_dict for point in key):
+    if not all(is_number(point) for key in distance_dict for point in key):
         raise TypeError('`distance_dict` key entries not all int or float.')
-    if not all(is_numeric(value) for value in distance_dict.values()):
+    if not all(is_number(value) for value in distance_dict.values()):
         raise TypeError('`distance_dict` values not all int or float.')
 
     # Check values

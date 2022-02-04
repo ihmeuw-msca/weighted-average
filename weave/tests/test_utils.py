@@ -3,11 +3,11 @@ from hypothesis import given
 from hypothesis.strategies import integers, floats
 import pytest
 
-from weave.utils import as_list, flatten, is_numeric
+from weave.utils import as_list, flatten, is_number
 
 # Example types
 value_list = [1, 1.0, 'dummy', True, None, (), {}]
-not_numeric = ['dummy', True, None, [], (), {}]
+not_number = ['dummy', True, None, [], (), {}]
 
 # Hypothesis types
 my_integers = integers(min_value=-1e5, max_value=1e5)
@@ -55,20 +55,20 @@ def test_flatten_flat():
     assert flatten(values) == values
 
 
-# Test `is_numeric()`
+# Test `is_number()`
 @given(my_integers)
-def test_int_numeric(value):
+def test_int_number(value):
     """Return True if `value` is an int."""
-    assert is_numeric(value) is True
+    assert is_number(value) is True
 
 
 @given(my_floats)
-def test_float_numeric(value):
+def test_float_number(value):
     """Return True if `value` is a float."""
-    assert is_numeric(value) is True
+    assert is_number(value) is True
 
 
-@pytest.mark.parametrize('value', not_numeric)
-def test_not_numeric(value):
+@pytest.mark.parametrize('value', not_number)
+def test_not_number(value):
     """Return False if `value` is not an int or float."""
-    assert is_numeric(value) is False
+    assert is_number(value) is False
