@@ -1,8 +1,10 @@
 """Tests for smoother function.
 
 TODO:
-* TypeError to ValueError for empty lists
-* So many other things...
+* Exceptions raised for invalid types
+* Exceptions raised for invalid values
+* Exceptions raised for invalid keys
+* Behavior of functions within smoother module
 
 """
 import pytest

@@ -16,9 +16,6 @@ other examples of valid input. Could do this with 'parametrize' or
     - `pars` == {'radius': 0.5, 'normalize': True}
     - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
 
-TODO:
-* Add tests for TypedDimension
-
 """
 import pytest
 

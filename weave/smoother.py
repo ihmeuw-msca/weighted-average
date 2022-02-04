@@ -2,17 +2,9 @@
 """Smooth data across multiple dimensions using weighted averages.
 
 TODO
-* Write checks and tests
-* Check tests for Dimension vs. list of Dimension?
-* Change tests for vectorization?
+* Write tests
 * Compile with two points first
 * Flag for dict vs. dimension weights on the fly
-
-Checks
-* Check for duplicates in columns
-* Check for NaNs and Infs in data frame
-* Check columns, fit, predict in data frame
-* Anything else?
 
 """
 from typing import Dict, List, Optional, Tuple, Union
@@ -143,16 +135,9 @@ class Smoother:
         pandas.DataFrame
             Points in `predict` with smoothed `columns` values.
 
-        Raises
-        ------
-        # Check input types
-        # Check columns, fit, predict in data
-        # Anything else?
-
         """
-        # Run checks (TODO)
-
         # Extract data
+        check_args(data, columns, fit, predict, loop)
         idx_fit = get_indices(data, fit)
         idx_pred = get_indices(data, predict)
         cols = get_columns(data, columns, idx_fit)
@@ -167,6 +152,7 @@ class Smoother:
         data_smooth = data.iloc[idx_pred].reset_index(drop=True)
         for idx_col, col in enumerate(as_list(columns)):
             data_smooth[f"{col}_smooth"] = cols_smooth[:, idx_col]
+
         return data_smooth
 
     def get_points(self, data: DataFrame) -> List[np.ndarray]:
@@ -215,6 +201,69 @@ class Smoother:
                                        distance_dict)
             dim_list.append(typed_dim)
         return dim_list
+
+
+def check_args(data: DataFrame, columns: Union[str, List[str]],
+               fit: Optional[str], predict: Optional[str], loop: bool) -> None:
+    """Check `smoother` argument types and values.
+
+    Parameters
+    ----------
+    data : DataFrame
+        Input data structure.
+    columns : str or list of str
+        Column names of values to smooth.
+    fit : str or None
+        Column name indicating points to include in weighted
+        averages.
+    predict : str or None
+        Column name indicating points to predict smoothed values.
+    loop : bool
+        If True, smooth values for each point in `predict`
+        separately in a loop. Otherwise, populate a matrix of weights
+        for all points in `predict` and smooth values together.
+
+    Raises
+    ------
+    TypeError
+        If `smoother` arguments contain invalid types.
+    ValueError
+        If `columns` is an empty list or contains duplicates, or if
+        `data` contains NaNs or Infs.
+    KeyError
+        If `columns`, `fit`, or `predict` not in `data`.
+
+    """
+    # Check types
+    if not isinstance(data, DataFrame):
+        raise TypeError('`data` is not a DataFrame.')
+    columns = as_list(columns)
+    if not all(isinstance(col, str) for col in columns):
+        raise TypeError('`columns` contains invalid types.')
+    if fit is not None and not isinstance(fit, str):
+        raise TypeError('`fit` is not a str.')
+    if predict is not None and not isinstance(predict, str):
+        raise TypeError('`predict` is not a str.')
+    if not isinstance(loop, bool):
+        raise TypeError('`loop` is not a bool.')
+
+    # Check values
+    if len(columns) == 0:
+        raise ValueError('`columns` is an empty list.')
+    if len(columns) > len(set(columns)):
+        raise ValueError('`columns` contains duplicates.')
+    if data.isna().any(None):
+        raise ValueError('`data` contains NaNs.')
+    if np.isinf(data).any(None):
+        raise ValueError('`data` contains Infs.')
+
+    # Check Keys
+    if not all(column in data for column in columns):
+        raise KeyError('`columns` not in `data`.')
+    if fit not in data:
+        raise KeyError('`fit` not in `data`.')
+    if predict not in data:
+        raise KeyError('`predict` not in `data`.')
 
 
 def get_indices(data: DataFrame, indicator: str = None) -> np.ndarray:
