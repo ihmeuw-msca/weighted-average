@@ -138,6 +138,11 @@ def check_pars(pars: Dict[str, Union[int, float]],
         If a kernel parameter is an invalid value.
 
     """
+    # Check type
+    if not isinstance(pars, dict):
+        raise TypeError('`kernel_pars` is not a dict.')
+
+    # Get parameter names
     names = as_list(names)
     if isinstance(types, str):
         types = [types]*len(names)

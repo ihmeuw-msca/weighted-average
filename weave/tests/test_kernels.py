@@ -28,6 +28,7 @@ my_notfrac = floats(min_value=1.0, max_value=1e5, allow_nan=False,
                     allow_infinity=False, allow_subnormal=False)
 
 # Lists of wrong types to test exceptions
+not_dict = [1, 1.0, 'dummy', True, None, [], ()]
 not_float = [1, 'dummy', True, None, [], (), {}]
 not_numeric = ['dummy', True, None, [], (), {}]
 not_bool = [1, 1.0, 'dummy', None, [], (), {}]
@@ -133,6 +134,13 @@ def test_different_super_region():
 
 
 # Test `check_pars()`
+@pytest.mark.parametrize('pars', not_dict)
+def test_pars_type(pars):
+    """Raise TypeError if `kernel_pars` is not a dict."""
+    with pytest.raises(TypeError):
+        check_pars(pars, 'radius', 'pos_num')
+
+
 @given(my_pos)
 def test_pars_missing(par_val):
     """Raise KeyError if `pars` is missing a kernel parameter."""
