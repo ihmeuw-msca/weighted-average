@@ -1,12 +1,14 @@
-# pylint: disable=C0103, E0611
+# pylint: disable=C0103, E0611, R0913
 """Smooth data across multiple dimensions using weighted averages.
 
 TODO
 * Write checks and tests
 * Fix mypy errors
 * Type hints not consistent with numba types
-* Check tests for Dimension vs. list of Dimension
-* Change docstrings and tests for vectorization
+* Check tests for Dimension vs. list of Dimension?
+* Change tests for vectorization?
+* Compile with two points first
+* Flag for dict vs. dimension weights on the fly
 
 Checks
 * Check for duplicates in columns
@@ -104,7 +106,8 @@ class Smoother:
         self._dimensions = dimensions
 
     def __call__(self, data: DataFrame, columns: Union[str, List[str]],
-                 fit: str = None, predict: str = None) -> DataFrame:
+                 fit: str = None, predict: str = None, loop: bool = False) \
+            -> DataFrame:
         """Smooth data across dimensions with weighted averages.
 
         For each point in `predict`, calculate smoothed value of
@@ -131,6 +134,12 @@ class Smoother:
         predict : str, optional
             Column name indicating points to predict smoothed values.
             If None, predictions are made for all points in `data`.
+        loop : bool, optional
+            If True, smooth values for each point in `predict`
+            separately in a loop. Requires less memory, but is slower.
+            Otherwise, populate a matrix of weights for all points in
+            `predict` and smooth values together. Requires more
+            memory, but is faster. Default is False.
 
         Returns
         -------
@@ -155,7 +164,7 @@ class Smoother:
 
         # Calculate smoothed values
         cols_smooth = smooth_data(dim_list, point_list, cols, idx_fit,
-                                  idx_pred)
+                                  idx_pred, loop)
 
         # Construct smoothed data frame
         data_smooth = data.iloc[idx_pred].reset_index(drop=True)
@@ -173,7 +182,7 @@ class Smoother:
 
         Returns
         -------
-        list of numpy.ndarray of float
+        list of 2D numpy.ndarray of float
             Point locations by dimension.
 
         """
@@ -223,7 +232,7 @@ def get_indices(data: DataFrame, indicator: str = None) -> np.ndarray:
 
     Returns
     -------
-    numpy.ndarray of int
+    1D numpy.ndarray of int
         Indices of `fit` or `predict` points.
 
     """
@@ -247,12 +256,12 @@ def get_columns(data: DataFrame, columns: Union[str, List[str]],
 
     Returns
     -------
-    numpy.ndarray of float
+    2D numpy.ndarray of float
         Values to smooth.
 
     """
     return np.array([data[col].values[idx_fit] for col in as_list(columns)],
-                    dtype=float)
+                    dtype=float).T
 
 
 def get_typed_pars(kernel_pars: Dict[str, Pars]) \
@@ -305,38 +314,52 @@ def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
 
 @njit
 def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
-                cols: np.ndarray, idx_fit: np.ndarray, idx_pred: np.ndarray) \
-        -> np.ndarray:
+                cols: np.ndarray, idx_fit: np.ndarray, idx_pred: np.ndarray,
+                loop: bool = False) -> np.ndarray:
     """Smooth data across dimensions with weighted averages.
 
     Parameters
     ----------
     dim_list : list of TypedDimension
         Smoothing dimensions.
-    point_list : list of numpy.ndarray of float
+    point_list : list of 2D numpy.ndarray of float
         Point locations by dimension.
-    cols : numpy.ndarray of float
+    cols : 2D numpy.ndarray of float
         Values to smooth.
-    idx_fit : numpy.ndarray of int
+    idx_fit : 1D numpy.ndarray of int
         Indices of points to include in weighted averages.
-    idx_pred: numpy.ndarray of int
+    idx_pred: 1D numpy.ndarray of int
         Indices of points to predict smoothed values.
+    loop : bool, optional
+        If True, smooth values for each point in `predict`
+        separately in a loop. Requires less memory, but is slower.
+        Otherwise, populate a matrix of weights for all points in
+        `predict` and smooth values together. Requires more
+        memory, but is faster. Default is False.
 
     Returns
     -------
-    numpy.ndarray of float
+    2D numpy.ndarray of float
         Smoothed values.
 
     """
     # Initialize smoothed values
-    n_cols = len(cols)
+    n_cols = cols.shape[1]
+    n_fit = len(idx_fit)
     n_pred = len(idx_pred)
-    cols_smooth = np.empty((n_pred, n_cols))
 
-    # Calculate smoothed values one point at a time
-    for idx_x in range(n_pred):
-        weights = get_weights(dim_list, point_list, idx_fit, idx_pred[idx_x])
-        cols_smooth[idx_x, :] = cols.dot(weights)
+    if loop:  # Calculate smoothed values one point at a time
+        cols_smooth = np.empty((n_pred, n_cols))
+        for idx_x in range(n_pred):
+            weights = get_weights(dim_list, point_list, idx_fit,
+                                  idx_pred[idx_x])
+            cols_smooth[idx_x, :] = weights.dot(cols)
+    else:  # Calculate smoothed values together
+        weights = np.empty((n_pred, n_fit))
+        for idx_x in range(n_pred):
+            weights[idx_x, :] = get_weights(dim_list, point_list, idx_fit,
+                                            idx_pred[idx_x])
+        cols_smooth = weights.dot(cols)
 
     return cols_smooth
 
@@ -350,16 +373,16 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
     ----------
     dim_list : list of TypedDimension
         Smoothing dimensions.
-    point_list : list of numpy.ndarray
+    point_list : list of 2D numpy.ndarray of float
         Point locations by dimension.
-    idx_fit : numpy.ndarray of int
+    idx_fit : 1D numpy.ndarray of int
         Indices of nearby points to include in weighted averages.
     idx_x : int
         Index of current point to predict smoothed values.
 
     Returns
     -------
-    numpy.ndarray of nonnegative float
+    1D numpy.ndarray of nonnegative float
         Smoothing weights for current point.
 
     """
@@ -382,7 +405,7 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
         else:
             weights *= dim_weights
 
-        return weights/weights.sum()  # what if ALL weights are zero?
+    return weights/weights.sum()
 
 
 @njit
@@ -422,7 +445,7 @@ def get_dim_weights(distance: np.ndarray, kernel: str,
     Parameters
     ----------
     distance : 1D numpy.ndarray of nonnegative float
-        Distance between points.
+        Distances between points.
     kernel : str
         Kernel function name.
     pars : dict of {str: float}
