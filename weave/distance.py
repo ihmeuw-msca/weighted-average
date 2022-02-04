@@ -10,8 +10,15 @@ In general, distance functions should satisfy the following properties:
 3. d(x, y) == d(y, x) (symmetry)
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
-TODO:
-* Change tests based on vectorization
+Notes
+-----
+* `euclidean` could be vectorized using the `axis` argument for
+  `np.linalg.norm`, but this is not recognized in numba
+* `hierarchical` could potentially be vectorized using numba's
+  `guvectorize` or numpy's `vectorize` (but the latter isn't recognized
+  by numba)
+* `dictionary` can't be vectorized using numba's `guvectorize` because
+  of the dictionary argument, but we could try numpy's `vectorize`
 
 """
 from typing import Dict, Tuple, Union
@@ -26,24 +33,24 @@ Numeric = Union[int, float]
 
 @njit
 def euclidean(x: np.ndarray, y: np.ndarray) -> np.ndarray:
-    """Get Euclidean distance between `x` and `y`.
+    """Get Euclidean distances between `x` and `y`.
 
     Parameters
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    y : 1D numpy.ndarray of float
-        Nearby point.
+    y : 2D numpy.ndarray of float
+        Nearby points.
 
     Returns
     -------
     1D numpy.ndarray of nonnegative float
-        Euclidean distance between `x` and `y`.
+        Euclidean distances between `x` and `y`.
 
     """
     # Scalars
     if len(x) == 1:
-        return 1.0*np.abs(x - y)[0]
+        return 1.0*np.abs(x - y).flatten()
 
     # Vectors
     distance = np.empty(len(y))
