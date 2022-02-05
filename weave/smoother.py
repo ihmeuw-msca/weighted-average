@@ -185,11 +185,14 @@ class Smoother:
             If `data` contains NaNs or Infs.
 
         """
+        # Get column names
+        dim_cols = [col for dim in self._dimensions for col in dim.columns]
+        cols = as_list(columns)
+
         # Check keys
-        if not all(col in data for dim in self._dimensions
-                   for col in dim.columns):
+        if not all(col in data for col in dim_cols):
             raise KeyError('Not all `dimensions.columns` in `data`.')
-        if not all(column in data for column in columns):
+        if not all(col in data for col in cols):
             raise KeyError('Not all `columns` in `data`.')
         if fit is not None and fit not in data:
             raise KeyError('`fit` not in `data`.')
@@ -197,10 +200,9 @@ class Smoother:
             raise KeyError('`predict` not in `data`.')
 
         # Check types
-        if not all(is_numeric_dtype(data[col] for dim in self._dimensions
-                                    for col in dim.columns)):
+        if not all(is_numeric_dtype(data[col]) for col in dim_cols):
             raise TypeError('Not all `dimensions.columns` data int or float.')
-        if not all(is_numeric_dtype(data[col] for col in columns)):
+        if not all(is_numeric_dtype(data[col]) for col in cols):
             raise TypeError('Not all `columns` data int or float.')
         if fit is not None:
             if not is_bool_dtype(data[fit]):
@@ -212,7 +214,7 @@ class Smoother:
         # Check values
         if data.isna().any(None):
             raise ValueError('`data` contains NaNs.')
-        if np.isinf(data).any(None):
+        if np.isinf(data[dim_cols + cols]).any(None):
             raise ValueError('`data` contains Infs.')
 
     def get_points(self, data: DataFrame) -> List[np.ndarray]:

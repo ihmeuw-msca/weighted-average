@@ -9,6 +9,7 @@ TODO:
 """
 import pytest
 
+import numpy as np
 from pandas import DataFrame
 
 from weave.dimension import Dimension
@@ -31,14 +32,17 @@ smoother = Smoother([age, year, location])
 
 # Example data
 data = DataFrame({
-    'age_id': ['five', 'five', 'six', 'seven', 'nine'],
+    'age_id': [10, 20, 30, 40, 50],
     'year_id': [1980, 1990, 2000, 2010, 2020],
     'location_id': [5, 5, 6, 7, 9],
     'level_1': [1, 1, 1, 1, 2],
     'level_2': [3, 3, 3, 4, 8],
     'level_3': [5, 5, 6, 7, 9],
     'fit': [True, False, False, True, True],
-    'predict': [False, True, True, False, False]
+    'predict': [False, True, True, False, False],
+    'count': [1.0, 2.0, 3.0, 4.0, 5.0],
+    'residual': [0.1, 0.2, 0.3, 0.4, 0.5],
+    'name': ['a', 'b', 'c', 'd', 'e']
 })
 
 
@@ -87,7 +91,7 @@ def test_duplicate_columns(columns1, columns2, kernel1, kernel2):
 def test_data_type(bad_data):
     """Raise TypeError if `data` is not a DataFrame."""
     with pytest.raises(TypeError):
-        smoother(bad_data, 'dummy')
+        smoother(bad_data, 'residual')
 
 
 @pytest.mark.parametrize('columns', not_columns)
@@ -101,82 +105,112 @@ def test_columns_type(columns):
 @pytest.mark.parametrize('fit', not_str)
 def test_fit_type(fit):
     """Raise TypeError if `fit` is not a str."""
-    with pytest.raises(TypeError):
-        smoother(data, 'dummy', fit)
+    if fit is not None:
+        with pytest.raises(TypeError):
+            smoother(data, 'residual', fit)
 
 
 @pytest.mark.parametrize('predict', not_str)
 def test_predict_type(predict):
     """Raise TypeError if `predict` is not a str."""
-    with pytest.raises(TypeError):
-        smoother(data, 'dummy', predict=predict)
+    if predict is not None:
+        with pytest.raises(TypeError):
+            smoother(data, 'residual', predict=predict)
 
 
 @pytest.mark.parametrize('loop', not_bool)
 def test_loop_type(loop):
     """Raise TypeError if `loop` is not a bool."""
     with pytest.raises(TypeError):
-        smoother(data, 'dummy', loop=loop)
+        smoother(data, 'residual', loop=loop)
 
 
 # Test input values
 def test_columns_values():
     """Raise ValueError if `columns` is an empty list."""
-    pass
+    with pytest.raises(ValueError):
+        smoother(data, [])
 
 
 def test_columns_duplicates():
-    """Raise ValueError if duplicate names in `dimensions`."""
-    pass
+    """Raise ValueError if duplicate names in `columns`."""
+    with pytest.raises(ValueError):
+        smoother(data, ['residual', 'residual'])
 
 
 # Test data keys
-def test_dimensions_in_data():
-    """Raise KeyError if `dimensions` not in `data`."""
-    pass
+@pytest.mark.parametrize('columns', ['dummy', ['location_id', 'dummy']])
+def test_dimensions_in_data(columns):
+    """Raise KeyError if `dimensions.columns` not in `data`."""
+    with pytest.raises(KeyError):
+        dummy = Dimension('dummy', columns, 'exponential', {'radius': 0.9})
+        smoother2 = Smoother([age, year, location, dummy])
+        smoother2(data, 'residual')
 
 
-def test_columns_in_data():
+@pytest.mark.parametrize('columns', ['dummy', ['residual', 'dummy']])
+def test_columns_in_data(columns):
     """Raise KeyError if `columns` not in `data`."""
-    pass
+    with pytest.raises(KeyError):
+        smoother(data, columns)
 
 
 def test_fit_in_data():
     """Raise KeyError if `fit` not in `data`."""
-    pass
+    with pytest.raises(KeyError):
+        smoother(data, 'residual', 'dummy')
 
 
 def test_predict_in_data():
     """Raise KeyError if `predict` not in `data`."""
-    pass
+    with pytest.raises(KeyError):
+        smoother(data, 'residual', predict='dummy')
+
+
+# Test data types
+@pytest.mark.parametrize('columns', ['name', ['location_id', 'name']])
+def test_data_dimensions_type(columns):
+    """Raise TypeError if `dimensions.columns` are not int or float."""
+    with pytest.raises(TypeError):
+        dummy = Dimension('dummy', columns, 'exponential', {'radius': 0.9})
+        smoother2 = Smoother([age, year, location, dummy])
+        smoother2(data, 'residual')
+
+
+@pytest.mark.parametrize('columns', ['name', ['residual', 'name']])
+def test_data_columns_type(columns):
+    """Raise TypeError if `columns` are not int or float."""
+    with pytest.raises(TypeError):
+        smoother(data, columns)
+
+
+@pytest.mark.parametrize('fit', ['age_id', 'count', 'name'])
+def test_data_fit_type(fit):
+    """Raise TypeError if `fit` column is not bool."""
+    with pytest.raises(TypeError):
+        smoother(data, 'residual', fit)
+
+
+@pytest.mark.parametrize('predict', ['age_id', 'count', 'name'])
+def test_data_predict_type(predict):
+    """Raise TypeError if `predict` column is not bool."""
+    with pytest.raises(TypeError):
+        smoother(data, 'residual', predict=predict)
 
 
 # Test data values
 def test_data_nans():
     """Raise ValueError if NaNs in `data`."""
-    pass
+    with pytest.raises(ValueError):
+        data2 = data.copy()
+        data2['dummy'] = 5*[np.nan]
+        smoother(data2, 'residual')
 
 
-def test_data_infs():
+@pytest.mark.parametrize('value', [-np.inf, np.inf])
+def test_data_infs(value):
     """Raise ValueError if Infs in `data`."""
-    pass
-
-
-def test_data_dimensions_type():
-    """Raise TypeError if `dimensions` columns are not int or float."""
-    pass
-
-
-def test_data_columns_type():
-    """Raise TypeError if `columns` colummns are not int or float."""
-    pass
-
-
-def test_data_fit_type():
-    """Raise TypeError if `fit` column is not bool."""
-    pass
-
-
-def test_data_predict_type():
-    """Raise TypeError if `predict` column is not bool."""
-    pass
+    with pytest.raises(ValueError):
+        data2 = data.copy()
+        data2['residual'] = 5*[value]
+        smoother(data2, 'residual')
