@@ -2,10 +2,9 @@
 <html class="no-js">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="weave.distance" href="weave.distance.html" /><link rel="prev" title="API Reference" href="index.html" />
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="weave.distance" href="weave.distance.html" /><link rel="prev" title="API Reference" href="index.html" />
 
-    <meta name="generator" content="sphinx-4.3.2, furo 2022.01.02"/>
+    <meta name="generator" content="sphinx-4.4.0, furo 2022.01.02"/>
         <title>weave.dimension - weave 0.1.0</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=df49af52631e7917044a9c21a57f7b83170a6dd0" />
@@ -209,23 +208,25 @@
           </label>
         </div>
         <article role="main">
-          <section id="module-weave.dimension">
+          <div class="section" id="module-weave.dimension">
 <span id="weave-dimension"></span><h1>weave.dimension<a class="headerlink" href="#module-weave.dimension" title="Permalink to this headline">¶</a></h1>
 <p>Smoothing dimension specifications.</p>
-<p>Dimension class to specify smoothing dimension column name(s), distance
+<p>Dimension class to specify smoothing dimension column names, distance
 function, and kernel function.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="weave.dimension.Dimension">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weave.dimension.</span></span><span class="sig-name descname"><span class="pre">Dimension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dimension</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/dimension.html#Dimension"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.dimension.Dimension" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weave.dimension.</span></span><span class="sig-name descname"><span class="pre">Dimension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_pars</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/dimension.html#Dimension"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.dimension.Dimension" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Smoothing dimension specifications.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dimension</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em>) – </p></li>
+<li><p><strong>name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>columns</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em>) – </p></li>
 <li><p><strong>kernel</strong> (<em>str</em>) – </p></li>
-<li><p><strong>pars</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Union</em><em>[</em><em>int</em><em>, </em><em>float</em><em>]</em><em>]</em>) – </p></li>
+<li><p><strong>kernel_pars</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Union</em><em>[</em><em>int</em><em>, </em><em>float</em><em>, </em><em>bool</em><em>]</em><em>]</em>) – </p></li>
 <li><p><strong>distance</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – </p></li>
+<li><p><strong>distance_dict</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>Tuple</em><em>[</em><em>Union</em><em>[</em><em>int</em><em>, </em><em>float</em><em>]</em><em>, </em><em>Union</em><em>[</em><em>int</em><em>, </em><em>float</em><em>]</em><em>]</em><em>, </em><em>Union</em><em>[</em><em>int</em><em>, </em><em>float</em><em>]</em><em>]</em><em>]</em>) – </p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -233,12 +234,22 @@ function, and kernel function.</p>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="weave.dimension.Dimension.dimension">
-<span class="sig-name descname"><span class="pre">dimension</span></span><a class="headerlink" href="#weave.dimension.Dimension.dimension" title="Permalink to this definition">¶</a></dt>
-<dd><p>Dimension column name(s).</p>
+<dt class="sig sig-object py" id="weave.dimension.Dimension.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#weave.dimension.Dimension.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension name.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>str or list of str</p>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="weave.dimension.Dimension.columns">
+<span class="sig-name descname"><span class="pre">columns</span></span><a class="headerlink" href="#weave.dimension.Dimension.columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension column names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of str</p>
 </dd>
 </dl>
 </dd></dl>
@@ -253,12 +264,12 @@ function, and kernel function.</p>
 </dl>
 </dd></dl>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="weave.dimension.Dimension.pars">
-<span class="sig-name descname"><span class="pre">pars</span></span><a class="headerlink" href="#weave.dimension.Dimension.pars" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="weave.dimension.Dimension.kernel_pars">
+<span class="sig-name descname"><span class="pre">kernel_pars</span></span><a class="headerlink" href="#weave.dimension.Dimension.kernel_pars" title="Permalink to this definition">¶</a></dt>
 <dd><p>Kernel function parameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>dict of {str: float}</p>
+<dd class="field-odd"><p>dict of {str: number or bool}</p>
 </dd>
 </dl>
 </dd></dl>
@@ -268,44 +279,31 @@ function, and kernel function.</p>
 <dd><p>Distance function name.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>{‘euclidean’, ‘hierarchical’}</p>
+<dd class="field-odd"><p>{‘dictionary’, ‘euclidean’, ‘hierarchical’}</p>
 </dd>
 </dl>
 </dd></dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="weave.dimension.Dimension.check_pars">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check_pars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pars</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/dimension.html#Dimension.check_pars"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.dimension.Dimension.check_pars" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check parameter types and values.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="weave.dimension.Dimension.distance_dict">
+<span class="sig-name descname"><span class="pre">distance_dict</span></span><a class="headerlink" href="#weave.dimension.Dimension.distance_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dictionary of distances between points if <cite>distance</cite> is
+‘dictionary’.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>pars</strong> (<em>dict of {str: int</em><em> or </em><em>float}</em>) – Kernel parameters</p></li>
-<li><p><strong>names</strong> (<em>str</em><em> or </em><em>list of str</em>) – Parameter names.</p></li>
-<li><p><strong>types</strong> (<em>str</em><em> or </em><em>list of str</em>) – Parameter types. Valid types are ‘pos_num’ or ‘pos_frac’.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>KeyError</strong> – If <cite>pars</cite> is missing a kernel parameter.</p></li>
-<li><p><strong>TypeError</strong> – If a kernel parameter is an invalid type.</p></li>
-<li><p><strong>ValueError</strong> – If a kernel parameter is an invalid value.</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>None</p>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict of {(number, number): number}</p>
 </dd>
 </dl>
 </dd></dl>
 <dl class="py property">
 <dt class="sig sig-object py" id="id0">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dimension</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get dimension column name(s).</p>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get dimension column names.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Dimension column name(s).</p>
+<dd class="field-odd"><p>Dimension column names.</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p>str or list of str</p>
+<dd class="field-even"><p>list of str</p>
 </dd>
 </dl>
 </dd></dl>
@@ -324,7 +322,20 @@ function, and kernel function.</p>
 </dd></dl>
 <dl class="py property">
 <dt class="sig sig-object py" id="id2">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kernel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#id2" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">distance_dict</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get dictionary of distances between points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>dict of {(number, number)</strong> – Dictionary of distances between points.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>number}</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="id3">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kernel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#id3" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get kernel function name.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -336,20 +347,33 @@ function, and kernel function.</p>
 </dl>
 </dd></dl>
 <dl class="py property">
-<dt class="sig sig-object py" id="id3">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pars</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id3" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="id4">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">kernel_pars</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id4" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get kernel function parameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p><strong>dict of {str</strong> – Kernel function parameters.</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p>float}</p>
+<dd class="field-even"><p>number or bool}</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="id5">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#id5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get dimension name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Dimension name.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
 </dd>
 </dl>
 </dd></dl>
 </dd></dl>
-</section>
+</div>
 
         </article>
       </div>

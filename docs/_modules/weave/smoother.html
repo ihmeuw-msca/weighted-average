@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" />
 
-    <meta name="generator" content="sphinx-4.3.2, furo 2022.01.02"/>
+    <meta name="generator" content="sphinx-4.4.0, furo 2022.01.02"/>
         <title>weave.smoother - weave 0.1.0</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=df49af52631e7917044a9c21a57f7b83170a6dd0" />
@@ -209,31 +209,32 @@
         </div>
         <article role="main">
           <h1>Source code for weave.smoother</h1><div class="highlight"><pre>
-<span></span><span class="c1"># pylint: disable=C0103, E0611, R0913, R0914</span>
+<span></span><span class="c1"># pylint: disable=C0103, E0611, R0913</span>
 <span class="sd">"""Smooth data across multiple dimensions using weighted averages.</span>
 
 <span class="sd">TODO</span>
-<span class="sd">* Write checks and tests</span>
-
-<span class="sd">Checks</span>
-<span class="sd">* Check for duplicates in columns</span>
-<span class="sd">* Check for NaNs and Infs in data frame</span>
-<span class="sd">* Check columns, fit, predict in data frame</span>
-<span class="sd">* Anything else?</span>
+<span class="sd">* Write tests</span>
+<span class="sd">* Compile with two points first</span>
+<span class="sd">* Flag for dict vs. dimension weights on the fly</span>
 
 <span class="sd">"""</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">njit</span>
-<span class="kn">from</span> <span class="nn">numba.typed</span> <span class="kn">import</span> <span class="n">List</span> <span class="k">as</span> <span class="n">TypedList</span>
-<span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">ListType</span><span class="p">,</span> <span class="n">float64</span>
+<span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">njit</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">numba.typed</span> <span class="kn">import</span> <span class="n">Dict</span> <span class="k">as</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">List</span> <span class="k">as</span> <span class="n">TypedList</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">float64</span><span class="p">,</span> <span class="n">UniTuple</span>  <span class="c1"># type: ignore</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
+<span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">pandas.api.types</span> <span class="kn">import</span> <span class="n">is_bool_dtype</span><span class="p">,</span> <span class="n">is_numeric_dtype</span>  <span class="c1"># type: ignore</span>
 
-<span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span>
-<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">euclidean</span><span class="p">,</span> <span class="n">hierarchical</span>
+<span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span><span class="p">,</span> <span class="n">TypedDimension</span>
+<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">euclidean</span><span class="p">,</span> <span class="n">hierarchical</span>
 <span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">exponential</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">tricubic</span>
 <span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">flatten</span>
+
+<span class="n">number</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+<span class="n">pars</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">number</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span>
+<span class="n">DistanceDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">number</span><span class="p">,</span> <span class="n">number</span><span class="p">],</span> <span class="n">number</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="Smoother"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother">[docs]</a><span class="k">class</span> <span class="nc">Smoother</span><span class="p">:</span>
@@ -241,79 +242,73 @@
 
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
-<span class="sd">    dimensions : list of list of Dimension</span>
-<span class="sd">        Smoothing dimension(s).</span>
+<span class="sd">    dimensions : list of Dimension</span>
+<span class="sd">        Smoothing dimensions.</span>
 
 <span class="sd">    """</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dimension</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">"""Create smoother function.</span>
-
-<span class="sd">        Dimension weights are aggregated in the order and groupings</span>
-<span class="sd">        present in `dimensions`. For example, if `dimensions` ==</span>
-<span class="sd">        [['age', 'year'], ['location']], then age and year weights will</span>
-<span class="sd">        be multiplied and normalized, then the result will be</span>
-<span class="sd">        multiplied by location weights and normalized.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        dimensions : list of list of Dimension</span>
-<span class="sd">            Smoothing dimension(s).</span>
+<span class="sd">        dimensions : Dimension or list of Dimension</span>
+<span class="sd">            Smoothing dimensions.</span>
 
 <span class="sd">        """</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="n">dimensions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="n">dimensions</span>  <span class="c1"># type: ignore</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">]]:</span>
-        <span class="sd">"""Get smoothing dimension(s).</span>
+    <span class="k">def</span> <span class="nf">dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">]:</span>
+        <span class="sd">"""Get smoothing dimensions.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        list of list of Dimension</span>
-<span class="sd">            Smoothing dimension(s).</span>
+<span class="sd">        list of Dimension</span>
+<span class="sd">            Smoothing dimensions.</span>
 
 <span class="sd">        """</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span>
 
     <span class="nd">@dimensions</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">"""Set smoothing dimension(s).</span>
+    <span class="k">def</span> <span class="nf">dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dimension</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">]])</span> \
+            <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">"""Set smoothing dimensions.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        dimensions : list of list of Dimension</span>
-<span class="sd">            Smoothing dimension(s).</span>
+<span class="sd">        dimensions : Dimension or list of Dimension</span>
+<span class="sd">            Smoothing dimensions.</span>
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        TypeError</span>
-<span class="sd">            If `dimensions` is not a list of list of Dimension.</span>
+<span class="sd">            If `dimensions` is not a list of Dimension.</span>
 <span class="sd">        ValueError</span>
-<span class="sd">            If duplicates found in `dimensions`.</span>
+<span class="sd">            If `dimensions` is an empty list, contains an empty list,</span>
+<span class="sd">            or contains duplicate names or columns.</span>
 
 <span class="sd">        """</span>
         <span class="c1"># Check types</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dimensions</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`dimensions` is not a list.'</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`dimensions` is an empty list.'</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`dimensions` contains invalid type(s).'</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`dimensions` contains an empty list.'</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">Dimension</span><span class="p">)</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">group</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`dimensions` contains invalid type(s).'</span><span class="p">)</span>
+        <span class="n">dimensions</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">Dimension</span><span class="p">)</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`dimensions` contains invalid types.'</span><span class="p">)</span>
 
-        <span class="c1"># Check duplicates</span>
-        <span class="n">dim_list</span> <span class="o">=</span> <span class="n">flatten</span><span class="p">([</span><span class="n">dim</span><span class="o">.</span><span class="n">dimension</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">flatten</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)])</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dim_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dim_list</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Duplicates found in `dimensions`.'</span><span class="p">)</span>
+        <span class="c1"># Check values</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`dimensions` is an empty list.'</span><span class="p">)</span>
+        <span class="n">name_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">dim</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">name_list</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Duplicate names found in `dimensions`.'</span><span class="p">)</span>
+        <span class="n">col_list</span> <span class="o">=</span> <span class="n">flatten</span><span class="p">([</span><span class="n">dim</span><span class="o">.</span><span class="n">columns</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">col_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">col_list</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Duplicate columns found in `dimensions`.'</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span> <span class="o">=</span> <span class="n">dimensions</span>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
-                 <span class="n">fit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">predict</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+                 <span class="n">fit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">predict</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">loop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
         <span class="sd">"""Smooth data across dimensions with weighted averages.</span>
 
 <span class="sd">        For each point in `predict`, calculate smoothed value of</span>
@@ -333,49 +328,108 @@
 <span class="sd">        data : DataFrame</span>
 <span class="sd">            Input data structure.</span>
 <span class="sd">        columns : str or list of str</span>
-<span class="sd">            Column name(s) of values to smooth.</span>
+<span class="sd">            Column names of values to smooth.</span>
 <span class="sd">        fit : str, optional</span>
 <span class="sd">            Column name indicating points to include in weighted</span>
 <span class="sd">            averages. If None, all points in `data` are used.</span>
 <span class="sd">        predict : str, optional</span>
 <span class="sd">            Column name indicating points to predict smoothed values.</span>
 <span class="sd">            If None, predictions are made for all points in `data`.</span>
+<span class="sd">        loop : bool, optional</span>
+<span class="sd">            If True, smooth values for each point in `predict`</span>
+<span class="sd">            separately in a loop. Requires less memory, but is slower.</span>
+<span class="sd">            Otherwise, populate a matrix of weights for all points in</span>
+<span class="sd">            `predict` and smooth values together. Requires more</span>
+<span class="sd">            memory, but is faster. Default is False.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        pandas.DataFrame</span>
 <span class="sd">            Points in `predict` with smoothed `columns` values.</span>
 
-<span class="sd">        Raises</span>
-<span class="sd">        ------</span>
-<span class="sd">        # Check input types</span>
-<span class="sd">        # Check columns, fit, predict in data</span>
-<span class="sd">        # Anything else?</span>
-
 <span class="sd">        """</span>
-        <span class="c1"># Run checks (TODO)</span>
-
-        <span class="c1"># Extract data from data frame</span>
+        <span class="c1"># Extract data</span>
+        <span class="n">check_args</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">predict</span><span class="p">,</span> <span class="n">loop</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">predict</span><span class="p">)</span>
         <span class="n">idx_fit</span> <span class="o">=</span> <span class="n">get_indices</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">fit</span><span class="p">)</span>
         <span class="n">idx_pred</span> <span class="o">=</span> <span class="n">get_indices</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">predict</span><span class="p">)</span>
-        <span class="n">col_list</span> <span class="o">=</span> <span class="n">get_columns</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">)</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">get_columns</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">)</span>
         <span class="n">point_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_points</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">kernel_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_functions</span><span class="p">(</span><span class="s1">'kernel'</span><span class="p">)</span>
-        <span class="n">pars_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_functions</span><span class="p">(</span><span class="s1">'pars'</span><span class="p">)</span>
-        <span class="n">dist_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_functions</span><span class="p">(</span><span class="s1">'distance'</span><span class="p">)</span>
+        <span class="n">dim_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_typed_dimensions</span><span class="p">()</span>
 
         <span class="c1"># Calculate smoothed values</span>
-        <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">smooth_data</span><span class="p">(</span><span class="n">point_list</span><span class="p">,</span> <span class="n">col_list</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">,</span>
-                                  <span class="n">kernel_list</span><span class="p">,</span> <span class="n">pars_list</span><span class="p">,</span> <span class="n">dist_list</span><span class="p">)</span>
+        <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">smooth_data</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">point_list</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">,</span>
+                                  <span class="n">idx_pred</span><span class="p">,</span> <span class="n">loop</span><span class="p">)</span>
 
         <span class="c1"># Construct smoothed data frame</span>
         <span class="n">data_smooth</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx_pred</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">idx_col</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)):</span>
             <span class="n">data_smooth</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_smooth"</span><span class="p">]</span> <span class="o">=</span> <span class="n">cols_smooth</span><span class="p">[:,</span> <span class="n">idx_col</span><span class="p">]</span>
+
         <span class="k">return</span> <span class="n">data_smooth</span>
 
-<div class="viewcode-block" id="Smoother.get_points"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.get_points">[docs]</a>    <span class="k">def</span> <span class="nf">get_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
-        <span class="sd">"""Get points by dimension group.</span>
+<div class="viewcode-block" id="Smoother.check_data"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.check_data">[docs]</a>    <span class="k">def</span> <span class="nf">check_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+                   <span class="n">fit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">predict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">"""Check input data.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data : DataFrame</span>
+<span class="sd">            Input data structure.</span>
+<span class="sd">        columns : str or list of str</span>
+<span class="sd">            Column names of values to smooth.</span>
+<span class="sd">        fit : str or None</span>
+<span class="sd">            Column name indicating points to include in weighted</span>
+<span class="sd">            averages.</span>
+<span class="sd">        predict : str or None</span>
+<span class="sd">            Column name indicating points to predict smoothed values.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        KeyError</span>
+<span class="sd">            If `dimensions.columns`, `columns`, `fit`, or `predict` not</span>
+<span class="sd">            in `data`.</span>
+<span class="sd">        TypeError</span>
+<span class="sd">            If `dimensions.columns`, `columns`, `fit`, or `predict` in</span>
+<span class="sd">            `data` contain invalid types.</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If `data` contains NaNs or Infs.</span>
+
+<span class="sd">        """</span>
+        <span class="c1"># Get column names</span>
+        <span class="n">dim_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">dim</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
+
+        <span class="c1"># Check keys</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">col</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">dim_cols</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'Not all `dimensions.columns` in `data`.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">col</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'Not all `columns` in `data`.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fit</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'`fit` not in `data`.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">predict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">predict</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'`predict` not in `data`.'</span><span class="p">)</span>
+
+        <span class="c1"># Check types</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">])</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">dim_cols</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'Not all `dimensions.columns` data int or float.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">])</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'Not all `columns` data int or float.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_bool_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">fit</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`fit` data is not bool.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">predict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_bool_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">predict</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`predict` data is not bool.'</span><span class="p">)</span>
+
+        <span class="c1"># Check values</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`data` contains NaNs.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">dim_cols</span> <span class="o">+</span> <span class="n">cols</span><span class="p">])</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`data` contains Infs.'</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Smoother.get_points"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.get_points">[docs]</a>    <span class="k">def</span> <span class="nf">get_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">"""Get point locations by dimension.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -384,36 +438,90 @@
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        list of list of numpy.ndarray of float</span>
-<span class="sd">            Points by dimension group.</span>
+<span class="sd">        list of 2D numpy.ndarray of float</span>
+<span class="sd">            Point locations by dimension.</span>
 
 <span class="sd">        """</span>
         <span class="n">point_list</span> <span class="o">=</span> <span class="n">TypedList</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span><span class="p">:</span>
-            <span class="n">group_list</span> <span class="o">=</span> <span class="n">TypedList</span><span class="p">(</span><span class="n">lsttype</span><span class="o">=</span><span class="n">ListType</span><span class="p">(</span><span class="n">float64</span><span class="p">[:,</span> <span class="p">:]))</span>
-            <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">group</span><span class="p">:</span>
-                <span class="n">dim_array</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">dim</span><span class="o">.</span><span class="n">dimension</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
-                <span class="n">group_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">dim_array</span><span class="p">))</span>
-            <span class="n">point_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">group_list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span><span class="p">:</span>
+            <span class="n">dim_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">dim</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+            <span class="n">dim_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">dim_array</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">point_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dim_array</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">point_list</span></div>
 
-<div class="viewcode-block" id="Smoother.get_functions"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.get_functions">[docs]</a>    <span class="k">def</span> <span class="nf">get_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> \
-            <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]]:</span>
-        <span class="sd">"""Get kernel or distance function data by dimension group.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        func : {'kernel', 'pars', 'distance'}</span>
-<span class="sd">            Name of dimension attribute.</span>
+<div class="viewcode-block" id="Smoother.get_typed_dimensions"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.get_typed_dimensions">[docs]</a>    <span class="k">def</span> <span class="nf">get_typed_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TypedDimension</span><span class="p">]:</span>
+        <span class="sd">"""Get smoothing dimensions cast as jitclass objects.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        list of list of {str or dict of {str: float}}</span>
-<span class="sd">            Kernel or distance function data by dimension group.</span>
+<span class="sd">        list of TypedDimension</span>
+<span class="sd">            Smoothing dimensions cast as jitclass objects.</span>
 
 <span class="sd">        """</span>
-        <span class="k">return</span> <span class="n">TypedList</span><span class="p">(</span><span class="n">TypedList</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">group</span><span class="p">)</span>
-                         <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span><span class="p">)</span></div></div>
+        <span class="n">dim_list</span> <span class="o">=</span> <span class="n">TypedList</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span><span class="p">:</span>
+            <span class="c1"># Get typed version of attributes</span>
+            <span class="n">columns</span> <span class="o">=</span> <span class="n">TypedList</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+            <span class="n">kernel_pars</span> <span class="o">=</span> <span class="n">get_typed_pars</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">kernel_pars</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="s1">'distance_dict'</span><span class="p">):</span>
+                <span class="n">distance_dict</span> <span class="o">=</span> <span class="n">get_typed_dict</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">distance_dict</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">distance_dict</span> <span class="o">=</span> <span class="n">get_typed_dict</span><span class="p">()</span>
+
+            <span class="c1"># Create typed dimension</span>
+            <span class="n">typed_dim</span> <span class="o">=</span> <span class="n">TypedDimension</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel</span><span class="p">,</span>
+                                       <span class="n">kernel_pars</span><span class="p">,</span> <span class="n">dim</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span>
+                                       <span class="n">distance_dict</span><span class="p">)</span>
+            <span class="n">dim_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">typed_dim</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dim_list</span></div></div>
+
+
+<div class="viewcode-block" id="check_args"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.check_args">[docs]</a><span class="k">def</span> <span class="nf">check_args</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+               <span class="n">fit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">predict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">loop</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">"""Check `smoother` argument types and values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : DataFrame</span>
+<span class="sd">        Input data structure.</span>
+<span class="sd">    columns : str or list of str</span>
+<span class="sd">        Column names of values to smooth.</span>
+<span class="sd">    fit : str or None</span>
+<span class="sd">        Column name indicating points to include in weighted</span>
+<span class="sd">        averages.</span>
+<span class="sd">    predict : str or None</span>
+<span class="sd">        Column name indicating points to predict smoothed values.</span>
+<span class="sd">    loop : bool</span>
+<span class="sd">        If True, smooth values for each point in `predict`</span>
+<span class="sd">        separately in a loop. Otherwise, populate a matrix of weights</span>
+<span class="sd">        for all points in `predict` and smooth values together.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If `smoother` arguments contain invalid types.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If `columns` is an empty list or contains duplicates.</span>
+
+<span class="sd">    """</span>
+    <span class="c1"># Check types</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`data` is not a DataFrame.'</span><span class="p">)</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`columns` contains invalid types.'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fit</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`fit` is not a str.'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">predict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">predict</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`predict` is not a str.'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loop</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`loop` is not a bool.'</span><span class="p">)</span>
+
+    <span class="c1"># Check values</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`columns` is an empty list.'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">columns</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`columns` contains duplicates.'</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="get_indices"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_indices">[docs]</a><span class="k">def</span> <span class="nf">get_indices</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">indicator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
@@ -428,7 +536,7 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    numpy.ndarray of int</span>
+<span class="sd">    1D numpy.ndarray of int</span>
 <span class="sd">        Indices of `fit` or `predict` points.</span>
 
 <span class="sd">    """</span>
@@ -438,7 +546,7 @@
 
 
 <div class="viewcode-block" id="get_columns"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_columns">[docs]</a><span class="k">def</span> <span class="nf">get_columns</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
-                <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+                <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">"""Get values to smooth.</span>
 
 <span class="sd">    Parameters</span>
@@ -446,228 +554,219 @@
 <span class="sd">    data : pandas.DataFrame</span>
 <span class="sd">        Input data structure.</span>
 <span class="sd">    columns : str or list of str</span>
-<span class="sd">        Column name(s) of values to smooth.</span>
+<span class="sd">        Column names of values to smooth.</span>
 <span class="sd">    idx_fit : numpy.ndarray of int</span>
 <span class="sd">        Indices of `fit` points.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    list of str</span>
+<span class="sd">    2D numpy.ndarray of float</span>
 <span class="sd">        Values to smooth.</span>
 
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="n">TypedList</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">idx_fit</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">))</span></div>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">idx_fit</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)],</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">T</span></div>
+
+
+<div class="viewcode-block" id="get_typed_pars"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_typed_pars">[docs]</a><span class="k">def</span> <span class="nf">get_typed_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="sd">"""Get typed version of `kernel_pars`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    kernel_pars : dict of {str: number or bool}</span>
+<span class="sd">        Kernel function parameters.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of {str: float}</span>
+<span class="sd">        Typed version of `kernel_pars`.</span>
+
+<span class="sd">    """</span>
+    <span class="n">typed_pars</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
+        <span class="n">typed_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">typed_pars</span></div>
+
+
+<div class="viewcode-block" id="get_typed_dict"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_typed_dict">[docs]</a><span class="k">def</span> <span class="nf">get_typed_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DistanceDict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="sd">"""Get typed version of `distance_dict`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    distance_dict : dict of {(number, number): number}</span>
+<span class="sd">        Dictionary of distances between points if `distance` is</span>
+<span class="sd">        'dictionary'.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of {(float, float): float}</span>
+<span class="sd">        Typed version of `distance_dict`.</span>
+
+<span class="sd">    """</span>
+    <span class="n">typed_dict</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
+        <span class="n">key_type</span><span class="o">=</span><span class="n">UniTuple</span><span class="p">(</span><span class="n">float64</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="n">value_type</span><span class="o">=</span><span class="n">float64</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">distance_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="p">:</span>
+            <span class="n">float_key</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">key</span><span class="p">)</span>
+            <span class="n">typed_dict</span><span class="p">[</span><span class="n">float_key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">typed_dict</span></div>
 
 
 <div class="viewcode-block" id="smooth_data"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.smooth_data">[docs]</a><span class="nd">@njit</span>
-<span class="k">def</span> <span class="nf">smooth_data</span><span class="p">(</span><span class="n">point_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span> <span class="n">col_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
-                <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                <span class="n">kernel_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
-                <span class="n">pars_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span>
-                <span class="n">dist_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">smooth_data</span><span class="p">(</span><span class="n">dim_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TypedDimension</span><span class="p">],</span> <span class="n">point_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                <span class="n">cols</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                <span class="n">loop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">"""Smooth data across dimensions with weighted averages.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    point_list : list of list of numpy.ndarray of float</span>
-<span class="sd">        Point locations by dimension group.</span>
-<span class="sd">    col_list : list of numpy.ndarray of float</span>
+<span class="sd">    dim_list : list of TypedDimension</span>
+<span class="sd">        Smoothing dimensions.</span>
+<span class="sd">    point_list : list of 2D numpy.ndarray of float</span>
+<span class="sd">        Point locations by dimension.</span>
+<span class="sd">    cols : 2D numpy.ndarray of float</span>
 <span class="sd">        Values to smooth.</span>
-<span class="sd">    idx_fit : numpy.ndarray of int</span>
+<span class="sd">    idx_fit : 1D numpy.ndarray of int</span>
 <span class="sd">        Indices of points to include in weighted averages.</span>
-<span class="sd">    idx_pred: numpy.ndarray of int</span>
-<span class="sd">        Indices of points to predict smooth values.</span>
-<span class="sd">    kernel_list : list of list of str</span>
-<span class="sd">        Kernel function names by dimension group.</span>
-<span class="sd">    pars_list : list of list of dict of {str: float}</span>
-<span class="sd">        Kernel function parameters by dimension group.</span>
-<span class="sd">    dist_lsit : list of list of str</span>
-<span class="sd">        Distance function names by dimension group.</span>
+<span class="sd">    idx_pred: 1D numpy.ndarray of int</span>
+<span class="sd">        Indices of points to predict smoothed values.</span>
+<span class="sd">    loop : bool, optional</span>
+<span class="sd">        If True, smooth values for each point in `predict`</span>
+<span class="sd">        separately in a loop. Requires less memory, but is slower.</span>
+<span class="sd">        Otherwise, populate a matrix of weights for all points in</span>
+<span class="sd">        `predict` and smooth values together. Requires more</span>
+<span class="sd">        memory, but is faster. Default is False.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    np.ndarray of float</span>
+<span class="sd">    2D numpy.ndarray of float</span>
 <span class="sd">        Smoothed values.</span>
 
 <span class="sd">    """</span>
     <span class="c1"># Initialize smoothed values</span>
-    <span class="n">n_cols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">col_list</span><span class="p">)</span>
+    <span class="n">n_cols</span> <span class="o">=</span> <span class="n">cols</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">n_fit</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_fit</span><span class="p">)</span>
     <span class="n">n_pred</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_pred</span><span class="p">)</span>
-    <span class="n">smooth_cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">n_pred</span><span class="p">,</span> <span class="n">n_cols</span><span class="p">))</span>
 
-    <span class="c1"># Calculate smoothed values one point at a time</span>
-    <span class="k">for</span> <span class="n">idx_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_pred</span><span class="p">):</span>
-        <span class="n">weights</span> <span class="o">=</span> <span class="n">get_weights</span><span class="p">(</span><span class="n">point_list</span><span class="p">,</span> <span class="n">kernel_list</span><span class="p">,</span> <span class="n">pars_list</span><span class="p">,</span> <span class="n">dist_list</span><span class="p">,</span>
-                              <span class="n">idx_fit</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">[</span><span class="n">idx_x</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">loop</span><span class="p">:</span>  <span class="c1"># Calculate smoothed values one point at a time</span>
+        <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">n_pred</span><span class="p">,</span> <span class="n">n_cols</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">idx_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_pred</span><span class="p">):</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">get_weights</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">point_list</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">,</span>
+                                  <span class="n">idx_pred</span><span class="p">[</span><span class="n">idx_x</span><span class="p">])</span>
+            <span class="n">cols_smooth</span><span class="p">[</span><span class="n">idx_x</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># Calculate smoothed values together</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">n_pred</span><span class="p">,</span> <span class="n">n_fit</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">idx_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_pred</span><span class="p">):</span>
+            <span class="n">weights</span><span class="p">[</span><span class="n">idx_x</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">get_weights</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">point_list</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">,</span>
+                                            <span class="n">idx_pred</span><span class="p">[</span><span class="n">idx_x</span><span class="p">])</span>
+        <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
 
-        <span class="c1"># Compute smoothed values one column at a time</span>
-        <span class="k">for</span> <span class="n">idx_col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_cols</span><span class="p">):</span>
-            <span class="n">smooth_cols</span><span class="p">[</span><span class="n">idx_x</span><span class="p">,</span> <span class="n">idx_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">col_list</span><span class="p">[</span><span class="n">idx_col</span><span class="p">])</span>
-
-    <span class="k">return</span> <span class="n">smooth_cols</span></div>
+    <span class="k">return</span> <span class="n">cols_smooth</span></div>
 
 
 <div class="viewcode-block" id="get_weights"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_weights">[docs]</a><span class="nd">@njit</span>
-<span class="k">def</span> <span class="nf">get_weights</span><span class="p">(</span><span class="n">group_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span>
-                <span class="n">kernel_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
-                <span class="n">pars_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span>
-                <span class="n">dist_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> \
-        <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">get_weights</span><span class="p">(</span><span class="n">dim_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TypedDimension</span><span class="p">],</span> <span class="n">point_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">"""Get smoothing weights for current point.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    group_list : list of list of numpy.ndarray</span>
-<span class="sd">        Point locations across dimension groups.</span>
-<span class="sd">    kernel_list : list of list of str</span>
-<span class="sd">        Kernel function names for dimension groups.</span>
-<span class="sd">    pars_list : list of list of dict of {str: float}</span>
-<span class="sd">        Kernel function parameters for dimension groups.</span>
-<span class="sd">    dist_list : list of list of str</span>
-<span class="sd">        Distance function names for dimension groups.</span>
-<span class="sd">    idx_fit : numpy.ndarray of int</span>
-<span class="sd">        Indices of nearby points in `group_list`.</span>
+<span class="sd">    dim_list : list of TypedDimension</span>
+<span class="sd">        Smoothing dimensions.</span>
+<span class="sd">    point_list : list of 2D numpy.ndarray of float</span>
+<span class="sd">        Point locations by dimension.</span>
+<span class="sd">    idx_fit : 1D numpy.ndarray of int</span>
+<span class="sd">        Indices of nearby points to include in weighted averages.</span>
 <span class="sd">    idx_x : int</span>
-<span class="sd">        Index of current point in `group_list`.</span>
+<span class="sd">        Index of current point to predict smoothed values.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    numpy.ndarray of nonnegative float</span>
+<span class="sd">    1D numpy.ndarray of nonnegative float</span>
 <span class="sd">        Smoothing weights for current point.</span>
 
 <span class="sd">    """</span>
     <span class="c1"># Initialize weight vector</span>
     <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">idx_fit</span><span class="p">))</span>
 
-    <span class="c1"># Calculate weights one group at a time</span>
-    <span class="k">for</span> <span class="n">idx_group</span><span class="p">,</span> <span class="n">dim_list</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">group_list</span><span class="p">):</span>
-        <span class="n">group_weights</span> <span class="o">=</span> <span class="n">get_group_weights</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">kernel_list</span><span class="p">[</span><span class="n">idx_group</span><span class="p">],</span>
-                                          <span class="n">pars_list</span><span class="p">[</span><span class="n">idx_group</span><span class="p">],</span>
-                                          <span class="n">dist_list</span><span class="p">[</span><span class="n">idx_group</span><span class="p">],</span> <span class="n">idx_fit</span><span class="p">,</span> <span class="n">idx_x</span><span class="p">)</span>
-        <span class="n">weights</span> <span class="o">*=</span> <span class="n">group_weights</span>
-        <span class="n">weights</span> <span class="o">/=</span> <span class="n">weights</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-
-    <span class="k">return</span> <span class="n">weights</span></div>
-
-
-<div class="viewcode-block" id="get_group_weights"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_group_weights">[docs]</a><span class="nd">@njit</span>
-<span class="k">def</span> <span class="nf">get_group_weights</span><span class="p">(</span><span class="n">dim_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">kernel_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-                      <span class="n">pars_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span>
-                      <span class="n">dist_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> \
-        <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">"""Get smoothing weights for current point and dimension group.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    dim_list : list of numpy.npdarray</span>
-<span class="sd">        Point locations across group dimension(s).</span>
-<span class="sd">    kernel_list : list of str</span>
-<span class="sd">        Kernel function names for group dimension(s).</span>
-<span class="sd">    pars_list : list of tuple of int or float</span>
-<span class="sd">        Kernel function parameters for group dimension(s).</span>
-<span class="sd">    dist_list : list of str</span>
-<span class="sd">        Distance function names for group dimension(s).</span>
-<span class="sd">    idx_fit : numpy.ndarray of int</span>
-<span class="sd">        Indices of nearby points in `group_list`.</span>
-<span class="sd">    idx_x : int</span>
-<span class="sd">        Index of current point in `group_list`.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    numpy.ndarray of nonnegative float</span>
-<span class="sd">        Smoothing weights for current point and dimension group.</span>
-
-<span class="sd">    """</span>
-    <span class="c1"># Initialize weight vector</span>
-    <span class="n">n_fit</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_fit</span><span class="p">)</span>
-    <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_fit</span><span class="p">)</span>
-
-    <span class="c1"># Calculate weights one dimension at a time</span>
+    <span class="c1"># Calculate weights one dimension at at a time</span>
     <span class="k">for</span> <span class="n">idx_dim</span><span class="p">,</span> <span class="n">dim</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dim_list</span><span class="p">):</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">get_point</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">idx_x</span><span class="p">)</span>
-        <span class="n">pars</span> <span class="o">=</span> <span class="n">pars_list</span><span class="p">[</span><span class="n">idx_dim</span><span class="p">]</span>
+        <span class="n">dim_points</span> <span class="o">=</span> <span class="n">point_list</span><span class="p">[</span><span class="n">idx_dim</span><span class="p">]</span>
+        <span class="n">dim_dists</span> <span class="o">=</span> <span class="n">get_dim_distances</span><span class="p">(</span><span class="n">dim_points</span><span class="p">[</span><span class="n">idx_x</span><span class="p">],</span> <span class="n">dim_points</span><span class="p">[</span><span class="n">idx_fit</span><span class="p">],</span>
+                                      <span class="n">dim</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span> <span class="n">dim</span><span class="o">.</span><span class="n">distance_dict</span><span class="p">)</span>
+        <span class="n">dim_weights</span> <span class="o">=</span> <span class="n">get_dim_weights</span><span class="p">(</span><span class="n">dim_dists</span><span class="p">,</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel</span><span class="p">,</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel_pars</span><span class="p">)</span>
 
-        <span class="c1"># Calculate weights one point at a time</span>
-        <span class="n">dim_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">idx_y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_fit</span><span class="p">):</span>
-            <span class="n">y</span> <span class="o">=</span> <span class="n">get_point</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">[</span><span class="n">idx_y</span><span class="p">])</span>
-            <span class="n">dist</span> <span class="o">=</span> <span class="n">get_distance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">dist_list</span><span class="p">[</span><span class="n">idx_dim</span><span class="p">])</span>
-            <span class="n">dim_weights</span><span class="p">[</span><span class="n">idx_y</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_weight</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">kernel_list</span><span class="p">[</span><span class="n">idx_dim</span><span class="p">],</span> <span class="n">pars</span><span class="p">)</span>
-        <span class="n">weights</span> <span class="o">*=</span> <span class="n">dim_weights</span>
+        <span class="c1"># Optional normalize by subgroup</span>
+        <span class="k">if</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel</span> <span class="o">==</span> <span class="s1">'depth'</span> <span class="ow">and</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dim_weights</span><span class="p">)):</span>
+                <span class="n">idx_weight</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dim_weights</span> <span class="o">==</span> <span class="n">weight</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">weights</span><span class="p">[</span><span class="n">idx_weight</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
+                    <span class="n">weights</span><span class="p">[</span><span class="n">idx_weight</span><span class="p">]</span> <span class="o">*=</span> <span class="n">weight</span><span class="o">/</span><span class="n">weights</span><span class="p">[</span><span class="n">idx_weight</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">*=</span> <span class="n">dim_weights</span>
 
     <span class="k">return</span> <span class="n">weights</span><span class="o">/</span><span class="n">weights</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="get_point"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_point">[docs]</a><span class="nd">@njit</span>
-<span class="k">def</span> <span class="nf">get_point</span><span class="p">(</span><span class="n">dim</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_point</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">"""Get point `x` or `y` as a vector.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    dim : 2D numpy.ndarray of float</span>
-<span class="sd">        Point locations for a given dimension.</span>
-<span class="sd">    idx_point : int</span>
-<span class="sd">        Index of `x` or `y` in `dim`.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    1D numpy.ndarray of float</span>
-<span class="sd">        Point `x` or `y` as a vector.</span>
-
-<span class="sd">    """</span>
-    <span class="k">if</span> <span class="n">dim</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dim</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">idx_point</span><span class="p">]))</span>
-    <span class="k">return</span> <span class="n">dim</span><span class="p">[</span><span class="n">idx_point</span><span class="p">]</span></div>
-
-
-<div class="viewcode-block" id="get_distance"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_distance">[docs]</a><span class="nd">@njit</span>
-<span class="k">def</span> <span class="nf">get_distance</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">distance</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-    <span class="sd">"""Get distance between `x` and `y`.</span>
+<div class="viewcode-block" id="get_dim_distances"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_dim_distances">[docs]</a><span class="nd">@njit</span>
+<span class="k">def</span> <span class="nf">get_dim_distances</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">distance</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                      <span class="n">distance_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">])</span> \
+        <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">"""Get distances between `x` and `y`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    x : 1D numpy.ndarray of float</span>
 <span class="sd">        Current point.</span>
-<span class="sd">    y : 1D numpy.ndarray of float</span>
-<span class="sd">        Nearby point.</span>
+<span class="sd">    y : 2D numpy.ndarray of float</span>
+<span class="sd">        Nearby points.</span>
 <span class="sd">    distance : str</span>
 <span class="sd">        Distance function name.</span>
+<span class="sd">    distance_dict : dict of {(float, float): float}</span>
+<span class="sd">        Dictionary of distances between points.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    nonnegative float</span>
-<span class="sd">        Distance between `x` and `y`.</span>
+<span class="sd">    1D numpy.ndarray of nonnegative float</span>
+<span class="sd">        Distances between `x` and `y`.</span>
 
 <span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">distance</span> <span class="o">==</span> <span class="s1">'dictionary'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dictionary</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">distance_dict</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">distance</span> <span class="o">==</span> <span class="s1">'euclidean'</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">euclidean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">hierarchical</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="get_weight"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_weight">[docs]</a><span class="nd">@njit</span>
-<span class="k">def</span> <span class="nf">get_weight</span><span class="p">(</span><span class="n">distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">kernel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-    <span class="sd">"""Get smoothing weight.</span>
+<div class="viewcode-block" id="get_dim_weights"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_dim_weights">[docs]</a><span class="nd">@njit</span>
+<span class="k">def</span> <span class="nf">get_dim_weights</span><span class="p">(</span><span class="n">distance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">kernel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                    <span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">"""Get smoothing weights.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    distance : nonnegative float</span>
-<span class="sd">        Distance between points.</span>
+<span class="sd">    distance : 1D numpy.ndarray of nonnegative float</span>
+<span class="sd">        Distances between points.</span>
 <span class="sd">    kernel : str</span>
 <span class="sd">        Kernel function name.</span>
-<span class="sd">    pars : dict of {str: float}</span>
+<span class="sd">    kernel_pars : dict of {str: float}</span>
 <span class="sd">        Kernel function parameters.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    nonnegative float</span>
-<span class="sd">        Smoothing weight.</span>
+<span class="sd">    1D numpy.ndarray of nonnegative float</span>
+<span class="sd">        Smoothing weights.</span>
 
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="n">kernel</span> <span class="o">==</span> <span class="s1">'exponential'</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">exponential</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">pars</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">exponential</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">])</span>
     <span class="k">if</span> <span class="n">kernel</span> <span class="o">==</span> <span class="s1">'tricubic'</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">tricubic</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">pars</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">pars</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">tricubic</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">],</span>
+                        <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'exponent'</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">])</span></div>
 </pre></div>
         </article>
       </div>

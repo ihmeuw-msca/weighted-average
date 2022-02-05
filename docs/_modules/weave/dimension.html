@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" />
 
-    <meta name="generator" content="sphinx-4.3.2, furo 2022.01.02"/>
+    <meta name="generator" content="sphinx-4.4.0, furo 2022.01.02"/>
         <title>weave.dimension - weave 0.1.0</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=df49af52631e7917044a9c21a57f7b83170a6dd0" />
@@ -209,20 +209,26 @@
         </div>
         <article role="main">
           <h1>Source code for weave.dimension</h1><div class="highlight"><pre>
-<span></span><span class="c1"># pylint: disable=E0611, R0902</span>
+<span></span><span class="c1"># pylint: disable=C0103, E0611, R0902, R0903, R0913</span>
 <span class="sd">"""Smoothing dimension specifications.</span>
 
-<span class="sd">Dimension class to specify smoothing dimension column name(s), distance</span>
+<span class="sd">Dimension class to specify smoothing dimension column names, distance</span>
 <span class="sd">function, and kernel function.</span>
 
 <span class="sd">"""</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
-<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">from</span> <span class="nn">numba.typed</span> <span class="kn">import</span> <span class="n">Dict</span> <span class="k">as</span> <span class="n">TypedDict</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numba.experimental</span> <span class="kn">import</span> <span class="n">jitclass</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">DictType</span><span class="p">,</span> <span class="n">ListType</span><span class="p">,</span> <span class="n">UniTuple</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">float64</span><span class="p">,</span> <span class="n">unicode_type</span>  <span class="c1"># type: ignore</span>
 
+<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">check_dict</span>
+<span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">check_pars</span>
 <span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span>
+
+<span class="n">number</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+<span class="n">pars</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">number</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span>
+<span class="n">DistanceDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">number</span><span class="p">,</span> <span class="n">number</span><span class="p">],</span> <span class="n">number</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="Dimension"><a class="viewcode-back" href="../../api_reference/weave.dimension.html#weave.dimension.Dimension">[docs]</a><span class="k">class</span> <span class="nc">Dimension</span><span class="p">:</span>
@@ -230,32 +236,42 @@
 
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
-<span class="sd">    dimension : str or list of str</span>
-<span class="sd">        Dimension column name(s).</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Dimension name.</span>
+<span class="sd">    columns : list of str</span>
+<span class="sd">        Dimension column names.</span>
 <span class="sd">    kernel : {'exponential', 'tricubic', 'depth'}</span>
 <span class="sd">        Kernel function name.</span>
-<span class="sd">    pars : dict of {str: float}</span>
+<span class="sd">    kernel_pars : dict of {str: number or bool}</span>
 <span class="sd">        Kernel function parameters.</span>
-<span class="sd">    distance : {'euclidean', 'hierarchical'}</span>
+<span class="sd">    distance : {'dictionary', 'euclidean', 'hierarchical'}</span>
 <span class="sd">        Distance function name.</span>
+<span class="sd">    distance_dict : dict of {(number, number): number}</span>
+<span class="sd">        Dictionary of distances between points if `distance` is</span>
+<span class="sd">        'dictionary'.</span>
 
 <span class="sd">    """</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimension</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">kernel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
-                 <span class="n">distance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">kernel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">],</span> <span class="n">distance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">distance_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DistanceDict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">"""Create smoothing dimension.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        dimension : str or list of str</span>
-<span class="sd">            Dimension column name(s).</span>
+<span class="sd">        name : str</span>
+<span class="sd">            Dimension name.</span>
+<span class="sd">        columns : str or list of str</span>
+<span class="sd">            Dimension column names.</span>
 <span class="sd">        kernel : {'exponential', 'tricubic', 'depth'}</span>
 <span class="sd">            Kernel function name.</span>
-<span class="sd">        pars : dict of {str: int or float}</span>
+<span class="sd">        kernel_pars : dict of {str: number or bool}</span>
 <span class="sd">            Kernel function parameters.</span>
-<span class="sd">        distance : {'euclidean', 'hierarchical'}, optional</span>
+<span class="sd">        distance : {'dictionary', 'euclidean', 'hierarchical'}, optional</span>
 <span class="sd">            Distance function name.</span>
+<span class="sd">        distance_dict : dict of {(number, number): number}, optional</span>
+<span class="sd">            Dictionary of distances between points if `distance` is</span>
+<span class="sd">            'dictionary'.</span>
 
 <span class="sd">        Distance function defaults</span>
 <span class="sd">        --------------------------</span>
@@ -267,68 +283,123 @@
 <span class="sd">        Kernel function parameters</span>
 <span class="sd">        --------------------------</span>
 <span class="sd">        `kernel` : 'exponential'</span>
-<span class="sd">            `radius` : positive int or float</span>
+<span class="sd">            `radius` : positive number</span>
 <span class="sd">        `kernel` : 'tricubic'</span>
-<span class="sd">            `radius` : positive int or float</span>
-<span class="sd">            `exponent` : positive int or float</span>
+<span class="sd">            `radius` : positive number</span>
+<span class="sd">            `exponent` : positive number</span>
 <span class="sd">        `kernel` : 'depth'</span>
 <span class="sd">            `radius` : float in (0, 1)</span>
+<span class="sd">            `normalize` : bool, optional</span>
+
+<span class="sd">        Kernel parameter `normalize` (used only with `depth` kernel)</span>
+<span class="sd">        indicates that dimension weights should be normalized in groups</span>
+<span class="sd">        based on `depth` kernel values before final normalization. For</span>
+<span class="sd">        example, in the CODEm framework, the product of age and time</span>
+<span class="sd">        weights are normalized in groups based on location hierarchy</span>
+<span class="sd">        before being multiplied by location weights, then these results</span>
+<span class="sd">        are normalized across all groups. Default is True.</span>
+
+<span class="sd">        Dictionary `distance_dict` contains the distance between points</span>
+<span class="sd">        `x` and `y`. Dictionary keys are tuples of point pairs</span>
+<span class="sd">        `(x, y)`, where `x` and `y` are floats (e.g., location IDs),</span>
+<span class="sd">        and dictionary values are the corresponding distances. Because</span>
+<span class="sd">        distances are assumed to be symmetric, point pairs are listed</span>
+<span class="sd">        from smallest to largest, e.g., `x` &lt;= `y`.</span>
 
 <span class="sd">        """</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dimension</span> <span class="o">=</span> <span class="n">dimension</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">columns</span>  <span class="c1"># type: ignore</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span> <span class="o">=</span> <span class="n">kernel</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pars</span> <span class="o">=</span> <span class="n">pars</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kernel_pars</span> <span class="o">=</span> <span class="n">kernel_pars</span>  <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span>  <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance_dict</span> <span class="o">=</span> <span class="n">distance_dict</span>  <span class="c1"># type: ignore</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-        <span class="sd">"""Get dimension column name(s).</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">"""Get dimension name.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        str or list of str</span>
-<span class="sd">            Dimension column name(s).</span>
+<span class="sd">        str</span>
+<span class="sd">            Dimension name.</span>
 
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dimension</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimension</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimension</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
 
-    <span class="nd">@dimension</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimension</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">"""Set dimension column name(s).</span>
+    <span class="nd">@name</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">"""Set dimension name.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        dimension : str or list of str</span>
-<span class="sd">            Dimension column name(s).</span>
+<span class="sd">        name : str</span>
+<span class="sd">            Dimension name.</span>
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        AttributeError</span>
-<span class="sd">            If `dimension` has already been set.</span>
+<span class="sd">            If `name` has already been set.</span>
 <span class="sd">        TypeError</span>
-<span class="sd">            If `dimension` not a str or list of str.</span>
-<span class="sd">        ValueError</span>
-<span class="sd">            If `dimension` contains duplicates.</span>
+<span class="sd">            If `name` is not a str.</span>
 
 <span class="sd">        """</span>
-        <span class="c1"># Once set, `dimension` cannot be changed</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'dimension'</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`dimension` cannot be changed.'</span><span class="p">)</span>
+        <span class="c1"># Once set, `name` cannot be changed</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'name'</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`name` cannot be changed.'</span><span class="p">)</span>
+
+        <span class="c1"># Check type</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`name` is not a str.'</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">columns</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">"""Get dimension column names.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list of str</span>
+<span class="sd">            Dimension column names.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_columns</span>
+
+    <span class="nd">@columns</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">columns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">"""Set dimension column names.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        columns : str or list of str</span>
+<span class="sd">            Dimension column names.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AttributeError</span>
+<span class="sd">            If `columns` has already been set.</span>
+<span class="sd">        TypeError</span>
+<span class="sd">            If `columns` not a str or list of str.</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If `columns` is an empty list or contains duplicates.</span>
+
+<span class="sd">        """</span>
+        <span class="c1"># Once set, `columns` cannot be changed</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'columns'</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`columns` cannot be changed.'</span><span class="p">)</span>
 
         <span class="c1"># Check types</span>
-        <span class="n">dimension</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">dimension</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dimension</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`dimension` is an empty list.'</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">dimension</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`dimension` contains invalid type(s).'</span><span class="p">)</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`columns` contains invalid types.'</span><span class="p">)</span>
 
-        <span class="c1"># Check duplicates</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dimension</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dimension</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`dimension` contains duplicates.'</span><span class="p">)</span>
+        <span class="c1"># Check values</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`columns` is an empty list.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">columns</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`columns` contains duplicates.'</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_dimension</span> <span class="o">=</span> <span class="n">dimension</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_columns</span> <span class="o">=</span> <span class="n">columns</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -353,18 +424,18 @@
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
+<span class="sd">        AttributeError</span>
+<span class="sd">            If `kernel` has already been set.</span>
 <span class="sd">        TypeError</span>
 <span class="sd">            If `kernel` not a str.</span>
 <span class="sd">        ValueError</span>
 <span class="sd">            If `kernel` is not a valid kernel function.</span>
 
-<span class="sd">        Warns</span>
-<span class="sd">        -----</span>
-<span class="sd">        UserWarning</span>
-<span class="sd">            Attribute `pars` is deleted when `kernel` is reset, so</span>
-<span class="sd">            `pars` must also be reset.</span>
-
 <span class="sd">        """</span>
+        <span class="c1"># Once set, `kernel` cannot be changed</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'kernel'</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`kernel` cannot be changed.'</span><span class="p">)</span>
+
         <span class="c1"># Check type</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`kernel` is not a str.'</span><span class="p">)</span>
@@ -373,51 +444,47 @@
         <span class="k">if</span> <span class="n">kernel</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'exponential'</span><span class="p">,</span> <span class="s1">'tricubic'</span><span class="p">,</span> <span class="s1">'depth'</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`kernel` is not a valid kernel function.'</span><span class="p">)</span>
 
-        <span class="c1"># Delete kernel parameters</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'pars'</span><span class="p">):</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">'`kernel` has changed; must reset `pars`.'</span><span class="p">)</span>
-            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pars</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">=</span> <span class="n">kernel</span>
 
-        <span class="c1"># Check distance</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'distance'</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span>
-
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">pars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">kernel_pars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">]:</span>
         <span class="sd">"""Get kernel function parameters.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        dict of {str: float}</span>
+<span class="sd">        dict of {str: number or bool}</span>
 <span class="sd">            Kernel function parameters.</span>
 
 <span class="sd">        """</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pars</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_pars</span>
 
-    <span class="nd">@pars</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">pars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="nd">@kernel_pars</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">kernel_pars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">"""Set kernel function parameters.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        pars : dict of {str: int or float}</span>
+<span class="sd">        kernel_pars : dict of {str: number or bool}</span>
 <span class="sd">            Kernel function parameters.</span>
 
 <span class="sd">        """</span>
+        <span class="c1"># Check parameter values</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'exponential'</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">check_pars</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'pos_num'</span><span class="p">)</span>
-            <span class="n">pars</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'radius'</span><span class="p">:</span> <span class="n">pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">]}</span>
+            <span class="n">check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'pos_num'</span><span class="p">)</span>
+            <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'radius'</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">]}</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'tricubic'</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">check_pars</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">],</span> <span class="s1">'pos_num'</span><span class="p">)</span>
-            <span class="n">pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">]}</span>
+            <span class="n">check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">],</span> <span class="s1">'pos_num'</span><span class="p">)</span>
+            <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                           <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">]}</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># 'depth'</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">check_pars</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'pos_frac'</span><span class="p">)</span>
-            <span class="n">pars</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'radius'</span><span class="p">:</span> <span class="n">pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">]}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_pars</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">pars</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">pars</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="k">if</span> <span class="s1">'normalize'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
+                <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">],</span>
+                       <span class="p">[</span><span class="s1">'pos_frac'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
+            <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                           <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_pars</span> <span class="o">=</span> <span class="n">kernel_pars</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -437,22 +504,23 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        distance : {'euclidean', 'hierarchical', None}</span>
+<span class="sd">        distance : {'dictionary', 'euclidean', 'hierarchical', None}</span>
 <span class="sd">            Distance function name.</span>
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
+<span class="sd">        AttributeError</span>
+<span class="sd">            If `distance` has already been set.</span>
 <span class="sd">        TypeError</span>
 <span class="sd">            If `distance` is not a str or None.</span>
 <span class="sd">        ValueError</span>
 <span class="sd">            If `distance` is not a valid distance function.</span>
 
-<span class="sd">        Warns</span>
-<span class="sd">        -----</span>
-<span class="sd">        UserWarning</span>
-<span class="sd">            If `kernel` == 'depth' but `distance` != 'hierarchical'.</span>
-
 <span class="sd">        """</span>
+        <span class="c1"># Once set, `distance` cannot be changed</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'distance'</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`distance` cannot be changed.'</span><span class="p">)</span>
+
         <span class="c1"># Set defaults</span>
         <span class="k">if</span> <span class="n">distance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'depth'</span><span class="p">:</span>
@@ -465,74 +533,94 @@
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance` is not a str.'</span><span class="p">)</span>
 
         <span class="c1"># Check value</span>
-        <span class="k">if</span> <span class="n">distance</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'euclidean'</span><span class="p">,</span> <span class="s1">'hierarchical'</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">distance</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'dictionary'</span><span class="p">,</span> <span class="s1">'euclidean'</span><span class="p">,</span> <span class="s1">'hierarchical'</span><span class="p">):</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s1">'`distance` is not a valid distance function.'</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-
-        <span class="c1"># Check kernel</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'depth'</span> <span class="ow">and</span> <span class="n">distance</span> <span class="o">!=</span> <span class="s1">'hierarchical'</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"`kernel` == 'depth' but `distance` != 'hierarchical'. "</span>
-            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">"Using 'hierarchical' instead."</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-            <span class="n">distance</span> <span class="o">=</span> <span class="s1">'hierarchical'</span>
+        <span class="k">if</span> <span class="n">distance</span> <span class="o">==</span> <span class="s1">'dictionary'</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_columns</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">'Too many column names for `dictionary` distance.'</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_distance</span> <span class="o">=</span> <span class="n">distance</span>
 
-<div class="viewcode-block" id="Dimension.check_pars"><a class="viewcode-back" href="../../api_reference/weave.dimension.html#weave.dimension.Dimension.check_pars">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">check_pars</span><span class="p">(</span><span class="n">pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
-                   <span class="n">names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
-                   <span class="n">types</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">"""Check parameter types and values.</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">distance_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DistanceDict</span><span class="p">:</span>
+        <span class="sd">"""Get dictionary of distances between points.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict of {(number, number): number}</span>
+<span class="sd">            Dictionary of distances between points.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_distance_dict</span>
+
+    <span class="nd">@distance_dict</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">distance_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">distance_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DistanceDict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">"""Set dictionary of distances between points.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        pars : dict of {str: int or float}</span>
-<span class="sd">            Kernel parameters</span>
-<span class="sd">        names : str or list of str</span>
-<span class="sd">            Parameter names.</span>
-<span class="sd">        types : str or list of str</span>
-<span class="sd">            Parameter types. Valid types are 'pos_num' or 'pos_frac'.</span>
+<span class="sd">        distance_dict : dict of {(number, number): number}</span>
+<span class="sd">            Dictionary of distances between points.</span>
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
-<span class="sd">        KeyError</span>
-<span class="sd">            If `pars` is missing a kernel parameter.</span>
-<span class="sd">        TypeError</span>
-<span class="sd">            If a kernel parameter is an invalid type.</span>
+<span class="sd">        AttributeError</span>
+<span class="sd">            If `distance_dict` has already been set.</span>
 <span class="sd">        ValueError</span>
-<span class="sd">            If a kernel parameter is an invalid value.</span>
+<span class="sd">            If `distance` is 'dictionary' but `distance_dict` is None.</span>
 
 <span class="sd">        """</span>
-        <span class="n">names</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">types</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="n">types</span> <span class="o">=</span> <span class="p">[</span><span class="n">types</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+        <span class="c1"># Once set, `distance_dict` cannot be changed</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'distance_dict'</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`distance_dict` cannot be changed.'</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">idx_par</span><span class="p">,</span> <span class="n">par_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
-            <span class="c1"># Check key</span>
-            <span class="k">if</span> <span class="n">par_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pars</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not in `pars`."</span><span class="p">)</span>
-            <span class="n">par_val</span> <span class="o">=</span> <span class="n">pars</span><span class="p">[</span><span class="n">par_name</span><span class="p">]</span>
+        <span class="c1"># Check values</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_distance</span> <span class="o">==</span> <span class="s1">'dictionary'</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">distance_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s2">"`distance` is 'dictionary', "</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'but `distance_dict` is None.'</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">check_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_distance_dict</span> <span class="o">=</span> <span class="n">distance_dict</span></div>
 
-            <span class="k">if</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'pos_num'</span><span class="p">:</span>
-                <span class="c1"># Check type</span>
-                <span class="n">is_bool</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">par_val</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
-                <span class="n">is_int</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">par_val</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">))</span>
-                <span class="n">is_float</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">par_val</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">))</span>
-                <span class="k">if</span> <span class="n">is_bool</span> <span class="ow">or</span> <span class="ow">not</span> <span class="p">(</span><span class="n">is_int</span> <span class="ow">or</span> <span class="n">is_float</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not an int or float."</span><span class="p">)</span>
 
-                <span class="c1"># Check value</span>
-                <span class="k">if</span> <span class="n">par_val</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not positive."</span><span class="p">)</span>
+<span class="nd">@jitclass</span><span class="p">([(</span><span class="s1">'name'</span><span class="p">,</span> <span class="n">unicode_type</span><span class="p">),</span>
+           <span class="p">(</span><span class="s1">'columns'</span><span class="p">,</span> <span class="n">ListType</span><span class="p">(</span><span class="n">unicode_type</span><span class="p">)),</span>
+           <span class="p">(</span><span class="s1">'kernel'</span><span class="p">,</span> <span class="n">unicode_type</span><span class="p">),</span>
+           <span class="p">(</span><span class="s1">'kernel_pars'</span><span class="p">,</span> <span class="n">DictType</span><span class="p">(</span><span class="n">unicode_type</span><span class="p">,</span> <span class="n">float64</span><span class="p">)),</span>
+           <span class="p">(</span><span class="s1">'distance'</span><span class="p">,</span> <span class="n">unicode_type</span><span class="p">),</span>
+           <span class="p">(</span><span class="s1">'distance_dict'</span><span class="p">,</span> <span class="n">DictType</span><span class="p">(</span><span class="n">UniTuple</span><span class="p">(</span><span class="n">float64</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">float64</span><span class="p">))])</span>
+<span class="k">class</span> <span class="nc">TypedDimension</span><span class="p">:</span>
+    <span class="sd">"""class docstring"""</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">kernel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">distance</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">distance_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">"""Create smoothing dimension.</span>
 
-            <span class="k">else</span><span class="p">:</span>  <span class="c1"># 'pos_frac'</span>
-                <span class="c1"># Check type</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">par_val</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">)):</span>
-                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not a float."</span><span class="p">)</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            Dimension name.</span>
+<span class="sd">        columns : list of str</span>
+<span class="sd">            Dimension column names.</span>
+<span class="sd">        kernel : {'exponential', 'tricubic', 'depth'}</span>
+<span class="sd">            Kernel function name.</span>
+<span class="sd">        kernel_pars : dict of {str: float}</span>
+<span class="sd">            Kernel function parameters.</span>
+<span class="sd">        distance : {'dictionary', 'euclidean', 'hierarchical'}</span>
+<span class="sd">            Distance function name.</span>
+<span class="sd">        distance_dict : dict of {(float, float): float}</span>
+<span class="sd">            Dictionary of distances between points if `distance` is</span>
+<span class="sd">            'dictionary'.</span>
 
-                <span class="c1"># Check value</span>
-                <span class="k">if</span> <span class="n">par_val</span> <span class="o">&lt;=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">par_val</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not in (0, 1)."</span><span class="p">)</span></div></div>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">columns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span> <span class="o">=</span> <span class="n">kernel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kernel_pars</span> <span class="o">=</span> <span class="n">kernel_pars</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance_dict</span> <span class="o">=</span> <span class="n">distance_dict</span>
 </pre></div>
         </article>
       </div>

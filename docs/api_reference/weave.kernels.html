@@ -2,10 +2,9 @@
 <html class="no-js">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="weave.smoother" href="weave.smoother.html" /><link rel="prev" title="weave.distance" href="weave.distance.html" />
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="weave.smoother" href="weave.smoother.html" /><link rel="prev" title="weave.distance" href="weave.distance.html" />
 
-    <meta name="generator" content="sphinx-4.3.2, furo 2022.01.02"/>
+    <meta name="generator" content="sphinx-4.4.0, furo 2022.01.02"/>
         <title>weave.kernels - weave 0.1.0</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=df49af52631e7917044a9c21a57f7b83170a6dd0" />
@@ -209,7 +208,7 @@
           </label>
         </div>
         <article role="main">
-          <section id="module-weave.kernels">
+          <div class="section" id="module-weave.kernels">
 <span id="weave-kernels"></span><h1>weave.kernels<a class="headerlink" href="#module-weave.kernels" title="Permalink to this headline">¶</a></h1>
 <p>Calculate the smoothing weight for nearby point given current point.</p>
 <p>Kernel functions to calculate the smoothing weight for a nearby point
@@ -230,47 +229,38 @@ given the current point, where points are given as scalars or vectors.</p>
 <blockquote>
 <div><p>k(x, y) &gt;= k(x’, y’) if d(x, y) &lt; d(x’, y’)</p>
 </div></blockquote>
+<p>Notes:
+* STGPR has a different depth function than CODEm and weave
+* CODEm has a different tricubic radius than weave</p>
 <p>TODO:
-* Generalize depth function to include more levels (e.g., sub-national)
-* STGPR has a different depth function than CODEm</p>
+* Generalize depth function to include more levels (e.g., sub-national)</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="weave.kernels.depth">
-<span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">depth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/kernels.html#depth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.kernels.depth" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get depth smoothing weight.</p>
-<dl class="simple">
-<dt>If distance == 0 (same country):</dt><dd><p>weight = radius</p>
-</dd>
-<dt>If distance == 1 (same region):</dt><dd><p>weight = radius*(1 - radius)</p>
-</dd>
-<dt>If distance == 2 (same super-region):</dt><dd><p>weight = (1 - radius)^2</p>
-</dd>
-<dt>If distance &gt;= 3 (different super-region):</dt><dd><p>weight = 0</p>
-</dd>
-</dl>
-<p>Need to generalize for more levels (e.g., sub-national).
-STGPR and CODEm have differnet versions. This function uses the
-CODEm version.</p>
+<dt class="sig sig-object py" id="weave.kernels.check_pars">
+<span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">check_pars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pars</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/kernels.html#check_pars"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.kernels.check_pars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check kernel parameter types and values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>distance</strong> (<em>nonnegative float</em>) – Distance between points.</p></li>
-<li><p><strong>pars</strong> (<em>dict of {str: float}</em>) – Kernel function parameters.</p></li>
-<li><p><strong>parameters</strong> (<em>Kernel function</em>) – </p></li>
-<li><p><strong>--------------------------</strong> – </p></li>
-<li><p><strong>radius</strong> (<em>float in</em><em> (</em><em>0</em><em>, </em><em>1</em><em>)</em>) – Kernel radius.</p></li>
+<li><p><strong>pars</strong> (<em>dict of {str: int</em><em> or </em><em>float}</em>) – Kernel parameters</p></li>
+<li><p><strong>names</strong> (<em>str</em><em> or </em><em>list of str</em>) – Parameter names.</p></li>
+<li><p><strong>types</strong> (<em>str</em><em> or </em><em>list of str</em>) – Parameter types. Valid types are ‘pos_num’, ‘pos_frac’, ‘bool’.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Depth smoothing weight.</p>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>KeyError</strong> – If <cite>pars</cite> is missing a kernel parameter.</p></li>
+<li><p><strong>TypeError</strong> – If a kernel parameter is an invalid type.</p></li>
+<li><p><strong>ValueError</strong> – If a kernel parameter is an invalid value.</p></li>
+</ul>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>nonnegative float</p>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="weave.kernels.exponential">
-<span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">exponential</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/kernels.html#exponential"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.kernels.exponential" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">exponential</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/kernels.html#exponential"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.kernels.exponential" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get exponential smoothing weight.</p>
 <p>k_r(x, y) = 1/exp(d(x, y)/r)
 CODEm: r = 1/omega</p>
@@ -278,9 +268,6 @@ CODEm: r = 1/omega</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>distance</strong> (<em>nonnegative float</em>) – Distance between points.</p></li>
-<li><p><strong>pars</strong> (<em>dict of {str: float}</em>) – Kernel function parameters.</p></li>
-<li><p><strong>parameters</strong> (<em>Kernel function</em>) – </p></li>
-<li><p><strong>--------------------------</strong> – </p></li>
 <li><p><strong>radius</strong> (<em>positive float</em>) – Kernel radius.</p></li>
 </ul>
 </dd>
@@ -294,7 +281,7 @@ CODEm: r = 1/omega</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="weave.kernels.tricubic">
-<span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">tricubic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/kernels.html#tricubic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.kernels.tricubic" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">tricubic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exponent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/kernels.html#tricubic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.kernels.tricubic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get tricubic smoothing weight.</p>
 <p>k_r(x, y) = max(0, (1 - (d(x, y)/r)^s)^3)
 CODEm: s = lambda, r = max(x - x_min, x_max - x) + 1</p>
@@ -302,9 +289,6 @@ CODEm: s = lambda, r = max(x - x_min, x_max - x) + 1</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>distance</strong> (<em>nonnegative float</em>) – Distance between points.</p></li>
-<li><p><strong>pars</strong> (<em>dict of {str: float}</em>) – Kernel function parameters.</p></li>
-<li><p><strong>parameters</strong> (<em>Kernel function</em>) – </p></li>
-<li><p><strong>--------------------------</strong> – </p></li>
 <li><p><strong>radius</strong> (<em>positive float</em>) – Kernel radius.</p></li>
 <li><p><strong>exponent</strong> (<em>positive float</em>) – Exponent value.</p></li>
 </ul>
@@ -317,7 +301,7 @@ CODEm: s = lambda, r = max(x - x_min, x_max - x) + 1</p>
 </dd>
 </dl>
 </dd></dl>
-</section>
+</div>
 
         </article>
       </div>
