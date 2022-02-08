@@ -20,6 +20,14 @@ def as_list(values: Union[Any, List[Any]]) -> List[Any]:
     list of Any
         Input `values` as a list.
 
+    Examples
+    --------
+    >>> as_list('single_value')
+    ['single_value']
+
+    >>> as_list(['list', 'of', 'values'])
+    ['list', 'of', 'values']
+
     """
     if isinstance(values, list):
         return values
@@ -38,6 +46,14 @@ def flatten(values: List[Union[Any, List[Any]]]) -> List[Any]:
     -------
     list of Any
         Flattened list.
+
+    Examples
+    --------
+    >>> flatten(['age', 'year', ['super_region', 'region', 'location']])
+    ['age', 'year', 'super_region', 'region', 'location']
+
+    >>> flatten (['a', ['b', ['c', ['d']]]])
+    ['a', 'b', 'c', 'd']
 
     """
     if not isinstance(values, (list, TypedList)):
@@ -61,6 +77,17 @@ def is_number(value: Any) -> bool:
     -------
     bool
         If `value` is an int or float.
+
+    Examples
+    --------
+    >>> is_number(1)
+    True
+
+    >>> is_number(1.0)
+    True
+
+    >>> is_number('one')
+    False
 
     """
     if isinstance(value, (int, np.integer)) and not isinstance(value, bool):

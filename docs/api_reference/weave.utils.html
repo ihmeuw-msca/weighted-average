@@ -226,6 +226,15 @@
 <dd class="field-odd"><p>list of Any</p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">as_list</span><span class="p">(</span><span class="s1">'single_value'</span><span class="p">)</span>
+<span class="go">['single_value']</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">as_list</span><span class="p">([</span><span class="s1">'list'</span><span class="p">,</span> <span class="s1">'of'</span><span class="p">,</span> <span class="s1">'values'</span><span class="p">])</span>
+<span class="go">['list', 'of', 'values']</span>
+</pre></div>
+</div>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="weave.utils.flatten">
@@ -242,6 +251,15 @@
 <dd class="field-odd"><p>list of Any</p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">flatten</span><span class="p">([</span><span class="s1">'age'</span><span class="p">,</span> <span class="s1">'year'</span><span class="p">,</span> <span class="p">[</span><span class="s1">'super_region'</span><span class="p">,</span> <span class="s1">'region'</span><span class="p">,</span> <span class="s1">'location'</span><span class="p">]])</span>
+<span class="go">['age', 'year', 'super_region', 'region', 'location']</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">flatten</span> <span class="p">([</span><span class="s1">'a'</span><span class="p">,</span> <span class="p">[</span><span class="s1">'b'</span><span class="p">,</span> <span class="p">[</span><span class="s1">'c'</span><span class="p">,</span> <span class="p">[</span><span class="s1">'d'</span><span class="p">]]]])</span>
+<span class="go">['a', 'b', 'c', 'd']</span>
+</pre></div>
+</div>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="weave.utils.is_number">
@@ -258,6 +276,19 @@
 <dd class="field-odd"><p>bool</p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="s1">'one'</span><span class="p">)</span>
+<span class="go">False</span>
+</pre></div>
+</div>
 </dd></dl>
 </div>
 
