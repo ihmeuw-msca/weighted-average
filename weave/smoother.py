@@ -11,13 +11,12 @@ from typing import Dict, List, Optional, Tuple, Union
 
 from numba import njit  # type: ignore
 from numba.typed import Dict as TypedDict, List as TypedList  # type: ignore
-from numba.types import float64, UniTuple  # type: ignore
 import numpy as np
 from pandas import DataFrame  # type: ignore
 from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
 from weave.dimension import Dimension, TypedDimension
-from weave.distance import dictionary, euclidean, hierarchical
+from weave.distance import dictionary, get_typed_dict, euclidean, hierarchical
 from weave.kernels import exponential, depth, tricubic
 from weave.utils import as_list, flatten
 
@@ -375,33 +374,6 @@ def get_typed_pars(kernel_pars: Dict[str, pars]) -> Dict[str, float]:
     for key in kernel_pars:
         typed_pars[key] = float(kernel_pars[key])
     return typed_pars
-
-
-def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
-        -> Dict[Tuple[float, float], float]:
-    """Get typed version of `distance_dict`.
-
-    Parameters
-    ----------
-    distance_dict : dict of {(number, number): number}
-        Dictionary of distances between points if `distance` is
-        'dictionary'.
-
-    Returns
-    -------
-    dict of {(float, float): float}
-        Typed version of `distance_dict`.
-
-    """
-    typed_dict = TypedDict.empty(
-        key_type=UniTuple(float64, 2),
-        value_type=float64
-    )
-    if distance_dict is not None:
-        for key in distance_dict:
-            float_key = tuple(float(point) for point in key)
-            typed_dict[float_key] = float(distance_dict[key])
-    return typed_dict
 
 
 @njit
