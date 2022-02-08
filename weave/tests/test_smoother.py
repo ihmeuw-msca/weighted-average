@@ -1,10 +1,7 @@
 """Tests for smoother function.
 
 TODO:
-* Exceptions raised for invalid types
-* Exceptions raised for invalid values
-* Exceptions raised for invalid keys
-* Behavior of functions within smoother module
+* Test behavior of functions within smoother module
 
 """
 import pytest
