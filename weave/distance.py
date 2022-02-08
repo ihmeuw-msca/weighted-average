@@ -123,6 +123,7 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     Examples
     --------
     .. image:: images/hierarchy.png
+
     >>> import numpy as np
     >>> from weave.distance import hierarchical
     >>> x = np.array([1., 2., 4.])
