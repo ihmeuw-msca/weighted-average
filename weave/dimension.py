@@ -11,7 +11,7 @@ from numba.experimental import jitclass  # type: ignore
 from numba.types import DictType, ListType, UniTuple  # type: ignore
 from numba.types import float64, unicode_type  # type: ignore
 
-from weave.distance import check_dict
+from weave.distance import _check_dict
 from weave.kernels import check_pars
 from weave.utils import as_list
 
@@ -370,7 +370,7 @@ class Dimension:
                 msg = "`distance` is 'dictionary', "
                 msg += 'but `distance_dict` is None.'
                 raise ValueError(msg)
-            check_dict(distance_dict)
+            _check_dict(distance_dict)
             self._distance_dict = distance_dict
 
 
