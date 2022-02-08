@@ -260,11 +260,11 @@
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; flatten([1, [2, [3, [4]]]])</span>
+<span class="sd">    [1, 2, 3, 4]</span>
+
 <span class="sd">    &gt;&gt;&gt; flatten(['age', 'year', ['super_region', 'region', 'location']])</span>
 <span class="sd">    ['age', 'year', 'super_region', 'region', 'location']</span>
-
-<span class="sd">    &gt;&gt;&gt; flatten (['a', ['b', ['c', ['d']]]])</span>
-<span class="sd">    ['a', 'b', 'c', 'd']</span>
 
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">TypedList</span><span class="p">)):</span>

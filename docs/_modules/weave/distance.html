@@ -209,137 +209,265 @@
         </div>
         <article role="main">
           <h1>Source code for weave.distance</h1><div class="highlight"><pre>
-<span></span><span class="c1"># pylint: disable=C0103</span>
-<span class="sd">"""Calculate the distance between two points.</span>
+<span></span><span class="c1"># pylint: disable=C0103, E0611, W1401</span>
+<span class="sd">"""Calculate the distance between points.</span>
 
-<span class="sd">Distance functions to calculate the distance between two points, where</span>
-<span class="sd">points are given as scalars or vectors.</span>
+<span class="sd">Distance functions to calculate the distances between the current point</span>
+<span class="sd">and a vector of nearby points. While points can be either scalars or</span>
+<span class="sd">vectors, scalars must be cast as 1D vectors to comply with `Numba</span>
+<span class="sd">&lt;https://numba.readthedocs.io/en/stable/index.html&gt;`_ just-in-time</span>
+<span class="sd">compilation.</span>
 
-<span class="sd">In general, distance functions should satisfy the following properties:</span>
-<span class="sd">1. d(x, y) is real-valued, finite, and nonnegative</span>
-<span class="sd">2. d(x, y) == 0 if and only if x == y</span>
-<span class="sd">3. d(x, y) == d(y, x) (symmetry)</span>
-<span class="sd">4. d(x, y) &lt;= d(x, z) + d(z, y) (triangle inequality)</span>
+<span class="sd">Notes</span>
+<span class="sd">-----</span>
+<span class="sd">In general, distance functions should satisfy the following properties</span>
+<span class="sd">[1]_:</span>
+
+<span class="sd">1. :math:`d(x, y)` is real-valued, finite, and nonnegative</span>
+<span class="sd">2. :math:`d(x, y) = 0` if and only if :math:`x = y`</span>
+<span class="sd">3. :math:`d(x, y) = d(y, x)` (symmetry)</span>
+<span class="sd">4. :math:`d(x, y) \\leq d(x, z) + d(z, y)` (triangle inequality)</span>
+
+<span class="sd">References</span>
+<span class="sd">----------</span>
+<span class="sd">.. [1] `Metric (mathematics)</span>
+<span class="sd">       &lt;https://en.wikipedia.org/wiki/Metric_(mathematics)&gt;`_</span>
 
 <span class="sd">"""</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">njit</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">numba.typed</span> <span class="kn">import</span> <span class="n">Dict</span> <span class="k">as</span> <span class="n">TypedDict</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">float64</span><span class="p">,</span> <span class="n">UniTuple</span>  <span class="c1"># type: ignore</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">is_number</span>
 
 <span class="n">number</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+<span class="n">DistanceDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">number</span><span class="p">,</span> <span class="n">number</span><span class="p">],</span> <span class="n">number</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="euclidean"><a class="viewcode-back" href="../../api_reference/weave.distance.html#weave.distance.euclidean">[docs]</a><span class="nd">@njit</span>
-<span class="k">def</span> <span class="nf">euclidean</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">"""Get Euclidean distances between `x` and `y`.</span>
+<span class="k">def</span> <span class="nf">euclidean</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">"""Get Euclidean distances between `x` and `Y`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    x : 1D numpy.ndarray of float</span>
 <span class="sd">        Current point.</span>
-<span class="sd">    y : 2D numpy.ndarray of float</span>
-<span class="sd">        Nearby points.</span>
+<span class="sd">    Y : 2D numpy.ndarray of float</span>
+<span class="sd">        Matrix of nearby points.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    1D numpy.ndarray of nonnegative float</span>
-<span class="sd">        Euclidean distances between `x` and `y`.</span>
+<span class="sd">        Euclidean distances between `x` and `Y`.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    For a pair of 1D points, this function computes the absolute value</span>
+<span class="sd">    of their difference:</span>
+
+<span class="sd">    .. math:: d(x, y) = |x - y|</span>
+
+<span class="sd">    For a pair of ND points, this function computes the *n*-dimensional</span>
+<span class="sd">    Euclidean distance [2]_:</span>
+
+<span class="sd">    .. math:: d(x, y) = \\sqrt{(x_1 - y_1)^2 + (x_2 - y_2)^2 + \\</span>
+<span class="sd">              \\dots + (x_n - y_n)^2}</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [2] `Euclidean distance</span>
+<span class="sd">           &lt;https://en.wikipedia.org/wiki/Euclidean_distance&gt;`_</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from weave.distance import euclidean</span>
+<span class="sd">    &gt;&gt;&gt; x = np.array([0.])</span>
+<span class="sd">    &gt;&gt;&gt; Y = np.array([[-1.], [0.], [1.]])</span>
+<span class="sd">    &gt;&gt;&gt; euclidean(x, Y)</span>
+<span class="sd">    array([1., 0., 1.])</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from weave.distance import euclidean</span>
+<span class="sd">    &gt;&gt;&gt; x = np.array([0., 0.])</span>
+<span class="sd">    &gt;&gt;&gt; Y = np.array([[-1., -1.], [0., 0.], [1., 1.]])</span>
+<span class="sd">    &gt;&gt;&gt; euclidean(x, Y)</span>
+<span class="sd">    array([1.41421356, 0., 1.41421356])</span>
 
 <span class="sd">    """</span>
     <span class="c1"># Scalars</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mf">1.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="k">return</span> <span class="mf">1.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">Y</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
 
     <span class="c1"># Vectors</span>
-    <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">yi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
-        <span class="n">distance</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">yi</span><span class="p">)</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">Y</span><span class="p">):</span>
+        <span class="n">distance</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">distance</span></div>
 
 
 <div class="viewcode-block" id="hierarchical"><a class="viewcode-back" href="../../api_reference/weave.distance.html#weave.distance.hierarchical">[docs]</a><span class="nd">@njit</span>
-<span class="k">def</span> <span class="nf">hierarchical</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">"""Get hierarchical distances between `x` and `y`.</span>
+<span class="k">def</span> <span class="nf">hierarchical</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">"""Get hierarchical distances between `x` and `Y`.</span>
+
+<span class="sd">    Points are specified as a vector of IDs corresponding to nodes in a</span>
+<span class="sd">    tree, starting from the root node and ending at a leaf node.</span>
+<span class="sd">    The distance between two points is defined as the number of edges</span>
+<span class="sd">    between the leaf nodes and their nearest common parent node.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    x : 1D numpy.ndarray of float</span>
 <span class="sd">        Current point.</span>
-<span class="sd">    y : 2D numpy.ndarray of float</span>
-<span class="sd">        Nearby points.</span>
+<span class="sd">    Y : 2D numpy.ndarray of float</span>
+<span class="sd">        Matrix of nearby points.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    1D numpy.ndarray of nonnegative float</span>
-<span class="sd">        Hierarchical distances between `x` and `y`.</span>
+<span class="sd">        Hierarchical distances between `x` and `Y`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. image:: images/hierarchy.png</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from weave.distance import hierarchical</span>
+<span class="sd">    &gt;&gt;&gt; x = np.array([1., 2., 4.])</span>
+<span class="sd">    &gt;&gt;&gt; Y = np.array([[1., 2., 4.], [1., 2., 5.], [1., 3., 6.]])</span>
+<span class="sd">    &gt;&gt;&gt; hierarchical(x, Y)</span>
+<span class="sd">    array([0., 1., 2.])</span>
 
 <span class="sd">    """</span>
     <span class="c1"># Get distance from one nearby point</span>
-    <span class="k">def</span> <span class="nf">get_distance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">yi</span><span class="p">):</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">x</span> <span class="o">==</span> <span class="n">yi</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">get_distance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">x</span> <span class="o">==</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
             <span class="k">return</span> <span class="mf">0.0</span>
         <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="n">ii</span><span class="p">]</span> <span class="o">==</span> <span class="n">yi</span><span class="p">[:</span><span class="o">-</span><span class="n">ii</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="n">ii</span><span class="p">]</span> <span class="o">==</span> <span class="n">y</span><span class="p">[:</span><span class="o">-</span><span class="n">ii</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
                 <span class="k">return</span> <span class="mf">1.0</span><span class="o">*</span><span class="n">ii</span>
         <span class="k">return</span> <span class="mf">1.0</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
     <span class="c1"># Get distance between all nearby points</span>
-    <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">yi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
-        <span class="n">distance</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_distance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">yi</span><span class="p">)</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">Y</span><span class="p">):</span>
+        <span class="n">distance</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_distance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">distance</span></div>
 
 
 <div class="viewcode-block" id="dictionary"><a class="viewcode-back" href="../../api_reference/weave.distance.html#weave.distance.dictionary">[docs]</a><span class="nd">@njit</span>
-<span class="k">def</span> <span class="nf">dictionary</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="k">def</span> <span class="nf">dictionary</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                <span class="n">distance_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">"""Get dictionary distances between `x` and `y`.</span>
+    <span class="sd">"""Get dictionary distances between `x` and `Y`.</span>
 
-<span class="sd">    Dictionary `distance_dict` contains the distance between points `x`</span>
-<span class="sd">    and `y`. For type consistency among distance functions, `x` and `y`</span>
-<span class="sd">    are 1D numpy arrays of float, but they should contain a single</span>
-<span class="sd">    value (e.g., location ID). Dictionary keys are tuples of point</span>
-<span class="sd">    pairs `(x[0], y[0])`, and dictionary values are the corresponding</span>
-<span class="sd">    distances. Because distances are assumed to be symmetric, point</span>
-<span class="sd">    pairs are listed from smallest to largest, e.g., `x` &lt;= `y`.</span>
+<span class="sd">    Returns user-defined distances between points `x` and `Y`,</span>
+<span class="sd">    specified in the dictionary `distance_dict`. Dictionary keys are</span>
+<span class="sd">    tuples of point ID pairs `(x, y)`, and dictionary values are the</span>
+<span class="sd">    corresponding distances. Because distances are assumed to be</span>
+<span class="sd">    symmetric, point IDs are listed from smallest to largest, e.g.</span>
+<span class="sd">    `x` :math:`\\leq` `y`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    x : 1D numpy.ndarray of float</span>
 <span class="sd">        Current point.</span>
-<span class="sd">    y : 2D numpy.ndarray of float</span>
-<span class="sd">        Nearby points.</span>
-<span class="sd">    distance_dict : dict of {(float, float): float}</span>
-<span class="sd">        Dictionary of distances between points.</span>
+<span class="sd">    Y : 2D numpy.ndarray of float</span>
+<span class="sd">        Matrix of nearby points.</span>
+<span class="sd">    distance_dict : numba.typed.Dict of {(float64, float64): float64}</span>
+<span class="sd">        Typed dictionary of distances between points.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    1D numpy.ndarray of nonnegative float</span>
-<span class="sd">        Dictionary distances between `x` and `y`.</span>
+<span class="sd">        Dictionary distances between `x` and `Y`.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    get_typed_dict</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Because this is a Numba just-in-time function, the parameter</span>
+<span class="sd">    `distance_dict` must be of type `numba.typed.Dict</span>
+<span class="sd">    &lt;https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict&gt;`_.</span>
+<span class="sd">    Dictionaries can be cast as a typed dictionary using the function</span>
+<span class="sd">    :func:`get_typed_dict`, but values are not checked for validity.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from weave.distance import dictionary, get_typed_dict</span>
+<span class="sd">    &gt;&gt;&gt; distance_dict = {</span>
+<span class="sd">            (4, 4): 0,</span>
+<span class="sd">            (4, 5): 1,</span>
+<span class="sd">            (4, 6): 2,</span>
+<span class="sd">            (5, 6): 2</span>
+<span class="sd">        }</span>
+<span class="sd">    &gt;&gt;&gt; typed_dict = get_typed_dict(distance_dict)</span>
+<span class="sd">    &gt;&gt;&gt; x = np.array([4.])</span>
+<span class="sd">    &gt;&gt;&gt; y = np.array([[4.], [5.], [6.]])</span>
+<span class="sd">    &gt;&gt;&gt; dictionary(x, y, typed_dict)</span>
+<span class="sd">    array([0., 1., 2.])</span>
 
 <span class="sd">    """</span>
     <span class="c1"># Get distance from one nearby point</span>
-    <span class="k">def</span> <span class="nf">get_distance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">yi</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_distance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
         <span class="n">x0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">y0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">yi</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="k">if</span> <span class="n">x0</span> <span class="o">&lt;=</span> <span class="n">y0</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">distance_dict</span><span class="p">[(</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">)]</span>
         <span class="k">return</span> <span class="n">distance_dict</span><span class="p">[(</span><span class="n">y0</span><span class="p">,</span> <span class="n">x0</span><span class="p">)]</span>
 
     <span class="c1"># Get distance from all nearby points</span>
-    <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">yi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
-        <span class="n">distance</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_distance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">yi</span><span class="p">)</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">Y</span><span class="p">):</span>
+        <span class="n">distance</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_distance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">distance</span></div>
 
 
-<div class="viewcode-block" id="check_dict"><a class="viewcode-back" href="../../api_reference/weave.distance.html#weave.distance.check_dict">[docs]</a><span class="k">def</span> <span class="nf">check_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">number</span><span class="p">,</span> <span class="n">number</span><span class="p">],</span> <span class="n">number</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="get_typed_dict"><a class="viewcode-back" href="../../api_reference/weave.distance.html#weave.distance.get_typed_dict">[docs]</a><span class="k">def</span> <span class="nf">get_typed_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DistanceDict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="sd">"""Get typed version of `distance_dict`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    distance_dict : dict of {(number, number): number}, optional</span>
+<span class="sd">        Dictionary of distances between points.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    : numba.typed.Dict of {(float64, float64): float64}</span>
+<span class="sd">        Typed version of `distance_dict`.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    `numba.typed.Dict</span>
+<span class="sd">    &lt;https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict&gt;`_</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from weave.distance import get_typed_dict</span>
+<span class="sd">    &gt;&gt;&gt; distance_dict = {(1, 1): 0}</span>
+<span class="sd">    &gt;&gt;&gt; get_typed_dict(distance_dict)</span>
+<span class="sd">    DictType[UniTuple(float64 x 2),float64]&lt;iv=None&gt;({(1.0, 1.0): 0.0})</span>
+
+<span class="sd">    """</span>
+    <span class="n">typed_dict</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
+        <span class="n">key_type</span><span class="o">=</span><span class="n">UniTuple</span><span class="p">(</span><span class="n">float64</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="n">value_type</span><span class="o">=</span><span class="n">float64</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">distance_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="p">:</span>
+            <span class="n">float_key</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">key</span><span class="p">)</span>
+            <span class="n">typed_dict</span><span class="p">[</span><span class="n">float_key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">typed_dict</span></div>
+
+
+<span class="k">def</span> <span class="nf">_check_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">number</span><span class="p">,</span> <span class="n">number</span><span class="p">],</span> <span class="n">number</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">"""Check dictionary keys and values.</span>
 
 <span class="sd">    Parameters</span>
@@ -372,7 +500,7 @@
     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`distance_dict` keys are not all length 2.'</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">value</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`distance_dict` contains negative values.'</span><span class="p">)</span></div>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`distance_dict` contains negative values.'</span><span class="p">)</span>
 </pre></div>
         </article>
       </div>

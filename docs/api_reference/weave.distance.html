@@ -210,98 +210,187 @@
         <article role="main">
           <div class="section" id="module-weave.distance">
 <span id="weave-distance"></span><h1>weave.distance<a class="headerlink" href="#module-weave.distance" title="Permalink to this headline">¶</a></h1>
-<p>Calculate the distance between two points.</p>
-<p>Distance functions to calculate the distance between two points, where
-points are given as scalars or vectors.</p>
-<p>In general, distance functions should satisfy the following properties:
-1. d(x, y) is real-valued, finite, and nonnegative
-2. d(x, y) == 0 if and only if x == y
-3. d(x, y) == d(y, x) (symmetry)
-4. d(x, y) &lt;= d(x, z) + d(z, y) (triangle inequality)</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="weave.distance.check_dict">
-<span class="sig-prename descclassname"><span class="pre">weave.distance.</span></span><span class="sig-name descname"><span class="pre">check_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/distance.html#check_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.distance.check_dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check dictionary keys and values.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>distance_dict</strong> (<em>dict of {</em><em>(</em><em>number</em><em>, </em><em>number</em><em>)</em><em>: number}</em>) – Dictionary of distances between points.</p>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>TypeError</strong> – If <cite>distance_dict</cite>, keys, or values are an invalid type.</p></li>
-<li><p><strong>ValueError</strong> – If <cite>dictionary_dict</cite> is empty, dictionary keys are not all
-    length 2, or dictionary values are not all nonnegative.</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>None</p>
+<p>Calculate the distance between points.</p>
+<p>Distance functions to calculate the distances between the current point
+and a vector of nearby points. While points can be either scalars or
+vectors, scalars must be cast as 1D vectors to comply with <a class="reference external" href="https://numba.readthedocs.io/en/stable/index.html">Numba</a> just-in-time
+compilation.</p>
+<p class="rubric">Notes</p>
+<p>In general, distance functions should satisfy the following properties
+<a class="footnote-reference brackets" href="#id2" id="id1">1</a>:</p>
+<ol class="arabic simple">
+<li><p><span class="math notranslate nohighlight">\(d(x, y)\)</span> is real-valued, finite, and nonnegative</p></li>
+<li><p><span class="math notranslate nohighlight">\(d(x, y) = 0\)</span> if and only if <span class="math notranslate nohighlight">\(x = y\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(d(x, y) = d(y, x)\)</span> (symmetry)</p></li>
+<li><p><span class="math notranslate nohighlight">\(d(x, y) \leq d(x, z) + d(z, y)\)</span> (triangle inequality)</p></li>
+</ol>
+<p class="rubric">References</p>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Metric_(mathematics)">Metric (mathematics)</a></p>
 </dd>
 </dl>
-</dd></dl>
-<dl class="py function">
-<dt class="sig sig-object py" id="weave.distance.dictionary">
-<span class="sig-prename descclassname"><span class="pre">weave.distance.</span></span><span class="sig-name descname"><span class="pre">dictionary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/distance.html#dictionary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.distance.dictionary" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get dictionary distances between <cite>x</cite> and <cite>y</cite>.</p>
-<p>Dictionary <cite>distance_dict</cite> contains the distance between points <cite>x</cite>
-and <cite>y</cite>. For type consistency among distance functions, <cite>x</cite> and <cite>y</cite>
-are 1D numpy arrays of float, but they should contain a single
-value (e.g., location ID). Dictionary keys are tuples of point
-pairs <cite>(x[0], y[0])</cite>, and dictionary values are the corresponding
-distances. Because distances are assumed to be symmetric, point
-pairs are listed from smallest to largest, e.g., <cite>x</cite> &lt;= <cite>y</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>1D numpy.ndarray of float</em>) – Current point.</p></li>
-<li><p><strong>y</strong> (<em>2D numpy.ndarray of float</em>) – Nearby points.</p></li>
-<li><p><strong>distance_dict</strong> (<em>dict of {</em><em>(</em><em>float</em><em>, </em><em>float</em><em>)</em><em>: float}</em>) – Dictionary of distances between points.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Dictionary distances between <cite>x</cite> and <cite>y</cite>.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>1D numpy.ndarray of nonnegative float</p>
-</dd>
-</dl>
-</dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="weave.distance.euclidean">
-<span class="sig-prename descclassname"><span class="pre">weave.distance.</span></span><span class="sig-name descname"><span class="pre">euclidean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/distance.html#euclidean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.distance.euclidean" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get Euclidean distances between <cite>x</cite> and <cite>y</cite>.</p>
+<span class="sig-prename descclassname"><span class="pre">weave.distance.</span></span><span class="sig-name descname"><span class="pre">euclidean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/distance.html#euclidean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.distance.euclidean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get Euclidean distances between <cite>x</cite> and <cite>Y</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x</strong> (<em>1D numpy.ndarray of float</em>) – Current point.</p></li>
-<li><p><strong>y</strong> (<em>2D numpy.ndarray of float</em>) – Nearby points.</p></li>
+<li><p><strong>Y</strong> (<em>2D numpy.ndarray of float</em>) – Matrix of nearby points.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Euclidean distances between <cite>x</cite> and <cite>y</cite>.</p>
+<dd class="field-even"><p>Euclidean distances between <cite>x</cite> and <cite>Y</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>1D numpy.ndarray of nonnegative float</p>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>For a pair of 1D points, this function computes the absolute value
+of their difference:</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[d(x, y) = |x - y|\]</div></div>
+<p>For a pair of ND points, this function computes the <em>n</em>-dimensional
+Euclidean distance <a class="footnote-reference brackets" href="#id4" id="id3">2</a>:</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[d(x, y) = \sqrt{(x_1 - y_1)^2 + (x_2 - y_2)^2 + \
+\dots + (x_n - y_n)^2}\]</div></div>
+<p class="rubric">References</p>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Euclidean_distance">Euclidean distance</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">euclidean</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">1.</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">euclidean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+<span class="go">array([1., 0., 1.])</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">euclidean</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">euclidean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+<span class="go">array([1.41421356, 0., 1.41421356])</span>
+</pre></div>
+</div>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="weave.distance.hierarchical">
-<span class="sig-prename descclassname"><span class="pre">weave.distance.</span></span><span class="sig-name descname"><span class="pre">hierarchical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/distance.html#hierarchical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.distance.hierarchical" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get hierarchical distances between <cite>x</cite> and <cite>y</cite>.</p>
+<span class="sig-prename descclassname"><span class="pre">weave.distance.</span></span><span class="sig-name descname"><span class="pre">hierarchical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/distance.html#hierarchical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.distance.hierarchical" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get hierarchical distances between <cite>x</cite> and <cite>Y</cite>.</p>
+<p>Points are specified as a vector of IDs corresponding to nodes in a
+tree, starting from the root node and ending at a leaf node.
+The distance between two points is defined as the number of edges
+between the leaf nodes and their nearest common parent node.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x</strong> (<em>1D numpy.ndarray of float</em>) – Current point.</p></li>
-<li><p><strong>y</strong> (<em>2D numpy.ndarray of float</em>) – Nearby points.</p></li>
+<li><p><strong>Y</strong> (<em>2D numpy.ndarray of float</em>) – Matrix of nearby points.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Hierarchical distances between <cite>x</cite> and <cite>y</cite>.</p>
+<dd class="field-even"><p>Hierarchical distances between <cite>x</cite> and <cite>Y</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>1D numpy.ndarray of nonnegative float</p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<img alt="../_images/hierarchy.png" src="../_images/hierarchy.png"/>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">hierarchical</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">4.</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">4.</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">5.</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">3.</span><span class="p">,</span> <span class="mf">6.</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hierarchical</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+<span class="go">array([0., 1., 2.])</span>
+</pre></div>
+</div>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="weave.distance.dictionary">
+<span class="sig-prename descclassname"><span class="pre">weave.distance.</span></span><span class="sig-name descname"><span class="pre">dictionary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/distance.html#dictionary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.distance.dictionary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get dictionary distances between <cite>x</cite> and <cite>Y</cite>.</p>
+<p>Returns user-defined distances between points <cite>x</cite> and <cite>Y</cite>,
+specified in the dictionary <cite>distance_dict</cite>. Dictionary keys are
+tuples of point ID pairs <cite>(x, y)</cite>, and dictionary values are the
+corresponding distances. Because distances are assumed to be
+symmetric, point IDs are listed from smallest to largest, e.g.
+<cite>x</cite> <span class="math notranslate nohighlight">\(\leq\)</span> <cite>y</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>1D numpy.ndarray of float</em>) – Current point.</p></li>
+<li><p><strong>Y</strong> (<em>2D numpy.ndarray of float</em>) – Matrix of nearby points.</p></li>
+<li><p><strong>distance_dict</strong> (<em>numba.typed.Dict of {</em><em>(</em><em>float64</em><em>, </em><em>float64</em><em>)</em><em>: float64}</em>) – Typed dictionary of distances between points.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dictionary distances between <cite>x</cite> and <cite>Y</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D numpy.ndarray of nonnegative float</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#weave.distance.get_typed_dict" title="weave.distance.get_typed_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_typed_dict</span></code></a></p>
+</div>
+<p class="rubric">Notes</p>
+<p>Because this is a Numba just-in-time function, the parameter
+<cite>distance_dict</cite> must be of type <a class="reference external" href="https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict">numba.typed.Dict</a>.
+Dictionaries can be cast as a typed dictionary using the function
+<a class="reference internal" href="#weave.distance.get_typed_dict" title="weave.distance.get_typed_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_typed_dict()</span></code></a>, but values are not checked for validity.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">get_typed_dict</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance_dict</span> <span class="o">=</span> <span class="p">{</span>
+<span class="go">        (4, 4): 0,</span>
+<span class="go">        (4, 5): 1,</span>
+<span class="go">        (4, 6): 2,</span>
+<span class="go">        (5, 6): 2</span>
+<span class="go">    }</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">typed_dict</span> <span class="o">=</span> <span class="n">get_typed_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">4.</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">4.</span><span class="p">],</span> <span class="p">[</span><span class="mf">5.</span><span class="p">],</span> <span class="p">[</span><span class="mf">6.</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dictionary</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">typed_dict</span><span class="p">)</span>
+<span class="go">array([0., 1., 2.])</span>
+</pre></div>
+</div>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="weave.distance.get_typed_dict">
+<span class="sig-prename descclassname"><span class="pre">weave.distance.</span></span><span class="sig-name descname"><span class="pre">get_typed_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/distance.html#get_typed_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.distance.get_typed_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get typed version of <cite>distance_dict</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>distance_dict</strong> (<em>dict of {</em><em>(</em><em>number</em><em>, </em><em>number</em><em>)</em><em>: number}</em><em>, </em><em>optional</em>) – Dictionary of distances between points.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Typed version of <cite>distance_dict</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numba.typed.Dict of {(float64, float64): float64}</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference external" href="https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict">numba.typed.Dict</a></p>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">get_typed_dict</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance_dict</span> <span class="o">=</span> <span class="p">{(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">0</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">get_typed_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span>
+<span class="go">DictType[UniTuple(float64 x 2),float64]&lt;iv=None&gt;({(1.0, 1.0): 0.0})</span>
+</pre></div>
+</div>
 </dd></dl>
 </div>
 
@@ -355,5 +444,6 @@ pairs are listed from smallest to largest, e.g., <cite>x</cite> &lt;= <cite>y</c
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/scripts/furo.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </body>
 </html>

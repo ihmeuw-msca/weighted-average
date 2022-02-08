@@ -222,7 +222,7 @@
 <span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">DictType</span><span class="p">,</span> <span class="n">ListType</span><span class="p">,</span> <span class="n">UniTuple</span>  <span class="c1"># type: ignore</span>
 <span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">float64</span><span class="p">,</span> <span class="n">unicode_type</span>  <span class="c1"># type: ignore</span>
 
-<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">check_dict</span>
+<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">_check_dict</span>
 <span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">check_pars</span>
 <span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span>
 
@@ -581,7 +581,7 @@
                 <span class="n">msg</span> <span class="o">=</span> <span class="s2">"`distance` is 'dictionary', "</span>
                 <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'but `distance_dict` is None.'</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-            <span class="n">check_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span>
+            <span class="n">_check_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_distance_dict</span> <span class="o">=</span> <span class="n">distance_dict</span></div>
 
 

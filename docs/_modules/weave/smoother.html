@@ -222,13 +222,12 @@
 
 <span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">njit</span>  <span class="c1"># type: ignore</span>
 <span class="kn">from</span> <span class="nn">numba.typed</span> <span class="kn">import</span> <span class="n">Dict</span> <span class="k">as</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">List</span> <span class="k">as</span> <span class="n">TypedList</span>  <span class="c1"># type: ignore</span>
-<span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">float64</span><span class="p">,</span> <span class="n">UniTuple</span>  <span class="c1"># type: ignore</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>  <span class="c1"># type: ignore</span>
 <span class="kn">from</span> <span class="nn">pandas.api.types</span> <span class="kn">import</span> <span class="n">is_bool_dtype</span><span class="p">,</span> <span class="n">is_numeric_dtype</span>  <span class="c1"># type: ignore</span>
 
 <span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span><span class="p">,</span> <span class="n">TypedDimension</span>
-<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">euclidean</span><span class="p">,</span> <span class="n">hierarchical</span>
+<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">get_typed_dict</span><span class="p">,</span> <span class="n">euclidean</span><span class="p">,</span> <span class="n">hierarchical</span>
 <span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">exponential</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">tricubic</span>
 <span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">flatten</span>
 
@@ -586,33 +585,6 @@
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
         <span class="n">typed_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">typed_pars</span></div>
-
-
-<div class="viewcode-block" id="get_typed_dict"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_typed_dict">[docs]</a><span class="k">def</span> <span class="nf">get_typed_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DistanceDict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> \
-        <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
-    <span class="sd">"""Get typed version of `distance_dict`.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    distance_dict : dict of {(number, number): number}</span>
-<span class="sd">        Dictionary of distances between points if `distance` is</span>
-<span class="sd">        'dictionary'.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    dict of {(float, float): float}</span>
-<span class="sd">        Typed version of `distance_dict`.</span>
-
-<span class="sd">    """</span>
-    <span class="n">typed_dict</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
-        <span class="n">key_type</span><span class="o">=</span><span class="n">UniTuple</span><span class="p">(</span><span class="n">float64</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
-        <span class="n">value_type</span><span class="o">=</span><span class="n">float64</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="n">distance_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="p">:</span>
-            <span class="n">float_key</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">key</span><span class="p">)</span>
-            <span class="n">typed_dict</span><span class="p">[</span><span class="n">float_key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">typed_dict</span></div>
 
 
 <div class="viewcode-block" id="smooth_data"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.smooth_data">[docs]</a><span class="nd">@njit</span>
