@@ -190,7 +190,7 @@ def test_different_super_region():
     assert np.isclose(hierarchical(x, y)[0], 3.)
 
 
-# Test `check_dict()`
+# Test `_check_dict()`
 @pytest.mark.parametrize('distance_dict', not_dict)
 def test_dict_type(distance_dict):
     """Raise TypeError if `distance_dict` is not a dict."""
