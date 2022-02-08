@@ -12,7 +12,7 @@ from hypothesis.strategies import floats
 import numpy as np
 import pytest
 
-from weave.kernels import exponential, tricubic, depth, check_pars
+from weave.kernels import exponential, tricubic, depth, _check_pars
 
 # Hypothesis types
 my_pos = floats(min_value=0.0, max_value=1e5, allow_nan=False,
@@ -133,12 +133,12 @@ def test_different_super_region():
     assert np.isclose(weight, 0.0)
 
 
-# Test `check_pars()`
+# Test `_check_pars()`
 @pytest.mark.parametrize('pars', not_dict)
 def test_pars_type(pars):
     """Raise TypeError if `kernel_pars` is not a dict."""
     with pytest.raises(TypeError):
-        check_pars(pars, 'radius', 'pos_num')
+        _check_pars(pars, 'radius', 'pos_num')
 
 
 @given(my_pos)
@@ -146,7 +146,7 @@ def test_pars_missing(par_val):
     """Raise KeyError if `pars` is missing a kernel parameter."""
     with pytest.raises(KeyError):
         pars = {'dummy': par_val}
-        check_pars(pars, 'radius', 'pos_num')
+        _check_pars(pars, 'radius', 'pos_num')
 
 
 @pytest.mark.parametrize('par_val', not_numeric)
@@ -154,7 +154,7 @@ def test_pars_num(par_val):
     """Raise TypeError if kernel parameter is not an int or float."""
     with pytest.raises(TypeError):
         pars = {'dummy': par_val}
-        check_pars(pars, 'dummy', 'pos_num')
+        _check_pars(pars, 'dummy', 'pos_num')
 
 
 @pytest.mark.parametrize('par_val', not_float)
@@ -162,7 +162,7 @@ def test_pars_float(par_val):
     """Raise TypeError if kernel parameter is not a float."""
     with pytest.raises(TypeError):
         pars = {'dummy': par_val}
-        check_pars(pars, 'dummy', 'pos_frac')
+        _check_pars(pars, 'dummy', 'pos_frac')
 
 
 @pytest.mark.parametrize('par_val', not_bool)
@@ -170,7 +170,7 @@ def test_pars_bool(par_val):
     """Raise TypeError if kernel parameter is not a bool."""
     with pytest.raises(TypeError):
         pars = {'dummy': par_val}
-        check_pars(pars, 'dummy', 'bool')
+        _check_pars(pars, 'dummy', 'bool')
 
 
 @given(my_nonpos)
@@ -178,7 +178,7 @@ def test_pars_pos_num(par_val):
     """Raise ValueError if kernel parameter is not positive."""
     with pytest.raises(ValueError):
         pars = {'dummy': par_val}
-        check_pars(pars, 'dummy', 'pos_num')
+        _check_pars(pars, 'dummy', 'pos_num')
 
 
 @given(my_nonpos)
@@ -186,7 +186,7 @@ def test_pars_pos_frac(par_val):
     """Raise ValueError if kernel parameter is not positive."""
     with pytest.raises(ValueError):
         pars = {'dummy': par_val}
-        check_pars(pars, 'dummy', 'pos_frac')
+        _check_pars(pars, 'dummy', 'pos_frac')
 
 
 @given(my_notfrac)
@@ -194,4 +194,4 @@ def test_pars_frac(par_val):
     """Raise ValueError if kernel parameter is >= 1."""
     with pytest.raises(ValueError):
         pars = {'dummy': par_val}
-        check_pars(pars, 'dummy', 'pos_frac')
+        _check_pars(pars, 'dummy', 'pos_frac')

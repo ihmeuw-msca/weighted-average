@@ -12,7 +12,7 @@ from numba.types import DictType, ListType, UniTuple  # type: ignore
 from numba.types import float64, unicode_type  # type: ignore
 
 from weave.distance import _check_dict
-from weave.kernels import check_pars
+from weave.kernels import _check_pars
 from weave.utils import as_list
 
 number = Union[int, float]
@@ -259,17 +259,17 @@ class Dimension:
         """
         # Check parameter values
         if self._kernel == 'exponential':
-            check_pars(kernel_pars, 'radius', 'pos_num')
+            _check_pars(kernel_pars, 'radius', 'pos_num')
             kernel_pars = {'radius': kernel_pars['radius']}
         elif self._kernel == 'tricubic':
-            check_pars(kernel_pars, ['radius', 'exponent'], 'pos_num')
+            _check_pars(kernel_pars, ['radius', 'exponent'], 'pos_num')
             kernel_pars = {key: kernel_pars[key]
                            for key in ['radius', 'exponent']}
         else:  # 'depth'
             if 'normalize' not in kernel_pars:
                 kernel_pars['normalize'] = True
-            check_pars(kernel_pars, ['radius', 'normalize'],
-                       ['pos_frac', 'bool'])
+            _check_pars(kernel_pars, ['radius', 'normalize'],
+                        ['pos_frac', 'bool'])
             kernel_pars = {key: kernel_pars[key]
                            for key in ['radius', 'normalize']}
 

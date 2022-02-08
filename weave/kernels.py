@@ -4,6 +4,7 @@ Kernel functions to calculate the smoothing weight for a nearby point
 given the current point, where points are given as scalars or vectors.
 
 In general, kernel functions should have the following form:
+
 * k_r(x, y) = f(d(x, y)/r)
 * f: function whose value is decreasing (or non-increasing) for
      increasing distance between `x` and `y`
@@ -11,6 +12,7 @@ In general, kernel functions should have the following form:
 * r: kernel radius
 
 In general, kernel functions should satisfy the following properties:
+
 1. k(x, y) is real-valued, finite, and nonnegative
 2. k(x, y) <= k(x', y') if d(x, y) > d(x', y')
    k(x, y) >= k(x', y') if d(x, y) < d(x', y')
@@ -114,8 +116,8 @@ def depth(distance: float, radius: float) -> float:
     return 0.0
 
 
-def check_pars(pars: Dict[str, Union[int, float]],
-               names: Union[str, List[str]], types: Union[str, List[str]]) \
+def _check_pars(pars: Dict[str, Union[int, float]],
+                names: Union[str, List[str]], types: Union[str, List[str]]) \
         -> None:
     """Check kernel parameter types and values.
 
