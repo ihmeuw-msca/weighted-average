@@ -49,11 +49,11 @@ def flatten(values: List[Union[Any, List[Any]]]) -> List[Any]:
 
     Examples
     --------
+    >>> flatten([1, [2, [3, [4]]]])
+    [1, 2, 3, 4]
+
     >>> flatten(['age', 'year', ['super_region', 'region', 'location']])
     ['age', 'year', 'super_region', 'region', 'location']
-
-    >>> flatten (['a', ['b', ['c', ['d']]]])
-    ['a', 'b', 'c', 'd']
 
     """
     if not isinstance(values, (list, TypedList)):
