@@ -22,9 +22,10 @@ def as_list(values: Union[Any, List[Any]]) -> List[Any]:
 
     Examples
     --------
+    Single values are cast as a list, while lists remain unchanged.
+
     >>> as_list('single_value')
     ['single_value']
-
     >>> as_list(['list', 'of', 'values'])
     ['list', 'of', 'values']
 
@@ -51,9 +52,8 @@ def flatten(values: List[Union[Any, List[Any]]]) -> List[Any]:
     --------
     >>> flatten([1, [2, [3, [4]]]])
     [1, 2, 3, 4]
-
-    >>> flatten(['age', 'year', ['super_region', 'region', 'location']])
-    ['age', 'year', 'super_region', 'region', 'location']
+    >>> flatten(['age', 'year', ['super_region', 'region', 'country']])
+    ['age', 'year', 'super_region', 'region', 'country']
 
     """
     if not isinstance(values, (list, TypedList)):
@@ -80,12 +80,12 @@ def is_number(value: Any) -> bool:
 
     Examples
     --------
+    Returns ``True`` for ints and floats, but ``False`` otherwise.
+
     >>> is_number(1)
     True
-
     >>> is_number(1.0)
     True
-
     >>> is_number('one')
     False
 
