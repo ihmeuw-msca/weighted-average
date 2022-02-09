@@ -10,14 +10,14 @@ TODO
 from typing import Dict, List, Optional, Tuple, Union
 
 from numba import njit  # type: ignore
-from numba.typed import Dict as TypedDict, List as TypedList  # type: ignore
+from numba.typed import List as TypedList  # type: ignore
 import numpy as np
 from pandas import DataFrame  # type: ignore
 from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
 from weave.dimension import Dimension, TypedDimension
 from weave.distance import dictionary, get_typed_dict, euclidean, hierarchical
-from weave.kernels import exponential, depth, tricubic
+from weave.kernels import exponential, depth, get_typed_pars, tricubic
 from weave.utils import as_list, flatten
 
 number = Union[int, float]
@@ -354,26 +354,6 @@ def get_columns(data: DataFrame, columns: Union[str, List[str]],
     """
     return np.array([data[col].values[idx_fit] for col in as_list(columns)],
                     dtype=float).T
-
-
-def get_typed_pars(kernel_pars: Dict[str, pars]) -> Dict[str, float]:
-    """Get typed version of `kernel_pars`.
-
-    Parameters
-    ----------
-    kernel_pars : dict of {str: number or bool}
-        Kernel function parameters.
-
-    Returns
-    -------
-    dict of {str: float}
-        Typed version of `kernel_pars`.
-
-    """
-    typed_pars = TypedDict()
-    for key in kernel_pars:
-        typed_pars[key] = float(kernel_pars[key])
-    return typed_pars
 
 
 @njit

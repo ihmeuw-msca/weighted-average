@@ -1,3 +1,4 @@
+# pylint: disable=C0103, E0611
 """Calculate the smoothing weight for nearby point given current point.
 
 Kernel functions to calculate the smoothing weight for a nearby point
@@ -49,9 +50,12 @@ References
 from typing import Dict, List, Union
 
 from numba import njit, vectorize  # type: ignore
+from numba.typed import Dict as TypedDict  # type: ignore
 import numpy as np
 
 from weave.utils import as_list, is_number
+
+pars = Union[int, float, bool]
 
 
 @njit
@@ -227,14 +231,33 @@ def depth(distance: float, radius: float) -> float:
     return 0.0
 
 
-def _check_pars(pars: Dict[str, Union[int, float]],
-                names: Union[str, List[str]], types: Union[str, List[str]]) \
-        -> None:
+def get_typed_pars(kernel_pars: Dict[str, pars]) -> Dict[str, float]:
+    """Get typed version of `kernel_pars`.
+
+    Parameters
+    ----------
+    kernel_pars : dict of {str: int, float, or bool}
+        Kernel function parameters.
+
+    Returns
+    -------
+    dict of {str: float}
+        Typed version of `kernel_pars`.
+
+    """
+    typed_pars = TypedDict()
+    for key in kernel_pars:
+        typed_pars[key] = float(kernel_pars[key])
+    return typed_pars
+
+
+def _check_pars(kernel_pars: Dict[str, pars], names: Union[str, List[str]],
+                types: Union[str, List[str]]) -> None:
     """Check kernel parameter types and values.
 
     Parameters
     ----------
-    pars : dict of {str: int or float}
+    pars : dict of {str: int, float, or bool}
         Kernel parameters
     names : str or list of str
         Parameter names.
@@ -252,7 +275,7 @@ def _check_pars(pars: Dict[str, Union[int, float]],
 
     """
     # Check type
-    if not isinstance(pars, dict):
+    if not isinstance(kernel_pars, dict):
         raise TypeError('`kernel_pars` is not a dict.')
 
     # Get parameter names
@@ -262,9 +285,9 @@ def _check_pars(pars: Dict[str, Union[int, float]],
 
     for idx_par, par_name in enumerate(names):
         # Check key
-        if par_name not in pars:
+        if par_name not in kernel_pars:
             raise KeyError(f"`{par_name}` is not in `pars`.")
-        par_val = pars[par_name]
+        par_val = kernel_pars[par_name]
 
         if types[idx_par] == 'pos_num':
             # Check type
