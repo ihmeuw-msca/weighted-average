@@ -212,26 +212,50 @@
 <span></span><span class="sd">"""Calculate the smoothing weight for nearby point given current point.</span>
 
 <span class="sd">Kernel functions to calculate the smoothing weight for a nearby point</span>
-<span class="sd">given the current point, where points are given as scalars or vectors.</span>
+<span class="sd">or a vector of nearby points given the current point using the distance</span>
+<span class="sd">between points as input.</span>
 
-<span class="sd">In general, kernel functions should have the following form:</span>
-<span class="sd">* k_r(x, y) = f(d(x, y)/r)</span>
-<span class="sd">* f: function whose value is decreasing (or non-increasing) for</span>
-<span class="sd">     increasing distance between `x` and `y`</span>
-<span class="sd">* d: distance function</span>
-<span class="sd">* r: kernel radius</span>
+<span class="sd">Notes</span>
+<span class="sd">-----</span>
+<span class="sd">In general, kernel functions should have the form [1]_</span>
 
-<span class="sd">In general, kernel functions should satisfy the following properties:</span>
-<span class="sd">1. k(x, y) is real-valued, finite, and nonnegative</span>
-<span class="sd">2. k(x, y) &lt;= k(x', y') if d(x, y) &gt; d(x', y')</span>
-<span class="sd">   k(x, y) &gt;= k(x', y') if d(x, y) &lt; d(x', y')</span>
+<span class="sd">.. math:: k(x, y; r) = f\\left(\\frac{d(x, y)}{r}\\right)</span>
 
-<span class="sd">Notes:</span>
-<span class="sd">* STGPR has a different depth function than CODEm and weave</span>
-<span class="sd">* CODEm has a different tricubic radius than weave</span>
+<span class="sd">with components:</span>
 
-<span class="sd">TODO:</span>
-<span class="sd">* Generalize depth function to include more levels (e.g., sub-national)</span>
+<span class="sd">* :math:`d(x, y)`: distance function</span>
+<span class="sd">* :math:`r`: kernel radius</span>
+
+<span class="sd">Kernel functions should also satisfy the following properties:</span>
+
+<span class="sd">1. :math:`k(x, y; r)` is real-valued, finite, and nonnegative</span>
+<span class="sd">2. :math:`k(x, y; r)` is decreasing (or non-increasing) for increasing</span>
+<span class="sd">   distances between :math:`x` and :math:`y`:</span>
+
+<span class="sd">   - :math:`k(x, y; r) \\leq k(x', y'; r)` if :math:`d(x, y) &gt; d(x', y')`</span>
+<span class="sd">   - :math:`k(x, y; r) \\geq k(x', y'; r)` if :math:`d(x, y) &lt; d(x', y')`</span>
+
+<span class="sd">The :func:`exponential`, :func:`tricubic`, and :func:`depth` kernel</span>
+<span class="sd">functions are modeled after the age, time, and location weights in the</span>
+<span class="sd">Cause of Death Ensemble model (CODEm) [2]_ (see the spatial-temporal</span>
+<span class="sd">models sub-section within the methods section). There are many other</span>
+<span class="sd">kernel functions in common use [3]_.</span>
+
+<span class="sd">The kernel functions in this module compute weights using the distance</span>
+<span class="sd">between points as input rather than the points themselves. They are</span>
+<span class="sd">also universal functions in the sense that the input can be either a</span>
+<span class="sd">scalar distance or a vector of distances, as opposed to the functions</span>
+<span class="sd">in :mod:`weave.distance`, which are stricter in terms of input</span>
+<span class="sd">structure.</span>
+
+<span class="sd">References</span>
+<span class="sd">----------</span>
+<span class="sd">.. [1] `Kernel smoother</span>
+<span class="sd">       &lt;https://en.wikipedia.org/wiki/Kernel_smoother&gt;`_</span>
+<span class="sd">.. [2] `Cause of Death Ensemble model</span>
+<span class="sd">       &lt;https://pophealthmetrics.biomedcentral.com/articles/10.1186/1478-7954-10-1&gt;`_</span>
+<span class="sd">.. [3] `Kernel (statistics)</span>
+<span class="sd">       &lt;https://en.wikipedia.org/wiki/Kernel_(statistics)#Kernel_functions_in_common_use&gt;`_</span>
 
 <span class="sd">"""</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
@@ -246,9 +270,6 @@
 <span class="k">def</span> <span class="nf">exponential</span><span class="p">(</span><span class="n">distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
     <span class="sd">"""Get exponential smoothing weight.</span>
 
-<span class="sd">    k_r(x, y) = 1/exp(d(x, y)/r)</span>
-<span class="sd">    CODEm: r = 1/omega</span>
-
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    distance : nonnegative float</span>
@@ -261,6 +282,33 @@
 <span class="sd">    nonnegative float</span>
 <span class="sd">        Exponential smoothing weight.</span>
 
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The exponential kernel function is defined as</span>
+
+<span class="sd">    .. math:: k(d; r) = \\frac{1}{\\exp\\left(\\frac{d}{r}\\right)},</span>
+
+<span class="sd">    which is equivalent to the CODEm age weight</span>
+
+<span class="sd">    .. math:: w_{a_{i, j}} = \\frac{1}{\\exp(\\omega \\cdot d_{i, j})}</span>
+
+<span class="sd">    with :math:`r = \\frac{1}{\\omega}` and :math:`d_{i, j} =`</span>
+<span class="sd">    :mod:`weave.distance.euclidean`:math:`(a_i, a_j)`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from weave.kernels import exponential</span>
+<span class="sd">    &gt;&gt;&gt; radius = 0.5</span>
+<span class="sd">    &gt;&gt;&gt; distance = 1.</span>
+<span class="sd">    &gt;&gt;&gt; exponential(distance, radius)</span>
+<span class="sd">    0.1353352832366127</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from weave.kernels import exponential</span>
+<span class="sd">    &gt;&gt;&gt; radius = 0.5</span>
+<span class="sd">    &gt;&gt;&gt; distance = np.array([0., 1., 2.])</span>
+<span class="sd">    array([1., 0.13533528, 0.01831564])</span>
+
 <span class="sd">    """</span>
     <span class="k">return</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">distance</span><span class="o">/</span><span class="n">radius</span><span class="p">)</span></div>
 
@@ -268,9 +316,6 @@
 <div class="viewcode-block" id="tricubic"><a class="viewcode-back" href="../../api_reference/weave.kernels.html#weave.kernels.tricubic">[docs]</a><span class="nd">@njit</span>
 <span class="k">def</span> <span class="nf">tricubic</span><span class="p">(</span><span class="n">distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">exponent</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
     <span class="sd">"""Get tricubic smoothing weight.</span>
-
-<span class="sd">    k_r(x, y) = max(0, (1 - (d(x, y)/r)^s)^3)</span>
-<span class="sd">    CODEm: s = lambda, r = max(x - x_min, x_max - x) + 1</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -286,6 +331,40 @@
 <span class="sd">    nonnegative float</span>
 <span class="sd">        Tricubic smoothing weight.</span>
 
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The tricubic kernel function is defined as</span>
+
+<span class="sd">    .. math:: k(d; r, s) = \\left(1 -</span>
+<span class="sd">              \\left(\\frac{d}{r}\\right)^s\\right)^3_+,</span>
+
+<span class="sd">    which is similar to the CODEm time weight</span>
+
+<span class="sd">    ..  math:: w_{t_{i, j}} = \\left(1 - \\left(\\frac{d_{i,</span>
+<span class="sd">               j}}{\\max_k|t_i - t_k| + 1}\\right)^\\lambda\\right)^3</span>
+
+<span class="sd">    with :math:`s = \\lambda` and :math:`d_{i, j} =`</span>
+<span class="sd">    :mod:`weave.distance.euclidean`:math:`(t_i, t_j)`. However, the</span>
+<span class="sd">    denominator in the CODEm weight varies by input :math:`t_i`, while</span>
+<span class="sd">    the kernel radius :math:`r` does not depend on the input :math:`d`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from weave.kernels import tricubic</span>
+<span class="sd">    &gt;&gt;&gt; radius = 2.</span>
+<span class="sd">    &gt;&gt;&gt; exponent = 3.</span>
+<span class="sd">    &gt;&gt;&gt; distance = 1.</span>
+<span class="sd">    &gt;&gt;&gt; tricubic(distance, radius, exponent)</span>
+<span class="sd">    0.669921875</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from weave.kernels import tricubic</span>
+<span class="sd">    &gt;&gt;&gt; radius = 2.</span>
+<span class="sd">    &gt;&gt;&gt; exponent = 3.</span>
+<span class="sd">    &gt;&gt;&gt; distance = np.array([0., 1., 2.])</span>
+<span class="sd">    &gt;&gt;&gt; tricubic(distance, radius, exponent)</span>
+<span class="sd">    array([1., 0.66992188, 0.])</span>
+
 <span class="sd">    """</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">distance</span><span class="o">/</span><span class="n">radius</span><span class="p">)</span><span class="o">**</span><span class="n">exponent</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span></div>
 
@@ -293,15 +372,6 @@
 <span class="nd">@vectorize</span><span class="p">([</span><span class="s1">'float64(float64,float64)'</span><span class="p">])</span>
 <span class="k">def</span> <span class="nf">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
     <span class="sd">"""Get depth smoothing weight.</span>
-
-<span class="sd">    If distance == 0 (same country):</span>
-<span class="sd">        weight = radius</span>
-<span class="sd">    If distance in (0, 1] (same region):</span>
-<span class="sd">        weight = radius*(1 - radius)</span>
-<span class="sd">    If distance in (1, 2] (same super-region):</span>
-<span class="sd">        weight = (1 - radius)^2</span>
-<span class="sd">    If distance &gt; 2 (different super-region):</span>
-<span class="sd">        weight = 0</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -315,6 +385,38 @@
 <span class="sd">    nonnegative float</span>
 <span class="sd">        Depth smoothing weight.</span>
 
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The depth kernel function is defined as</span>
+
+<span class="sd">    .. math:: k(d; r) = \\begin{cases} r &amp; \\text{if } d = 0, \\\\</span>
+<span class="sd">              r(1 - r) &amp; \\text{if } 0 &lt; d \\leq 1, \\\\ (1 - r)^2 &amp;</span>
+<span class="sd">              \\text{if } 1 &lt; d \\leq 2, \\\\ 0 &amp; \\text{otherwise},</span>
+<span class="sd">              \\end{cases}</span>
+
+<span class="sd">    which is the same as CODEm's location scale factors with</span>
+<span class="sd">    :math:`r = \\zeta` and :math:`d =`</span>
+<span class="sd">    :mod:`weave.distance.hierarchical`:math:`(\\ell_i, \\ell_j)`. This</span>
+<span class="sd">    corresponds to points that have the same country, region, or super</span>
+<span class="sd">    region, respectively, but the kernel function has not yet been</span>
+<span class="sd">    generalized to consider further location divisions (e.g., state or</span>
+<span class="sd">    county).</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from weave.kernels import depth</span>
+<span class="sd">    &gt;&gt;&gt; radius = 0.9</span>
+<span class="sd">    &gt;&gt;&gt; distance = 1.</span>
+<span class="sd">    &gt;&gt;&gt; depth(distance, radius)</span>
+<span class="sd">    0.08999999999999998</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from weave.kernels import depth</span>
+<span class="sd">    &gt;&gt;&gt; radius = 0.9</span>
+<span class="sd">    &gt;&gt;&gt; distance = np.array([0., 1., 2., 3.])</span>
+<span class="sd">    &gt;&gt;&gt; depth(distance, radius)</span>
+<span class="sd">    array([0.9, 0.09, 0.01, 0.])</span>
+
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="n">distance</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">radius</span>
@@ -325,8 +427,8 @@
     <span class="k">return</span> <span class="mf">0.0</span>
 
 
-<div class="viewcode-block" id="check_pars"><a class="viewcode-back" href="../../api_reference/weave.kernels.html#weave.kernels.check_pars">[docs]</a><span class="k">def</span> <span class="nf">check_pars</span><span class="p">(</span><span class="n">pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
-               <span class="n">names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">types</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> \
+<span class="k">def</span> <span class="nf">_check_pars</span><span class="p">(</span><span class="n">pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
+                <span class="n">names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">types</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> \
         <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">"""Check kernel parameter types and values.</span>
 
@@ -385,7 +487,7 @@
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># 'bool'</span>
             <span class="c1"># Check type</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">par_val</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not a bool."</span><span class="p">)</span></div>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not a bool."</span><span class="p">)</span>
 </pre></div>
         </article>
       </div>

@@ -212,58 +212,55 @@
 <span id="weave-kernels"></span><h1>weave.kernels<a class="headerlink" href="#module-weave.kernels" title="Permalink to this headline">¶</a></h1>
 <p>Calculate the smoothing weight for nearby point given current point.</p>
 <p>Kernel functions to calculate the smoothing weight for a nearby point
-given the current point, where points are given as scalars or vectors.</p>
-<p>In general, kernel functions should have the following form:
-* k_r(x, y) = f(d(x, y)/r)
-* f: function whose value is decreasing (or non-increasing) for</p>
-<blockquote>
-<div><p>increasing distance between <cite>x</cite> and <cite>y</cite></p>
-</div></blockquote>
+or a vector of nearby points given the current point using the distance
+between points as input.</p>
+<p class="rubric">Notes</p>
+<p>In general, kernel functions should have the form <a class="footnote-reference brackets" href="#id4" id="id1">1</a></p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[k(x, y; r) = f\left(\frac{d(x, y)}{r}\right)\]</div></div>
+<p>with components:</p>
 <ul class="simple">
-<li><p>d: distance function</p></li>
-<li><p>r: kernel radius</p></li>
+<li><p><span class="math notranslate nohighlight">\(d(x, y)\)</span>: distance function</p></li>
+<li><p><span class="math notranslate nohighlight">\(r\)</span>: kernel radius</p></li>
 </ul>
-<p>In general, kernel functions should satisfy the following properties:
-1. k(x, y) is real-valued, finite, and nonnegative
-2. k(x, y) &lt;= k(x’, y’) if d(x, y) &gt; d(x’, y’)</p>
-<blockquote>
-<div><p>k(x, y) &gt;= k(x’, y’) if d(x, y) &lt; d(x’, y’)</p>
-</div></blockquote>
-<p>Notes:
-* STGPR has a different depth function than CODEm and weave
-* CODEm has a different tricubic radius than weave</p>
-<p>TODO:
-* Generalize depth function to include more levels (e.g., sub-national)</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="weave.kernels.check_pars">
-<span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">check_pars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pars</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/kernels.html#check_pars"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.kernels.check_pars" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check kernel parameter types and values.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>pars</strong> (<em>dict of {str: int</em><em> or </em><em>float}</em>) – Kernel parameters</p></li>
-<li><p><strong>names</strong> (<em>str</em><em> or </em><em>list of str</em>) – Parameter names.</p></li>
-<li><p><strong>types</strong> (<em>str</em><em> or </em><em>list of str</em>) – Parameter types. Valid types are ‘pos_num’, ‘pos_frac’, ‘bool’.</p></li>
+<p>Kernel functions should also satisfy the following properties:</p>
+<ol class="arabic simple">
+<li><p><span class="math notranslate nohighlight">\(k(x, y; r)\)</span> is real-valued, finite, and nonnegative</p></li>
+<li><p><span class="math notranslate nohighlight">\(k(x, y; r)\)</span> is decreasing (or non-increasing) for increasing
+distances between <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span>:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(k(x, y; r) \leq k(x', y'; r)\)</span> if <span class="math notranslate nohighlight">\(d(x, y) &gt; d(x', y')\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(k(x, y; r) \geq k(x', y'; r)\)</span> if <span class="math notranslate nohighlight">\(d(x, y) &lt; d(x', y')\)</span></p></li>
 </ul>
+</li>
+</ol>
+<p>The <a class="reference internal" href="#weave.kernels.exponential" title="weave.kernels.exponential"><code class="xref py py-func docutils literal notranslate"><span class="pre">exponential()</span></code></a>, <a class="reference internal" href="#weave.kernels.tricubic" title="weave.kernels.tricubic"><code class="xref py py-func docutils literal notranslate"><span class="pre">tricubic()</span></code></a>, and <a class="reference internal" href="#weave.kernels.depth" title="weave.kernels.depth"><code class="xref py py-func docutils literal notranslate"><span class="pre">depth()</span></code></a> kernel
+functions are modeled after the age, time, and location weights in the
+Cause of Death Ensemble model (CODEm) <a class="footnote-reference brackets" href="#id5" id="id2">2</a> (see the spatial-temporal
+models sub-section within the methods section). There are many other
+kernel functions in common use <a class="footnote-reference brackets" href="#id6" id="id3">3</a>.</p>
+<p>The kernel functions in this module compute weights using the distance
+between points as input rather than the points themselves. They are
+also universal functions in the sense that the input can be either a
+scalar distance or a vector of distances, as opposed to the functions
+in <a class="reference internal" href="weave.distance.html#module-weave.distance" title="weave.distance"><code class="xref py py-mod docutils literal notranslate"><span class="pre">weave.distance</span></code></a>, which are stricter in terms of input
+structure.</p>
+<p class="rubric">References</p>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Kernel_smoother">Kernel smoother</a></p>
 </dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>KeyError</strong> – If <cite>pars</cite> is missing a kernel parameter.</p></li>
-<li><p><strong>TypeError</strong> – If a kernel parameter is an invalid type.</p></li>
-<li><p><strong>ValueError</strong> – If a kernel parameter is an invalid value.</p></li>
-</ul>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><p><a class="reference external" href="https://pophealthmetrics.biomedcentral.com/articles/10.1186/1478-7954-10-1">Cause of Death Ensemble model</a></p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>None</p>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Kernel_(statistics)#Kernel_functions_in_common_use">Kernel (statistics)</a></p>
 </dd>
 </dl>
-</dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="weave.kernels.exponential">
 <span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">exponential</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/kernels.html#exponential"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.kernels.exponential" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get exponential smoothing weight.</p>
-<p>k_r(x, y) = 1/exp(d(x, y)/r)
-CODEm: r = 1/omega</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -278,13 +275,35 @@ CODEm: r = 1/omega</p>
 <dd class="field-odd"><p>nonnegative float</p>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>The exponential kernel function is defined as</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[k(d; r) = \frac{1}{\exp\left(\frac{d}{r}\right)},\]</div></div>
+<p>which is equivalent to the CODEm age weight</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[w_{a_{i, j}} = \frac{1}{\exp(\omega \cdot d_{i, j})}\]</div></div>
+<p>with <span class="math notranslate nohighlight">\(r = \frac{1}{\omega}\)</span> and <span class="math notranslate nohighlight">\(d_{i, j} =\)</span>
+<a class="reference internal" href="weave.distance.html#weave.distance.euclidean" title="weave.distance.euclidean"><code class="xref py py-mod docutils literal notranslate"><span class="pre">weave.distance.euclidean</span></code></a><span class="math notranslate nohighlight">\((a_i, a_j)\)</span>.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">exponential</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="mf">1.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">exponential</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
+<span class="go">0.1353352832366127</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">exponential</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">])</span>
+<span class="go">array([1., 0.13533528, 0.01831564])</span>
+</pre></div>
+</div>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="weave.kernels.tricubic">
 <span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">tricubic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exponent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/kernels.html#tricubic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.kernels.tricubic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get tricubic smoothing weight.</p>
-<p>k_r(x, y) = max(0, (1 - (d(x, y)/r)^s)^3)
-CODEm: s = lambda, r = max(x - x_min, x_max - x) + 1</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -300,6 +319,86 @@ CODEm: s = lambda, r = max(x - x_min, x_max - x) + 1</p>
 <dd class="field-odd"><p>nonnegative float</p>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>The tricubic kernel function is defined as</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[k(d; r, s) = \left(1 -
+\left(\frac{d}{r}\right)^s\right)^3_+,\]</div></div>
+<p>which is similar to the CODEm time weight</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[w_{t_{i, j}} = \left(1 - \left(\frac{d_{i,
+j}}{\max_k|t_i - t_k| + 1}\right)^\lambda\right)^3\]</div></div>
+<p>with <span class="math notranslate nohighlight">\(s = \lambda\)</span> and <span class="math notranslate nohighlight">\(d_{i, j} =\)</span>
+<a class="reference internal" href="weave.distance.html#weave.distance.euclidean" title="weave.distance.euclidean"><code class="xref py py-mod docutils literal notranslate"><span class="pre">weave.distance.euclidean</span></code></a><span class="math notranslate nohighlight">\((t_i, t_j)\)</span>. However, the
+denominator in the CODEm weight varies by input <span class="math notranslate nohighlight">\(t_i\)</span>, while
+the kernel radius <span class="math notranslate nohighlight">\(r\)</span> does not depend on the input <span class="math notranslate nohighlight">\(d\)</span>.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">tricubic</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="mf">2.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">exponent</span> <span class="o">=</span> <span class="mf">3.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="mf">1.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tricubic</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">exponent</span><span class="p">)</span>
+<span class="go">0.669921875</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">tricubic</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="mf">2.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">exponent</span> <span class="o">=</span> <span class="mf">3.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tricubic</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">exponent</span><span class="p">)</span>
+<span class="go">array([1., 0.66992188, 0.])</span>
+</pre></div>
+</div>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="weave.kernels.depth">
+<span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">depth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#weave.kernels.depth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get depth smoothing weight.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>distance</strong> (<em>nonnegative float</em>) – Distance between points.</p></li>
+<li><p><strong>radius</strong> (<em>float in</em><em> (</em><em>0</em><em>, </em><em>1</em><em>)</em>) – Kernel radius.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Depth smoothing weight.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>nonnegative float</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The depth kernel function is defined as</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[\begin{split}k(d; r) = \begin{cases} r &amp; \text{if } d = 0, \\
+r(1 - r) &amp; \text{if } 0 &lt; d \leq 1, \\ (1 - r)^2 &amp;
+\text{if } 1 &lt; d \leq 2, \\ 0 &amp; \text{otherwise},
+\end{cases}\end{split}\]</div></div>
+<p>which is the same as CODEm’s location scale factors with
+<span class="math notranslate nohighlight">\(r = \zeta\)</span> and <span class="math notranslate nohighlight">\(d =\)</span>
+<a class="reference internal" href="weave.distance.html#weave.distance.hierarchical" title="weave.distance.hierarchical"><code class="xref py py-mod docutils literal notranslate"><span class="pre">weave.distance.hierarchical</span></code></a><span class="math notranslate nohighlight">\((\ell_i, \ell_j)\)</span>. This
+corresponds to points that have the same country, region, or super
+region, respectively, but the kernel function has not yet been
+generalized to consider further location divisions (e.g., state or
+county).</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="mf">0.9</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="mf">1.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
+<span class="go">0.08999999999999998</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="mf">0.9</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">3.</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
+<span class="go">array([0.9, 0.09, 0.01, 0.])</span>
+</pre></div>
+</div>
 </dd></dl>
 </div>
 
@@ -353,5 +452,6 @@ CODEm: s = lambda, r = max(x - x_min, x_max - x) + 1</p>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/scripts/furo.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </body>
 </html>

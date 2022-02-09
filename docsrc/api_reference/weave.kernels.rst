@@ -2,6 +2,7 @@ weave.kernels
 =============
 
 .. automodule:: weave.kernels
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+   .. autofunction:: exponential(distance, radius)
+   .. autofunction:: tricubic(distance, radius, exponent)
+   .. autofunction:: depth(distance, radius)

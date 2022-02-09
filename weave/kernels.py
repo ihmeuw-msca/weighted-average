@@ -1,28 +1,50 @@
 """Calculate the smoothing weight for nearby point given current point.
 
 Kernel functions to calculate the smoothing weight for a nearby point
-given the current point, where points are given as scalars or vectors.
+or a vector of nearby points given the current point using the distance
+between points as input.
 
-In general, kernel functions should have the following form:
+Notes
+-----
+In general, kernel functions should have the form [1]_
 
-* k_r(x, y) = f(d(x, y)/r)
-* f: function whose value is decreasing (or non-increasing) for
-     increasing distance between `x` and `y`
-* d: distance function
-* r: kernel radius
+.. math:: k(x, y; r) = f\\left(\\frac{d(x, y)}{r}\\right)
 
-In general, kernel functions should satisfy the following properties:
+with components:
 
-1. k(x, y) is real-valued, finite, and nonnegative
-2. k(x, y) <= k(x', y') if d(x, y) > d(x', y')
-   k(x, y) >= k(x', y') if d(x, y) < d(x', y')
+* :math:`d(x, y)`: distance function
+* :math:`r`: kernel radius
 
-Notes:
-* STGPR has a different depth function than CODEm and weave
-* CODEm has a different tricubic radius than weave
+Kernel functions should also satisfy the following properties:
 
-TODO:
-* Generalize depth function to include more levels (e.g., sub-national)
+1. :math:`k(x, y; r)` is real-valued, finite, and nonnegative
+2. :math:`k(x, y; r)` is decreasing (or non-increasing) for increasing
+   distances between :math:`x` and :math:`y`:
+
+   - :math:`k(x, y; r) \\leq k(x', y'; r)` if :math:`d(x, y) > d(x', y')`
+   - :math:`k(x, y; r) \\geq k(x', y'; r)` if :math:`d(x, y) < d(x', y')`
+
+The :func:`exponential`, :func:`tricubic`, and :func:`depth` kernel
+functions are modeled after the age, time, and location weights in the
+Cause of Death Ensemble model (CODEm) [2]_ (see the spatial-temporal
+models sub-section within the methods section). There are many other
+kernel functions in common use [3]_.
+
+The kernel functions in this module compute weights using the distance
+between points as input rather than the points themselves. They are
+also universal functions in the sense that the input can be either a
+scalar distance or a vector of distances, as opposed to the functions
+in :mod:`weave.distance`, which are stricter in terms of input
+structure.
+
+References
+----------
+.. [1] `Kernel smoother
+       <https://en.wikipedia.org/wiki/Kernel_smoother>`_
+.. [2] `Cause of Death Ensemble model
+       <https://pophealthmetrics.biomedcentral.com/articles/10.1186/1478-7954-10-1>`_
+.. [3] `Kernel (statistics)
+       <https://en.wikipedia.org/wiki/Kernel_(statistics)#Kernel_functions_in_common_use>`_
 
 """
 from typing import Dict, List, Union
@@ -37,9 +59,6 @@ from weave.utils import as_list, is_number
 def exponential(distance: float, radius: float) -> float:
     """Get exponential smoothing weight.
 
-    k_r(x, y) = 1/exp(d(x, y)/r)
-    CODEm: r = 1/omega
-
     Parameters
     ----------
     distance : nonnegative float
@@ -52,6 +71,33 @@ def exponential(distance: float, radius: float) -> float:
     nonnegative float
         Exponential smoothing weight.
 
+    Notes
+    -----
+    The exponential kernel function is defined as
+
+    .. math:: k(d; r) = \\frac{1}{\\exp\\left(\\frac{d}{r}\\right)},
+
+    which is equivalent to the CODEm age weight
+
+    .. math:: w_{a_{i, j}} = \\frac{1}{\\exp(\\omega \\cdot d_{i, j})}
+
+    with :math:`r = \\frac{1}{\\omega}` and :math:`d_{i, j} =`
+    :mod:`weave.distance.euclidean`:math:`(a_i, a_j)`.
+
+    Examples
+    --------
+    >>> from weave.kernels import exponential
+    >>> radius = 0.5
+    >>> distance = 1.
+    >>> exponential(distance, radius)
+    0.1353352832366127
+
+    >>> import numpy as np
+    >>> from weave.kernels import exponential
+    >>> radius = 0.5
+    >>> distance = np.array([0., 1., 2.])
+    array([1., 0.13533528, 0.01831564])
+
     """
     return 1.0/np.exp(distance/radius)
 
@@ -59,9 +105,6 @@ def exponential(distance: float, radius: float) -> float:
 @njit
 def tricubic(distance: float, radius: float, exponent: float) -> float:
     """Get tricubic smoothing weight.
-
-    k_r(x, y) = max(0, (1 - (d(x, y)/r)^s)^3)
-    CODEm: s = lambda, r = max(x - x_min, x_max - x) + 1
 
     Parameters
     ----------
@@ -77,6 +120,40 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
     nonnegative float
         Tricubic smoothing weight.
 
+    Notes
+    -----
+    The tricubic kernel function is defined as
+
+    .. math:: k(d; r, s) = \\left(1 -
+              \\left(\\frac{d}{r}\\right)^s\\right)^3_+,
+
+    which is similar to the CODEm time weight
+
+    ..  math:: w_{t_{i, j}} = \\left(1 - \\left(\\frac{d_{i,
+               j}}{\\max_k|t_i - t_k| + 1}\\right)^\\lambda\\right)^3
+
+    with :math:`s = \\lambda` and :math:`d_{i, j} =`
+    :mod:`weave.distance.euclidean`:math:`(t_i, t_j)`. However, the
+    denominator in the CODEm weight varies by input :math:`t_i`, while
+    the kernel radius :math:`r` does not depend on the input :math:`d`.
+
+    Examples
+    --------
+    >>> from weave.kernels import tricubic
+    >>> radius = 2.
+    >>> exponent = 3.
+    >>> distance = 1.
+    >>> tricubic(distance, radius, exponent)
+    0.669921875
+
+    >>> import numpy as np
+    >>> from weave.kernels import tricubic
+    >>> radius = 2.
+    >>> exponent = 3.
+    >>> distance = np.array([0., 1., 2.])
+    >>> tricubic(distance, radius, exponent)
+    array([1., 0.66992188, 0.])
+
     """
     return np.maximum(0.0, (1.0 - (distance/radius)**exponent)**3)
 
@@ -84,15 +161,6 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
 @vectorize(['float64(float64,float64)'])
 def depth(distance: float, radius: float) -> float:
     """Get depth smoothing weight.
-
-    If distance == 0 (same country):
-        weight = radius
-    If distance in (0, 1] (same region):
-        weight = radius*(1 - radius)
-    If distance in (1, 2] (same super-region):
-        weight = (1 - radius)^2
-    If distance > 2 (different super-region):
-        weight = 0
 
     Parameters
     ----------
@@ -105,6 +173,38 @@ def depth(distance: float, radius: float) -> float:
     -------
     nonnegative float
         Depth smoothing weight.
+
+    Notes
+    -----
+    The depth kernel function is defined as
+
+    .. math:: k(d; r) = \\begin{cases} r & \\text{if } d = 0, \\\\
+              r(1 - r) & \\text{if } 0 < d \\leq 1, \\\\ (1 - r)^2 &
+              \\text{if } 1 < d \\leq 2, \\\\ 0 & \\text{otherwise},
+              \\end{cases}
+
+    which is the same as CODEm's location scale factors with
+    :math:`r = \\zeta` and :math:`d =`
+    :mod:`weave.distance.hierarchical`:math:`(\\ell_i, \\ell_j)`. This
+    corresponds to points that have the same country, region, or super
+    region, respectively, but the kernel function has not yet been
+    generalized to consider further location divisions (e.g., state or
+    county).
+
+    Examples
+    --------
+    >>> from weave.kernels import depth
+    >>> radius = 0.9
+    >>> distance = 1.
+    >>> depth(distance, radius)
+    0.08999999999999998
+
+    >>> import numpy as np
+    >>> from weave.kernels import depth
+    >>> radius = 0.9
+    >>> distance = np.array([0., 1., 2., 3.])
+    >>> depth(distance, radius)
+    array([0.9, 0.09, 0.01, 0.])
 
     """
     if distance == 0.0:
