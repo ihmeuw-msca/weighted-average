@@ -62,8 +62,8 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     For a pair of ND points, this function computes the *n*-dimensional
     Euclidean distance [2]_:
 
-    .. math:: d(x, y) = \\sqrt{(x_1 - y_1)^2 + (x_2 - y_2)^2 + \\
-              \\dots + (x_n - y_n)^2}
+    .. math:: d(x, y) = \\sqrt{(x_1 - y_1)^2 + (x_2 - y_2)^2 + \\dots +
+              (x_n - y_n)^2}
 
     References
     ----------
