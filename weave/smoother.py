@@ -15,14 +15,10 @@ import numpy as np
 from pandas import DataFrame  # type: ignore
 from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
-from weave.dimension import Dimension, TypedDimension
-from weave.distance import dictionary, get_typed_dict, euclidean, hierarchical
-from weave.kernels import exponential, depth, get_typed_pars, tricubic
+from weave.dimension import Dimension, TypedDimension, get_typed_dimension
+from weave.distance import dictionary, euclidean, hierarchical
+from weave.kernels import exponential, depth, tricubic
 from weave.utils import as_list, flatten
-
-number = Union[int, float]
-pars = Union[number, bool]
-DistanceDict = Dict[Tuple[number, number], number]
 
 
 class Smoother:
@@ -136,12 +132,14 @@ class Smoother:
             Points in `predict` with smoothed `columns` values.
 
         """
-        # Extract data
-        check_args(data, columns, fit, predict, loop)
+        # Check input
+        self.check_args(data, columns, fit, predict, loop)
         self.check_data(data, columns, fit, predict)
-        idx_fit = get_indices(data, fit)
-        idx_pred = get_indices(data, predict)
-        cols = get_columns(data, columns, idx_fit)
+
+        # Extract data
+        idx_fit = self.get_indices(data, fit)
+        idx_pred = self.get_indices(data, predict)
+        cols = self.get_columns(data, columns, idx_fit)
         point_list = self.get_points(data)
         dim_list = self.get_typed_dimensions()
 
@@ -155,6 +153,55 @@ class Smoother:
             data_smooth[f"{col}_smooth"] = cols_smooth[:, idx_col]
 
         return data_smooth
+
+    @staticmethod
+    def check_args(data: DataFrame, columns: Union[str, List[str]],
+                   fit: Optional[str], predict: Optional[str], loop: bool) \
+            -> None:
+        """Check `smoother` argument types and values.
+
+        Parameters
+        ----------
+        data : DataFrame
+            Input data structure.
+        columns : str or list of str
+            Column names of values to smooth.
+        fit : str or None
+            Column name indicating points to include in weighted
+            averages.
+        predict : str or None
+            Column name indicating points to predict smoothed values.
+        loop : bool
+            If True, smooth values for each point in `predict`
+            separately in a loop. Otherwise, populate a matrix of weights
+            for all points in `predict` and smooth values together.
+
+        Raises
+        ------
+        TypeError
+            If `smoother` arguments contain invalid types.
+        ValueError
+            If `columns` is an empty list or contains duplicates.
+
+        """
+        # Check types
+        if not isinstance(data, DataFrame):
+            raise TypeError('`data` is not a DataFrame.')
+        columns = as_list(columns)
+        if not all(isinstance(col, str) for col in columns):
+            raise TypeError('`columns` contains invalid types.')
+        if fit is not None and not isinstance(fit, str):
+            raise TypeError('`fit` is not a str.')
+        if predict is not None and not isinstance(predict, str):
+            raise TypeError('`predict` is not a str.')
+        if not isinstance(loop, bool):
+            raise TypeError('`loop` is not a bool.')
+
+        # Check values
+        if len(columns) == 0:
+            raise ValueError('`columns` is an empty list.')
+        if len(columns) > len(set(columns)):
+            raise ValueError('`columns` contains duplicates.')
 
     def check_data(self, data: DataFrame, columns: Union[str, List[str]],
                    fit: Optional[str], predict: Optional[str]) -> None:
@@ -216,6 +263,50 @@ class Smoother:
         if np.isinf(data[dim_cols + cols]).any(None):
             raise ValueError('`data` contains Infs.')
 
+    @staticmethod
+    def get_indices(data: DataFrame, indicator: str = None) -> np.ndarray:
+        """Get indices of `fit` or `predict` data.
+
+        Parameters
+        ----------
+        data : DataFrame
+            Input data structure.
+        indicator : str, optional
+            Column name indicating either `fit` or `predict` data.
+
+        Returns
+        -------
+        1D numpy.ndarray of int
+            Indices of `fit` or `predict` points.
+
+        """
+        if indicator is None:
+            return np.arange(len(data))
+        return np.where(data[indicator])[0]
+
+    @staticmethod
+    def get_columns(data: DataFrame, columns: Union[str, List[str]],
+                    idx_fit: np.ndarray) -> np.ndarray:
+        """Get values to smooth.
+
+        Parameters
+        ----------
+        data : pandas.DataFrame
+            Input data structure.
+        columns : str or list of str
+            Column names of values to smooth.
+        idx_fit : numpy.ndarray of int
+            Indices of `fit` points.
+
+        Returns
+        -------
+        2D numpy.ndarray of float
+            Values to smooth.
+
+        """
+        return np.array([data[col].values[idx_fit]
+                         for col in as_list(columns)], dtype=float).T
+
     def get_points(self, data: DataFrame) -> List[np.ndarray]:
         """Get point locations by dimension.
 
@@ -226,7 +317,7 @@ class Smoother:
 
         Returns
         -------
-        list of 2D numpy.ndarray of float
+        numba.typed.List of 2D numpy.ndarray of float
             Point locations by dimension.
 
         """
@@ -242,118 +333,14 @@ class Smoother:
 
         Returns
         -------
-        list of TypedDimension
+        numba.typed.List of TypedDimension
             Smoothing dimensions cast as jitclass objects.
 
         """
         dim_list = TypedList()
         for dim in self._dimensions:
-            # Get typed version of attributes
-            columns = TypedList(dim.columns)
-            kernel_pars = get_typed_pars(dim.kernel_pars)
-            if hasattr(dim, 'distance_dict'):
-                distance_dict = get_typed_dict(dim.distance_dict)
-            else:
-                distance_dict = get_typed_dict()
-
-            # Create typed dimension
-            typed_dim = TypedDimension(dim.name, columns, dim.kernel,
-                                       kernel_pars, dim.distance,
-                                       distance_dict)
-            dim_list.append(typed_dim)
+            dim_list.append(get_typed_dimension(dim))
         return dim_list
-
-
-def check_args(data: DataFrame, columns: Union[str, List[str]],
-               fit: Optional[str], predict: Optional[str], loop: bool) -> None:
-    """Check `smoother` argument types and values.
-
-    Parameters
-    ----------
-    data : DataFrame
-        Input data structure.
-    columns : str or list of str
-        Column names of values to smooth.
-    fit : str or None
-        Column name indicating points to include in weighted
-        averages.
-    predict : str or None
-        Column name indicating points to predict smoothed values.
-    loop : bool
-        If True, smooth values for each point in `predict`
-        separately in a loop. Otherwise, populate a matrix of weights
-        for all points in `predict` and smooth values together.
-
-    Raises
-    ------
-    TypeError
-        If `smoother` arguments contain invalid types.
-    ValueError
-        If `columns` is an empty list or contains duplicates.
-
-    """
-    # Check types
-    if not isinstance(data, DataFrame):
-        raise TypeError('`data` is not a DataFrame.')
-    columns = as_list(columns)
-    if not all(isinstance(col, str) for col in columns):
-        raise TypeError('`columns` contains invalid types.')
-    if fit is not None and not isinstance(fit, str):
-        raise TypeError('`fit` is not a str.')
-    if predict is not None and not isinstance(predict, str):
-        raise TypeError('`predict` is not a str.')
-    if not isinstance(loop, bool):
-        raise TypeError('`loop` is not a bool.')
-
-    # Check values
-    if len(columns) == 0:
-        raise ValueError('`columns` is an empty list.')
-    if len(columns) > len(set(columns)):
-        raise ValueError('`columns` contains duplicates.')
-
-
-def get_indices(data: DataFrame, indicator: str = None) -> np.ndarray:
-    """Get indices of `fit` or `predict` data.
-
-    Parameters
-    ----------
-    data : DataFrame
-        Input data structure.
-    indicator : str, optional
-        Column name indicating either `fit` or `predict` data.
-
-    Returns
-    -------
-    1D numpy.ndarray of int
-        Indices of `fit` or `predict` points.
-
-    """
-    if indicator is None:
-        return np.arange(len(data))
-    return np.where(data[indicator])[0]
-
-
-def get_columns(data: DataFrame, columns: Union[str, List[str]],
-                idx_fit: np.ndarray) -> np.ndarray:
-    """Get values to smooth.
-
-    Parameters
-    ----------
-    data : pandas.DataFrame
-        Input data structure.
-    columns : str or list of str
-        Column names of values to smooth.
-    idx_fit : numpy.ndarray of int
-        Indices of `fit` points.
-
-    Returns
-    -------
-    2D numpy.ndarray of float
-        Values to smooth.
-
-    """
-    return np.array([data[col].values[idx_fit] for col in as_list(columns)],
-                    dtype=float).T
 
 
 @njit
