@@ -50,6 +50,8 @@ def flatten(values: List[Union[Any, List[Any]]]) -> List[Any]:
 
     Examples
     --------
+    Returns a flattened version of a nested list.
+
     >>> flatten([1, [2, [3, [4]]]])
     [1, 2, 3, 4]
     >>> flatten(['age', 'year', ['super_region', 'region', 'country']])

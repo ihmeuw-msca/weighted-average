@@ -72,12 +72,16 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
 
     Examples
     --------
+    Get distances between scalar points.
+
     >>> import numpy as np
     >>> from weave.distance import euclidean
     >>> x = np.array([0.])
     >>> Y = np.array([[-1.], [0.], [1.]])
     >>> euclidean(x, Y)
     array([1., 0., 1.])
+
+    Get distances between vector points.
 
     >>> import numpy as np
     >>> from weave.distance import euclidean
@@ -122,6 +126,8 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
 
     Examples
     --------
+    Get distances between leaf nodes from the following tree.
+
     .. image:: images/hierarchy.png
 
     >>> import numpy as np
@@ -175,10 +181,6 @@ def dictionary(x: np.ndarray, Y: np.ndarray,
     1D numpy.ndarray of nonnegative float
         Dictionary distances between `x` and `Y`.
 
-    See Also
-    --------
-    get_typed_dict
-
     Notes
     -----
     Because this is a Numba just-in-time function, the parameter
@@ -189,6 +191,9 @@ def dictionary(x: np.ndarray, Y: np.ndarray,
 
     Examples
     --------
+    Get user-defined distances between points based on scalar point
+    IDs.
+
     >>> from weave.distance import dictionary, get_typed_dict
     >>> distance_dict = {
             (4, 4): 0,
@@ -233,13 +238,11 @@ def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
     : numba.typed.Dict of {(float64, float64): float64}
         Typed version of `distance_dict`.
 
-    See Also
-    --------
-    `numba.typed.Dict
-    <https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict>`_
-
     Examples
     --------
+    Cast a dictionary as an instance of `numba.typed.Dict
+    <https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict>`_.
+
     >>> from weave.distance import get_typed_dict
     >>> distance_dict = {(1, 1): 0}
     >>> get_typed_dict(distance_dict)
