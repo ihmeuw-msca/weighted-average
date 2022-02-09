@@ -241,7 +241,7 @@ def get_typed_pars(kernel_pars: Dict[str, pars]) -> Dict[str, float]:
 
     Returns
     -------
-    dict of {str: float}
+    numba.typed.Dict of {unicode_type: float64}
         Typed version of `kernel_pars`.
 
     """
