@@ -1,18 +1,14 @@
 # pylint: disable=C0103, E0611, R0902, R0903, R0913
-"""Smoothing dimension specifications.
-
-Dimension class to specify smoothing dimension column names, distance
-function, and kernel function.
-
-"""
+"""Smoothing dimension specifications."""
 from typing import Dict, List, Optional, Tuple, Union
 
 from numba.experimental import jitclass  # type: ignore
+from numba.typed import List as TypedList  # type: ignore
 from numba.types import DictType, ListType, UniTuple  # type: ignore
 from numba.types import float64, unicode_type  # type: ignore
 
-from weave.distance import _check_dict
-from weave.kernels import _check_pars
+from weave.distance import get_typed_dict, _check_dict
+from weave.kernels import get_typed_pars, _check_pars
 from weave.utils import as_list
 
 number = Union[int, float]
@@ -23,21 +19,56 @@ DistanceDict = Dict[Tuple[number, number], number]
 class Dimension:
     """Smoothing dimension specifications.
 
+    Dimension class to specify smoothing dimension column names, kernel
+    function, distance function, and relevant parameters.
+
     Attributes
     ----------
     name : str
         Dimension name.
+
     columns : list of str
         Dimension column names.
+
+        Column names in data frame containing the coordinates of points
+        in the given dimension.
+
     kernel : {'exponential', 'tricubic', 'depth'}
         Kernel function name.
+
+        Name of kernel function to compute smoothing weights.
+
+        See Also
+        --------
+        weave.kernels
+
     kernel_pars : dict of {str: number or bool}
         Kernel function parameters.
+
+        Dictionary of kernel function parameters corresponding to
+        `kernel` attribute.
+
     distance : {'dictionary', 'euclidean', 'hierarchical'}
         Distance function name.
+
+        Name of distance function to compute distance between points.
+
+        See Also
+        --------
+        weave.distance
+
     distance_dict : dict of {(number, number): number}
-        Dictionary of distances between points if `distance` is
-        'dictionary'.
+        Dictionary of distances between points.
+
+        User-defined dictionary of distances between points if
+        `distance` attribute is 'dictionary'. Dictionary keys are
+        tuples of point ID pairs, and dictionary values are the
+        corresponding distances. Because distances are assumed to be
+        symmetric, point IDs are listed from smallest to largest.
+
+        See Also
+        --------
+        weave.distance.dictionary
 
     """
 
@@ -57,43 +88,132 @@ class Dimension:
         kernel_pars : dict of {str: number or bool}
             Kernel function parameters.
         distance : {'dictionary', 'euclidean', 'hierarchical'}, optional
-            Distance function name.
+            Distance function name. If None, default distance function
+            is used.
         distance_dict : dict of {(number, number): number}, optional
             Dictionary of distances between points if `distance` is
             'dictionary'.
 
-        Distance function defaults
-        --------------------------
-        `kernel` : {'exponential', 'tricubic'}
-            `distance` : 'euclidean'
-        `kernel` : 'depth'
-            `distance` : 'hierarchical'
+        Notes
+        -----
 
-        Kernel function parameters
-        --------------------------
-        `kernel` : 'exponential'
-            `radius` : positive number
-        `kernel` : 'tricubic'
-            `radius` : positive number
-            `exponent` : positive number
-        `kernel` : 'depth'
-            `radius` : float in (0, 1)
-            `normalize` : bool, optional
+        * Kernel-specific parameters and default distance functions are
+          given in the table below. The given dictionary `kernel_pars`
+          is converted to an instance of `numba.typed.Dict
+          <https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict>`_
+          within :func:`weave.smoother.Smoother`.
 
-        Kernel parameter `normalize` (used only with `depth` kernel)
-        indicates that dimension weights should be normalized in groups
-        based on `depth` kernel values before final normalization. For
-        example, in the CODEm framework, the product of age and time
-        weights are normalized in groups based on location hierarchy
-        before being multiplied by location weights, then these results
-        are normalized across all groups. Default is True.
+          .. list-table::
+             :header-rows: 1
 
-        Dictionary `distance_dict` contains the distance between points
-        `x` and `y`. Dictionary keys are tuples of point pairs
-        `(x, y)`, where `x` and `y` are floats (e.g., location IDs),
-        and dictionary values are the corresponding distances. Because
-        distances are assumed to be symmetric, point pairs are listed
-        from smallest to largest, e.g., `x` <= `y`.
+             * - Kernel
+               - Parameter
+               - Parameter type
+               - Default distance
+             * - ``exponential``
+               - ``radius``
+               - Positive number
+               - ``euclidean``
+             * - ``tricubic``
+               - ``radius``
+               - Positive number
+               - ``euclidean``
+             * -
+               - ``exponent``
+               - Positive number
+               -
+             * - ``depth``
+               - ``radius``
+               - Float in :math:`(0, 1)`
+               - ``hierarchical``
+             * -
+               - ``normalize``
+               - Boolean, optional (default is ``True``)
+               -
+
+        * The optional depth kernel function parameter `normalize`
+          indicates whether or not dimension weights should be
+          normalized in groups based on depth kernel weight values.
+          This corresponds to the CODEm [1]_ framework where the
+          product of age and time weights are normalized in groups
+          based on the location hierarchy before being multiplied by
+          location weights. For example, for points :math:`i, j, k`
+          from the same country:
+
+          .. math:: w_{i, j} = w_{\\ell_{i, j}} \\cdot
+                    \\frac{w_{a_{i, j}} w_{t_{i, j}}} {\\sum_{k}
+                    w_{a_{i, k}} w_{t_{i, k}}}
+
+        * The dictionary `distance_dict` contains the user-defined
+          distances between points if the distance attribute is
+          'dictionary'. Dictionary keys are tuples of point ID pairs,
+          and dictionary values are the corresponding distances.
+          Because distances are assumed to be symmetric, point IDs are
+          listed from smallest to largest. The given `distance_dict` is
+          converted to an instance of `numba.typed.Dict
+          <https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict>`_
+          within :func:`weave.smoother.Smoother`.
+
+        References
+        ----------
+        .. [1] `Cause of Death Ensemble model
+               <https://pophealthmetrics.biomedcentral.com/articles/10.1186/1478-7954-10-1>`_
+
+        Examples
+        --------
+        Dimensions with exponential kernel and default Euclidean
+        distance.
+
+        >>> from weave.dimension import Dimension
+        >>> age = Dimension(
+                name='age',
+                columns='age_mid',
+                kernel='exponential',
+                kernel_pars={'radius': 0.5}
+            )
+        >>> location = Dimension(
+                name='location',
+                columns=['lat', 'lon'],
+                kernel='exponential',
+                kernel_pars={'radius': 0.5}
+            )
+
+        Dimension with tricubic kernel and default Euclidean distance.
+
+        >>> from weave.dimension import Dimension
+        >>> year = Dimension(
+                name='year',
+                columns='year_id',
+                kernel='tricubic',
+                kernel_pars={'radius': 2, 'exponent': 3}
+            )
+
+        Dimension with tricubic kernel and dictionary distance.
+
+        >>> from weave.dimension import Dimension
+        >>> location = Dimension(
+                name='location',
+                columns='location_id',
+                kernel='tricubic',
+                kernel_pars={'radius': 2, 'exponent': 3},
+                distance='dictionary',
+                distance_dict={
+                    (4, 4): 0.,
+                    (4, 5): 1.,
+                    (4, 6): 2.,
+                    (5, 6): 2.
+                }
+            )
+
+        Dimension with depth kernel and default hierarchical distance.
+
+        >>> from weave.dimension import Dimension
+        >>> location = Dimension(
+                name='location',
+                columns=['super_region', 'region', 'country'],
+                kernel='depth',
+                kernel_pars={'radius': 0.9}
+            )
 
         """
         self.name = name
@@ -381,7 +501,7 @@ class Dimension:
            ('distance', unicode_type),
            ('distance_dict', DictType(UniTuple(float64, 2), float64))])
 class TypedDimension:
-    """class docstring"""
+    """Smoothing dimension specifications."""
     def __init__(self, name: str, columns: List[str], kernel: str,
                  kernel_pars: Dict[str, float], distance: str,
                  distance_dict: Dict[Tuple[float, float], float]) -> None:
@@ -389,17 +509,17 @@ class TypedDimension:
 
         Parameters
         ----------
-        name : str
+        name : unicode_type
             Dimension name.
-        columns : list of str
+        columns : numba.typed.List of unicode_type
             Dimension column names.
         kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
-        kernel_pars : dict of {str: float}
+        kernel_pars : numba.typed.Dict of {unicode_type: float64}
             Kernel function parameters.
         distance : {'dictionary', 'euclidean', 'hierarchical'}
             Distance function name.
-        distance_dict : dict of {(float, float): float}
+        distance_dict : numba.typed.Dict of {(float64, float64): float64}
             Dictionary of distances between points if `distance` is
             'dictionary'.
 
@@ -410,3 +530,26 @@ class TypedDimension:
         self.kernel_pars = kernel_pars
         self.distance = distance
         self.distance_dict = distance_dict
+
+
+def get_typed_dimension(dim: Dimension) -> TypedDimension:
+    """Get smoothing dimension cast as jitclass object.
+
+    Returns
+    -------
+    TypedDimension
+        Smoothing dimension cast as jitclass object.
+
+    """
+    # Get typed version of attributes
+    columns = TypedList(dim.columns)
+    kernel_pars = get_typed_pars(dim.kernel_pars)
+    if hasattr(dim, 'distance_dict'):
+        distance_dict = get_typed_dict(dim.distance_dict)
+    else:
+        distance_dict = get_typed_dict()
+
+    # Create typed dimension
+    typed_dim = TypedDimension(dim.name, columns, dim.kernel, kernel_pars,
+                               dim.distance, distance_dict)
+    return typed_dim
