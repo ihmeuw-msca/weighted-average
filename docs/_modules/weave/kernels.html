@@ -209,7 +209,8 @@
         </div>
         <article role="main">
           <h1>Source code for weave.kernels</h1><div class="highlight"><pre>
-<span></span><span class="sd">"""Calculate the smoothing weight for nearby point given current point.</span>
+<span></span><span class="c1"># pylint: disable=C0103, E0611</span>
+<span class="sd">"""Calculate the smoothing weight for nearby point given current point.</span>
 
 <span class="sd">Kernel functions to calculate the smoothing weight for a nearby point</span>
 <span class="sd">or a vector of nearby points given the current point using the distance</span>
@@ -236,10 +237,9 @@
 <span class="sd">   - :math:`k(x, y; r) \\geq k(x', y'; r)` if :math:`d(x, y) &lt; d(x', y')`</span>
 
 <span class="sd">The :func:`exponential`, :func:`tricubic`, and :func:`depth` kernel</span>
-<span class="sd">functions are modeled after the age, time, and location weights in the</span>
-<span class="sd">Cause of Death Ensemble model (CODEm) [2]_ (see the spatial-temporal</span>
-<span class="sd">models sub-section within the methods section). There are many other</span>
-<span class="sd">kernel functions in common use [3]_.</span>
+<span class="sd">functions are modeled after the age, time, and location weights CODEm</span>
+<span class="sd">[2]_ (see the spatial-temporal models sub-section within the methods</span>
+<span class="sd">section). There are many other kernel functions in common use [3]_.</span>
 
 <span class="sd">The kernel functions in this module compute weights using the distance</span>
 <span class="sd">between points as input rather than the points themselves. They are</span>
@@ -261,9 +261,12 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">njit</span><span class="p">,</span> <span class="n">vectorize</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">numba.typed</span> <span class="kn">import</span> <span class="n">Dict</span> <span class="k">as</span> <span class="n">TypedDict</span>  <span class="c1"># type: ignore</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">is_number</span>
+
+<span class="n">pars</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="exponential"><a class="viewcode-back" href="../../api_reference/weave.kernels.html#weave.kernels.exponential">[docs]</a><span class="nd">@njit</span>
@@ -297,11 +300,15 @@
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
+<span class="sd">    Get weight for a pair of points.</span>
+
 <span class="sd">    &gt;&gt;&gt; from weave.kernels import exponential</span>
 <span class="sd">    &gt;&gt;&gt; radius = 0.5</span>
 <span class="sd">    &gt;&gt;&gt; distance = 1.</span>
 <span class="sd">    &gt;&gt;&gt; exponential(distance, radius)</span>
 <span class="sd">    0.1353352832366127</span>
+
+<span class="sd">    Get weights for a vector of point pairs.</span>
 
 <span class="sd">    &gt;&gt;&gt; import numpy as np</span>
 <span class="sd">    &gt;&gt;&gt; from weave.kernels import exponential</span>
@@ -350,12 +357,16 @@
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
+<span class="sd">    Get weight for a pair of points.</span>
+
 <span class="sd">    &gt;&gt;&gt; from weave.kernels import tricubic</span>
 <span class="sd">    &gt;&gt;&gt; radius = 2.</span>
 <span class="sd">    &gt;&gt;&gt; exponent = 3.</span>
 <span class="sd">    &gt;&gt;&gt; distance = 1.</span>
 <span class="sd">    &gt;&gt;&gt; tricubic(distance, radius, exponent)</span>
 <span class="sd">    0.669921875</span>
+
+<span class="sd">    Get weights for a vector of point pairs.</span>
 
 <span class="sd">    &gt;&gt;&gt; import numpy as np</span>
 <span class="sd">    &gt;&gt;&gt; from weave.kernels import tricubic</span>
@@ -404,11 +415,15 @@
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
+<span class="sd">    Get weight for a pair of points.</span>
+
 <span class="sd">    &gt;&gt;&gt; from weave.kernels import depth</span>
 <span class="sd">    &gt;&gt;&gt; radius = 0.9</span>
 <span class="sd">    &gt;&gt;&gt; distance = 1.</span>
 <span class="sd">    &gt;&gt;&gt; depth(distance, radius)</span>
 <span class="sd">    0.08999999999999998</span>
+
+<span class="sd">    Get weights for a vector of point pairs.</span>
 
 <span class="sd">    &gt;&gt;&gt; import numpy as np</span>
 <span class="sd">    &gt;&gt;&gt; from weave.kernels import depth</span>
@@ -427,14 +442,33 @@
     <span class="k">return</span> <span class="mf">0.0</span>
 
 
-<span class="k">def</span> <span class="nf">_check_pars</span><span class="p">(</span><span class="n">pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
-                <span class="n">names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">types</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> \
-        <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">get_typed_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="sd">"""Get typed version of `kernel_pars`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    kernel_pars : dict of {str: int, float, or bool}</span>
+<span class="sd">        Kernel function parameters.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numba.typed.Dict of {unicode_type: float64}</span>
+<span class="sd">        Typed version of `kernel_pars`.</span>
+
+<span class="sd">    """</span>
+    <span class="n">typed_pars</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
+        <span class="n">typed_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">typed_pars</span>
+
+
+<span class="k">def</span> <span class="nf">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">],</span> <span class="n">names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+                <span class="n">types</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">"""Check kernel parameter types and values.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    pars : dict of {str: int or float}</span>
+<span class="sd">    pars : dict of {str: int, float, or bool}</span>
 <span class="sd">        Kernel parameters</span>
 <span class="sd">    names : str or list of str</span>
 <span class="sd">        Parameter names.</span>
@@ -452,7 +486,7 @@
 
 <span class="sd">    """</span>
     <span class="c1"># Check type</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`kernel_pars` is not a dict.'</span><span class="p">)</span>
 
     <span class="c1"># Get parameter names</span>
@@ -462,9 +496,9 @@
 
     <span class="k">for</span> <span class="n">idx_par</span><span class="p">,</span> <span class="n">par_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
         <span class="c1"># Check key</span>
-        <span class="k">if</span> <span class="n">par_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pars</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">par_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not in `pars`."</span><span class="p">)</span>
-        <span class="n">par_val</span> <span class="o">=</span> <span class="n">pars</span><span class="p">[</span><span class="n">par_name</span><span class="p">]</span>
+        <span class="n">par_val</span> <span class="o">=</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">par_name</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'pos_num'</span><span class="p">:</span>
             <span class="c1"># Check type</span>

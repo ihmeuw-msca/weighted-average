@@ -227,11 +227,10 @@
 </dd>
 </dl>
 <p class="rubric">Examples</p>
+<p>Single values are cast as a list, while lists remain unchanged.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">as_list</span><span class="p">(</span><span class="s1">'single_value'</span><span class="p">)</span>
 <span class="go">['single_value']</span>
-</pre></div>
-</div>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">as_list</span><span class="p">([</span><span class="s1">'list'</span><span class="p">,</span> <span class="s1">'of'</span><span class="p">,</span> <span class="s1">'values'</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">as_list</span><span class="p">([</span><span class="s1">'list'</span><span class="p">,</span> <span class="s1">'of'</span><span class="p">,</span> <span class="s1">'values'</span><span class="p">])</span>
 <span class="go">['list', 'of', 'values']</span>
 </pre></div>
 </div>
@@ -252,12 +251,11 @@
 </dd>
 </dl>
 <p class="rubric">Examples</p>
+<p>Returns a flattened version of a nested list.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">flatten</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="p">[</span><span class="mi">4</span><span class="p">]]]])</span>
 <span class="go">[1, 2, 3, 4]</span>
-</pre></div>
-</div>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">flatten</span><span class="p">([</span><span class="s1">'age'</span><span class="p">,</span> <span class="s1">'year'</span><span class="p">,</span> <span class="p">[</span><span class="s1">'super_region'</span><span class="p">,</span> <span class="s1">'region'</span><span class="p">,</span> <span class="s1">'location'</span><span class="p">]])</span>
-<span class="go">['age', 'year', 'super_region', 'region', 'location']</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">flatten</span><span class="p">([</span><span class="s1">'age'</span><span class="p">,</span> <span class="s1">'year'</span><span class="p">,</span> <span class="p">[</span><span class="s1">'super_region'</span><span class="p">,</span> <span class="s1">'region'</span><span class="p">,</span> <span class="s1">'country'</span><span class="p">]])</span>
+<span class="go">['age', 'year', 'super_region', 'region', 'country']</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -277,15 +275,12 @@
 </dd>
 </dl>
 <p class="rubric">Examples</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> for ints and floats, but <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 <span class="go">True</span>
-</pre></div>
-</div>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
 <span class="go">True</span>
-</pre></div>
-</div>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="s1">'one'</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="s1">'one'</span><span class="p">)</span>
 <span class="go">False</span>
 </pre></div>
 </div>

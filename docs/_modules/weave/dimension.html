@@ -210,20 +210,16 @@
         <article role="main">
           <h1>Source code for weave.dimension</h1><div class="highlight"><pre>
 <span></span><span class="c1"># pylint: disable=C0103, E0611, R0902, R0903, R0913</span>
-<span class="sd">"""Smoothing dimension specifications.</span>
-
-<span class="sd">Dimension class to specify smoothing dimension column names, distance</span>
-<span class="sd">function, and kernel function.</span>
-
-<span class="sd">"""</span>
+<span class="sd">"""Smoothing dimension specifications."""</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">numba.experimental</span> <span class="kn">import</span> <span class="n">jitclass</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">numba.typed</span> <span class="kn">import</span> <span class="n">List</span> <span class="k">as</span> <span class="n">TypedList</span>  <span class="c1"># type: ignore</span>
 <span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">DictType</span><span class="p">,</span> <span class="n">ListType</span><span class="p">,</span> <span class="n">UniTuple</span>  <span class="c1"># type: ignore</span>
 <span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">float64</span><span class="p">,</span> <span class="n">unicode_type</span>  <span class="c1"># type: ignore</span>
 
-<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">_check_dict</span>
-<span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">_check_pars</span>
+<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">get_typed_dict</span><span class="p">,</span> <span class="n">_check_dict</span>
+<span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">get_typed_pars</span><span class="p">,</span> <span class="n">_check_pars</span>
 <span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span>
 
 <span class="n">number</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
@@ -234,21 +230,56 @@
 <div class="viewcode-block" id="Dimension"><a class="viewcode-back" href="../../api_reference/weave.dimension.html#weave.dimension.Dimension">[docs]</a><span class="k">class</span> <span class="nc">Dimension</span><span class="p">:</span>
     <span class="sd">"""Smoothing dimension specifications.</span>
 
+<span class="sd">    Dimension class to specify smoothing dimension column names, kernel</span>
+<span class="sd">    function, distance function, and relevant parameters.</span>
+
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
 <span class="sd">    name : str</span>
 <span class="sd">        Dimension name.</span>
+
 <span class="sd">    columns : list of str</span>
 <span class="sd">        Dimension column names.</span>
+
+<span class="sd">        Column names in data frame containing the coordinates of points</span>
+<span class="sd">        in the given dimension.</span>
+
 <span class="sd">    kernel : {'exponential', 'tricubic', 'depth'}</span>
 <span class="sd">        Kernel function name.</span>
+
+<span class="sd">        Name of kernel function to compute smoothing weights.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        weave.kernels</span>
+
 <span class="sd">    kernel_pars : dict of {str: number or bool}</span>
 <span class="sd">        Kernel function parameters.</span>
+
+<span class="sd">        Dictionary of kernel function parameters corresponding to</span>
+<span class="sd">        `kernel` attribute.</span>
+
 <span class="sd">    distance : {'dictionary', 'euclidean', 'hierarchical'}</span>
 <span class="sd">        Distance function name.</span>
+
+<span class="sd">        Name of distance function to compute distance between points.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        weave.distance</span>
+
 <span class="sd">    distance_dict : dict of {(number, number): number}</span>
-<span class="sd">        Dictionary of distances between points if `distance` is</span>
-<span class="sd">        'dictionary'.</span>
+<span class="sd">        Dictionary of distances between points.</span>
+
+<span class="sd">        User-defined dictionary of distances between points if</span>
+<span class="sd">        `distance` attribute is 'dictionary'. Dictionary keys are</span>
+<span class="sd">        tuples of point ID pairs, and dictionary values are the</span>
+<span class="sd">        corresponding distances. Because distances are assumed to be</span>
+<span class="sd">        symmetric, point IDs are listed from smallest to largest.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        weave.distance.dictionary</span>
 
 <span class="sd">    """</span>
 
@@ -268,43 +299,132 @@
 <span class="sd">        kernel_pars : dict of {str: number or bool}</span>
 <span class="sd">            Kernel function parameters.</span>
 <span class="sd">        distance : {'dictionary', 'euclidean', 'hierarchical'}, optional</span>
-<span class="sd">            Distance function name.</span>
+<span class="sd">            Distance function name. If None, default distance function</span>
+<span class="sd">            is used.</span>
 <span class="sd">        distance_dict : dict of {(number, number): number}, optional</span>
 <span class="sd">            Dictionary of distances between points if `distance` is</span>
 <span class="sd">            'dictionary'.</span>
 
-<span class="sd">        Distance function defaults</span>
-<span class="sd">        --------------------------</span>
-<span class="sd">        `kernel` : {'exponential', 'tricubic'}</span>
-<span class="sd">            `distance` : 'euclidean'</span>
-<span class="sd">        `kernel` : 'depth'</span>
-<span class="sd">            `distance` : 'hierarchical'</span>
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
 
-<span class="sd">        Kernel function parameters</span>
-<span class="sd">        --------------------------</span>
-<span class="sd">        `kernel` : 'exponential'</span>
-<span class="sd">            `radius` : positive number</span>
-<span class="sd">        `kernel` : 'tricubic'</span>
-<span class="sd">            `radius` : positive number</span>
-<span class="sd">            `exponent` : positive number</span>
-<span class="sd">        `kernel` : 'depth'</span>
-<span class="sd">            `radius` : float in (0, 1)</span>
-<span class="sd">            `normalize` : bool, optional</span>
+<span class="sd">        * Kernel-specific parameters and default distance functions are</span>
+<span class="sd">          given in the table below. The given dictionary `kernel_pars`</span>
+<span class="sd">          is converted to an instance of `numba.typed.Dict</span>
+<span class="sd">          &lt;https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict&gt;`_</span>
+<span class="sd">          within :func:`weave.smoother.Smoother`.</span>
 
-<span class="sd">        Kernel parameter `normalize` (used only with `depth` kernel)</span>
-<span class="sd">        indicates that dimension weights should be normalized in groups</span>
-<span class="sd">        based on `depth` kernel values before final normalization. For</span>
-<span class="sd">        example, in the CODEm framework, the product of age and time</span>
-<span class="sd">        weights are normalized in groups based on location hierarchy</span>
-<span class="sd">        before being multiplied by location weights, then these results</span>
-<span class="sd">        are normalized across all groups. Default is True.</span>
+<span class="sd">          .. list-table::</span>
+<span class="sd">             :header-rows: 1</span>
 
-<span class="sd">        Dictionary `distance_dict` contains the distance between points</span>
-<span class="sd">        `x` and `y`. Dictionary keys are tuples of point pairs</span>
-<span class="sd">        `(x, y)`, where `x` and `y` are floats (e.g., location IDs),</span>
-<span class="sd">        and dictionary values are the corresponding distances. Because</span>
-<span class="sd">        distances are assumed to be symmetric, point pairs are listed</span>
-<span class="sd">        from smallest to largest, e.g., `x` &lt;= `y`.</span>
+<span class="sd">             * - Kernel</span>
+<span class="sd">               - Parameter</span>
+<span class="sd">               - Parameter type</span>
+<span class="sd">               - Default distance</span>
+<span class="sd">             * - ``exponential``</span>
+<span class="sd">               - ``radius``</span>
+<span class="sd">               - Positive number</span>
+<span class="sd">               - ``euclidean``</span>
+<span class="sd">             * - ``tricubic``</span>
+<span class="sd">               - ``radius``</span>
+<span class="sd">               - Positive number</span>
+<span class="sd">               - ``euclidean``</span>
+<span class="sd">             * -</span>
+<span class="sd">               - ``exponent``</span>
+<span class="sd">               - Positive number</span>
+<span class="sd">               -</span>
+<span class="sd">             * - ``depth``</span>
+<span class="sd">               - ``radius``</span>
+<span class="sd">               - Float in :math:`(0, 1)`</span>
+<span class="sd">               - ``hierarchical``</span>
+<span class="sd">             * -</span>
+<span class="sd">               - ``normalize``</span>
+<span class="sd">               - Boolean, optional (default is ``True``)</span>
+<span class="sd">               -</span>
+
+<span class="sd">        * The optional depth kernel function parameter `normalize`</span>
+<span class="sd">          indicates whether or not dimension weights should be</span>
+<span class="sd">          normalized in groups based on depth kernel weight values.</span>
+<span class="sd">          This corresponds to the CODEm [1]_ framework where the</span>
+<span class="sd">          product of age and time weights are normalized in groups</span>
+<span class="sd">          based on the location hierarchy before being multiplied by</span>
+<span class="sd">          location weights. For example, for points :math:`i, j, k`</span>
+<span class="sd">          from the same country:</span>
+
+<span class="sd">          .. math:: w_{i, j} = w_{\\ell_{i, j}} \\cdot</span>
+<span class="sd">                    \\frac{w_{a_{i, j}} w_{t_{i, j}}} {\\sum_{k}</span>
+<span class="sd">                    w_{a_{i, k}} w_{t_{i, k}}}</span>
+
+<span class="sd">        * The dictionary `distance_dict` contains the user-defined</span>
+<span class="sd">          distances between points if the distance attribute is</span>
+<span class="sd">          'dictionary'. Dictionary keys are tuples of point ID pairs,</span>
+<span class="sd">          and dictionary values are the corresponding distances.</span>
+<span class="sd">          Because distances are assumed to be symmetric, point IDs are</span>
+<span class="sd">          listed from smallest to largest. The given `distance_dict` is</span>
+<span class="sd">          converted to an instance of `numba.typed.Dict</span>
+<span class="sd">          &lt;https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict&gt;`_</span>
+<span class="sd">          within :func:`weave.smoother.Smoother`.</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] `Cause of Death Ensemble model</span>
+<span class="sd">               &lt;https://pophealthmetrics.biomedcentral.com/articles/10.1186/1478-7954-10-1&gt;`_</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Dimensions with exponential kernel and default Euclidean</span>
+<span class="sd">        distance.</span>
+
+<span class="sd">        &gt;&gt;&gt; from weave.dimension import Dimension</span>
+<span class="sd">        &gt;&gt;&gt; age = Dimension(</span>
+<span class="sd">                name='age',</span>
+<span class="sd">                columns='age_mid',</span>
+<span class="sd">                kernel='exponential',</span>
+<span class="sd">                kernel_pars={'radius': 0.5}</span>
+<span class="sd">            )</span>
+<span class="sd">        &gt;&gt;&gt; location = Dimension(</span>
+<span class="sd">                name='location',</span>
+<span class="sd">                columns=['lat', 'lon'],</span>
+<span class="sd">                kernel='exponential',</span>
+<span class="sd">                kernel_pars={'radius': 0.5}</span>
+<span class="sd">            )</span>
+
+<span class="sd">        Dimension with tricubic kernel and default Euclidean distance.</span>
+
+<span class="sd">        &gt;&gt;&gt; from weave.dimension import Dimension</span>
+<span class="sd">        &gt;&gt;&gt; year = Dimension(</span>
+<span class="sd">                name='year',</span>
+<span class="sd">                columns='year_id',</span>
+<span class="sd">                kernel='tricubic',</span>
+<span class="sd">                kernel_pars={'radius': 2, 'exponent': 3}</span>
+<span class="sd">            )</span>
+
+<span class="sd">        Dimension with tricubic kernel and dictionary distance.</span>
+
+<span class="sd">        &gt;&gt;&gt; from weave.dimension import Dimension</span>
+<span class="sd">        &gt;&gt;&gt; location = Dimension(</span>
+<span class="sd">                name='location',</span>
+<span class="sd">                columns='location_id',</span>
+<span class="sd">                kernel='tricubic',</span>
+<span class="sd">                kernel_pars={'radius': 2, 'exponent': 3},</span>
+<span class="sd">                distance='dictionary',</span>
+<span class="sd">                distance_dict={</span>
+<span class="sd">                    (4, 4): 0.,</span>
+<span class="sd">                    (4, 5): 1.,</span>
+<span class="sd">                    (4, 6): 2.,</span>
+<span class="sd">                    (5, 6): 2.</span>
+<span class="sd">                }</span>
+<span class="sd">            )</span>
+
+<span class="sd">        Dimension with depth kernel and default hierarchical distance.</span>
+
+<span class="sd">        &gt;&gt;&gt; from weave.dimension import Dimension</span>
+<span class="sd">        &gt;&gt;&gt; location = Dimension(</span>
+<span class="sd">                name='location',</span>
+<span class="sd">                columns=['super_region', 'region', 'country'],</span>
+<span class="sd">                kernel='depth',</span>
+<span class="sd">                kernel_pars={'radius': 0.9}</span>
+<span class="sd">            )</span>
 
 <span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
@@ -592,7 +712,7 @@
            <span class="p">(</span><span class="s1">'distance'</span><span class="p">,</span> <span class="n">unicode_type</span><span class="p">),</span>
            <span class="p">(</span><span class="s1">'distance_dict'</span><span class="p">,</span> <span class="n">DictType</span><span class="p">(</span><span class="n">UniTuple</span><span class="p">(</span><span class="n">float64</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">float64</span><span class="p">))])</span>
 <span class="k">class</span> <span class="nc">TypedDimension</span><span class="p">:</span>
-    <span class="sd">"""class docstring"""</span>
+    <span class="sd">"""Smoothing dimension specifications."""</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">kernel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">distance</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">distance_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -600,17 +720,17 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        name : str</span>
+<span class="sd">        name : unicode_type</span>
 <span class="sd">            Dimension name.</span>
-<span class="sd">        columns : list of str</span>
+<span class="sd">        columns : numba.typed.List of unicode_type</span>
 <span class="sd">            Dimension column names.</span>
 <span class="sd">        kernel : {'exponential', 'tricubic', 'depth'}</span>
 <span class="sd">            Kernel function name.</span>
-<span class="sd">        kernel_pars : dict of {str: float}</span>
+<span class="sd">        kernel_pars : numba.typed.Dict of {unicode_type: float64}</span>
 <span class="sd">            Kernel function parameters.</span>
 <span class="sd">        distance : {'dictionary', 'euclidean', 'hierarchical'}</span>
 <span class="sd">            Distance function name.</span>
-<span class="sd">        distance_dict : dict of {(float, float): float}</span>
+<span class="sd">        distance_dict : numba.typed.Dict of {(float64, float64): float64}</span>
 <span class="sd">            Dictionary of distances between points if `distance` is</span>
 <span class="sd">            'dictionary'.</span>
 
@@ -621,6 +741,29 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">kernel_pars</span> <span class="o">=</span> <span class="n">kernel_pars</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">distance_dict</span> <span class="o">=</span> <span class="n">distance_dict</span>
+
+
+<span class="k">def</span> <span class="nf">get_typed_dimension</span><span class="p">(</span><span class="n">dim</span><span class="p">:</span> <span class="n">Dimension</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TypedDimension</span><span class="p">:</span>
+    <span class="sd">"""Get smoothing dimension cast as jitclass object.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    TypedDimension</span>
+<span class="sd">        Smoothing dimension cast as jitclass object.</span>
+
+<span class="sd">    """</span>
+    <span class="c1"># Get typed version of attributes</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="n">TypedList</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">kernel_pars</span> <span class="o">=</span> <span class="n">get_typed_pars</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">kernel_pars</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="s1">'distance_dict'</span><span class="p">):</span>
+        <span class="n">distance_dict</span> <span class="o">=</span> <span class="n">get_typed_dict</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">distance_dict</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">distance_dict</span> <span class="o">=</span> <span class="n">get_typed_dict</span><span class="p">()</span>
+
+    <span class="c1"># Create typed dimension</span>
+    <span class="n">typed_dim</span> <span class="o">=</span> <span class="n">TypedDimension</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">,</span>
+                               <span class="n">dim</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span> <span class="n">distance_dict</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">typed_dim</span>
 </pre></div>
         </article>
       </div>

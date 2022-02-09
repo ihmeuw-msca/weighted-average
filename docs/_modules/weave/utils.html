@@ -233,9 +233,10 @@
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
+<span class="sd">    Single values are cast as a list, while lists remain unchanged.</span>
+
 <span class="sd">    &gt;&gt;&gt; as_list('single_value')</span>
 <span class="sd">    ['single_value']</span>
-
 <span class="sd">    &gt;&gt;&gt; as_list(['list', 'of', 'values'])</span>
 <span class="sd">    ['list', 'of', 'values']</span>
 
@@ -260,11 +261,12 @@
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
+<span class="sd">    Returns a flattened version of a nested list.</span>
+
 <span class="sd">    &gt;&gt;&gt; flatten([1, [2, [3, [4]]]])</span>
 <span class="sd">    [1, 2, 3, 4]</span>
-
-<span class="sd">    &gt;&gt;&gt; flatten(['age', 'year', ['super_region', 'region', 'location']])</span>
-<span class="sd">    ['age', 'year', 'super_region', 'region', 'location']</span>
+<span class="sd">    &gt;&gt;&gt; flatten(['age', 'year', ['super_region', 'region', 'country']])</span>
+<span class="sd">    ['age', 'year', 'super_region', 'region', 'country']</span>
 
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">TypedList</span><span class="p">)):</span>
@@ -291,12 +293,12 @@
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
+<span class="sd">    Returns ``True`` for ints and floats, but ``False`` otherwise.</span>
+
 <span class="sd">    &gt;&gt;&gt; is_number(1)</span>
 <span class="sd">    True</span>
-
 <span class="sd">    &gt;&gt;&gt; is_number(1.0)</span>
 <span class="sd">    True</span>
-
 <span class="sd">    &gt;&gt;&gt; is_number('one')</span>
 <span class="sd">    False</span>
 

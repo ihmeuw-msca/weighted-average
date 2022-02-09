@@ -265,6 +265,7 @@ Euclidean distance <a class="footnote-reference brackets" href="#id4" id="id3">2
 </dd>
 </dl>
 <p class="rubric">Examples</p>
+<p>Get distances between scalar points.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">euclidean</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">])</span>
@@ -273,6 +274,7 @@ Euclidean distance <a class="footnote-reference brackets" href="#id4" id="id3">2
 <span class="go">array([1., 0., 1.])</span>
 </pre></div>
 </div>
+<p>Get distances between vector points.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">euclidean</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">])</span>
@@ -305,6 +307,7 @@ between the leaf nodes and their nearest common parent node.</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
+<p>Get distances between leaf nodes from the following tree.</p>
 <img alt="../_images/hierarchy.png" src="../_images/hierarchy.png"/>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">hierarchical</span>
@@ -340,16 +343,14 @@ symmetric, point IDs are listed from smallest to largest, e.g.
 <dd class="field-odd"><p>1D numpy.ndarray of nonnegative float</p>
 </dd>
 </dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#weave.distance.get_typed_dict" title="weave.distance.get_typed_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_typed_dict</span></code></a></p>
-</div>
 <p class="rubric">Notes</p>
 <p>Because this is a Numba just-in-time function, the parameter
 <cite>distance_dict</cite> must be of type <a class="reference external" href="https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict">numba.typed.Dict</a>.
 Dictionaries can be cast as a typed dictionary using the function
 <a class="reference internal" href="#weave.distance.get_typed_dict" title="weave.distance.get_typed_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_typed_dict()</span></code></a>, but values are not checked for validity.</p>
 <p class="rubric">Examples</p>
+<p>Get user-defined distances between points based on scalar point
+IDs.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">get_typed_dict</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">distance_dict</span> <span class="o">=</span> <span class="p">{</span>
 <span class="go">        (4, 4): 0,</span>
@@ -380,11 +381,8 @@ Dictionaries can be cast as a typed dictionary using the function
 <dd class="field-odd"><p>numba.typed.Dict of {(float64, float64): float64}</p>
 </dd>
 </dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference external" href="https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict">numba.typed.Dict</a></p>
-</div>
 <p class="rubric">Examples</p>
+<p>Cast a dictionary as an instance of <a class="reference external" href="https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict">numba.typed.Dict</a>.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">get_typed_dict</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">distance_dict</span> <span class="o">=</span> <span class="p">{(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">0</span><span class="p">}</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">get_typed_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span>
