@@ -25,10 +25,9 @@ Kernel functions should also satisfy the following properties:
    - :math:`k(x, y; r) \\geq k(x', y'; r)` if :math:`d(x, y) < d(x', y')`
 
 The :func:`exponential`, :func:`tricubic`, and :func:`depth` kernel
-functions are modeled after the age, time, and location weights in the
-Cause of Death Ensemble model (CODEm) [2]_ (see the spatial-temporal
-models sub-section within the methods section). There are many other
-kernel functions in common use [3]_.
+functions are modeled after the age, time, and location weights CODEm
+[2]_ (see the spatial-temporal models sub-section within the methods
+section). There are many other kernel functions in common use [3]_.
 
 The kernel functions in this module compute weights using the distance
 between points as input rather than the points themselves. They are
@@ -86,11 +85,15 @@ def exponential(distance: float, radius: float) -> float:
 
     Examples
     --------
+    Get weight for a pair of points.
+
     >>> from weave.kernels import exponential
     >>> radius = 0.5
     >>> distance = 1.
     >>> exponential(distance, radius)
     0.1353352832366127
+
+    Get weights for a vector of point pairs.
 
     >>> import numpy as np
     >>> from weave.kernels import exponential
@@ -139,12 +142,16 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
 
     Examples
     --------
+    Get weight for a pair of points.
+
     >>> from weave.kernels import tricubic
     >>> radius = 2.
     >>> exponent = 3.
     >>> distance = 1.
     >>> tricubic(distance, radius, exponent)
     0.669921875
+
+    Get weights for a vector of point pairs.
 
     >>> import numpy as np
     >>> from weave.kernels import tricubic
@@ -193,11 +200,15 @@ def depth(distance: float, radius: float) -> float:
 
     Examples
     --------
+    Get weight for a pair of points.
+
     >>> from weave.kernels import depth
     >>> radius = 0.9
     >>> distance = 1.
     >>> depth(distance, radius)
     0.08999999999999998
+
+    Get weights for a vector of point pairs.
 
     >>> import numpy as np
     >>> from weave.kernels import depth
