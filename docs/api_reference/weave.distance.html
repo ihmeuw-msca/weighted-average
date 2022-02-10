@@ -2,7 +2,7 @@
 <html class="no-js">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="weave.kernels" href="weave.kernels.html" /><link rel="prev" title="weave.dimension" href="weave.dimension.html" />
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="weave.utils" href="weave.utils.html" /><link rel="prev" title="weave.kernels" href="weave.kernels.html" />
 
     <meta name="generator" content="sphinx-4.4.0, furo 2022.01.02"/>
         <title>weave.distance - weave 0.1.0</title>
@@ -175,10 +175,10 @@
 </ul>
 <ul class="current">
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="weave.dimension.html">weave.dimension</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">weave.distance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="weave.kernels.html">weave.kernels</a></li>
 <li class="toctree-l2"><a class="reference internal" href="weave.smoother.html">weave.smoother</a></li>
+<li class="toctree-l2"><a class="reference internal" href="weave.dimension.html">weave.dimension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="weave.kernels.html">weave.kernels</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">weave.distance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="weave.utils.html">weave.utils</a></li>
 </ul>
 </li>
@@ -351,7 +351,8 @@ Dictionaries can be cast as a typed dictionary using the function
 <p class="rubric">Examples</p>
 <p>Get user-defined distances between points based on scalar point
 IDs.</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">get_typed_dict</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">get_typed_dict</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">distance_dict</span> <span class="o">=</span> <span class="p">{</span>
 <span class="go">        (4, 4): 0,</span>
 <span class="go">        (4, 5): 1,</span>
@@ -397,23 +398,23 @@ IDs.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="weave.kernels.html">
+          <a class="next-page" href="weave.utils.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">weave.kernels</div>
+                <div class="title">weave.utils</div>
               </div>
               <svg><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="weave.dimension.html">
+          <a class="prev-page" href="weave.kernels.html">
               <svg><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">weave.dimension</div>
+                <div class="title">weave.kernels</div>
                 
               </div>
             </a>

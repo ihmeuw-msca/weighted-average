@@ -175,10 +175,10 @@
 </ul>
 <ul>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../api_reference/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.dimension.html">weave.dimension</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.distance.html">weave.distance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.kernels.html">weave.kernels</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.smoother.html">weave.smoother</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.dimension.html">weave.dimension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.kernels.html">weave.kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.distance.html">weave.distance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.utils.html">weave.utils</a></li>
 </ul>
 </li>
@@ -210,14 +210,7 @@
         <article role="main">
           <h1>Source code for weave.smoother</h1><div class="highlight"><pre>
 <span></span><span class="c1"># pylint: disable=C0103, E0611, R0913</span>
-<span class="sd">"""Smooth data across multiple dimensions using weighted averages.</span>
-
-<span class="sd">TODO</span>
-<span class="sd">* Write tests</span>
-<span class="sd">* Compile with two points first</span>
-<span class="sd">* Flag for dict vs. dimension weights on the fly</span>
-
-<span class="sd">"""</span>
+<span class="sd">"""Smooth data across multiple dimensions using weighted averages."""</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">njit</span>  <span class="c1"># type: ignore</span>
@@ -240,6 +233,10 @@
 <span class="sd">    dimensions : list of Dimension</span>
 <span class="sd">        Smoothing dimensions.</span>
 
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    weave.dimension.Dimension</span>
+
 <span class="sd">    """</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dimension</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -249,6 +246,34 @@
 <span class="sd">        ----------</span>
 <span class="sd">        dimensions : Dimension or list of Dimension</span>
 <span class="sd">            Smoothing dimensions.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Create a space-time smoother to smooth data across age, year,</span>
+<span class="sd">        and location.</span>
+
+<span class="sd">        &gt;&gt;&gt; from weave.dimension import Dimension</span>
+<span class="sd">        &gt;&gt;&gt; from weave.smoother import Smoother</span>
+<span class="sd">        &gt;&gt;&gt; age = Dimension(</span>
+<span class="sd">                name='age',</span>
+<span class="sd">                columns='age_mid',</span>
+<span class="sd">                kernel='exponential',</span>
+<span class="sd">                kernel_pars={'radius': 1}</span>
+<span class="sd">            )</span>
+<span class="sd">        &gt;&gt;&gt; year = Dimension(</span>
+<span class="sd">                name='year',</span>
+<span class="sd">                columns='year_id',</span>
+<span class="sd">                kernel='tricubic',</span>
+<span class="sd">                kernel_pars={'radius': 40, 'exponent': 0.5}</span>
+<span class="sd">            )</span>
+<span class="sd">        &gt;&gt;&gt; location = Dimension(</span>
+<span class="sd">                name='location',</span>
+<span class="sd">                columns=['super_region', 'region', 'country'],</span>
+<span class="sd">                kernel='depth',</span>
+<span class="sd">                kernel_pars={'radius': 0.9}</span>
+<span class="sd">            )</span>
+<span class="sd">        &gt;&gt;&gt; dimensions = [age, year, location]</span>
+<span class="sd">        &gt;&gt;&gt; smoother = Smoother(dimensions)</span>
 
 <span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="n">dimensions</span>  <span class="c1"># type: ignore</span>
@@ -301,22 +326,17 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span> <span class="o">=</span> <span class="n">dimensions</span>
 
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+<div class="viewcode-block" id="Smoother.__call__"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
                  <span class="n">fit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">predict</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">loop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
         <span class="sd">"""Smooth data across dimensions with weighted averages.</span>
 
-<span class="sd">        For each point in `predict`, calculate smoothed value of</span>
-<span class="sd">        each column in `columns` using a weighted average of points in</span>
+<span class="sd">        For each point in `predict`, calculate a smoothed value of each</span>
+<span class="sd">        column in `columns` using a weighted average of points in</span>
 <span class="sd">        `fit`, where weights are calculated based on proximity across</span>
 <span class="sd">        `dimensions`. Return a data frame of points in `predict` with</span>
-<span class="sd">        added columns '{column}_smooth' for each column in `columns`</span>
-<span class="sd">        containing smoothed values.</span>
-
-<span class="sd">        Column `fit` should contain booleans indicating whether or not</span>
-<span class="sd">        a given point should be used to compute weighted averages.</span>
-<span class="sd">        Column `predict` should contain booleans indicating whether or</span>
-<span class="sd">        not to calculate a smoothed value for a given point.</span>
+<span class="sd">        added columns '{column}_smooth' containing smoothed values for</span>
+<span class="sd">        each for each column in `columns`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -334,14 +354,60 @@
 <span class="sd">            If True, smooth values for each point in `predict`</span>
 <span class="sd">            separately in a loop. Requires less memory, but is slower.</span>
 <span class="sd">            Otherwise, populate a matrix of weights for all points in</span>
-<span class="sd">            `predict` and smooth values together. Requires more</span>
-<span class="sd">            memory, but is faster. Default is False.</span>
+<span class="sd">            `predict` and smooth values using matrix--vector</span>
+<span class="sd">            multiplication. Requires more memory, but is faster.</span>
+<span class="sd">            Default is False.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        pandas.DataFrame</span>
 <span class="sd">            Points in `predict` with smoothed `columns` values.</span>
 
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Using the smoother created in the previous example, smooth data</span>
+<span class="sd">        across age, year, and location. Create smoothed version of</span>
+<span class="sd">        multiple columns for all points using all points.</span>
+
+<span class="sd">        &gt;&gt;&gt; from pandas import DataFrame</span>
+<span class="sd">        &gt;&gt;&gt; data = DataFrame({</span>
+<span class="sd">                'age_mid': [0.5, 1.5, 2.5, 3.5, 3.5],</span>
+<span class="sd">                'year_id': [1980, 1990, 2000, 2010, 2020],</span>
+<span class="sd">                'super_region': [1, 1, 1, 1, 2],</span>
+<span class="sd">                'region': [3, 3, 3, 4, 8],</span>
+<span class="sd">                'country': [5, 5, 6, 7, 9],</span>
+<span class="sd">                'count': [1.0, 2.0, 3.0, 4.0, 5.0],</span>
+<span class="sd">                'fraction': [0.1, 0.2, 0.3, 0.4, 0.5]</span>
+<span class="sd">            })</span>
+<span class="sd">        &gt;&gt;&gt; smoother(data, ['count', 'fraction'])</span>
+<span class="sd">           age_mid  year_id  super_region  region  country  count  fraction  </span>
+<span class="sd">           count_smooth  fraction_smooth</span>
+<span class="sd">        0      0.5     1980             1       3        5    1.0       0.1      1.249567         0.124957</span>
+<span class="sd">        1      1.5     1990             1       3        5    2.0       0.2      2.070433         0.207043</span>
+<span class="sd">        2      2.5     2000             1       3        6    3.0       0.3      2.913803         0.291380</span>
+<span class="sd">        3      3.5     2010             1       4        7    4.0       0.4      3.988203         0.398820</span>
+<span class="sd">        4      3.5     2020             2       8        9    5.0       0.5      5.000000         0.500000</span>
+
+<span class="sd">        Create smoothed version of one column for all points using a</span>
+<span class="sd">        subset of points.</span>
+
+<span class="sd">        &gt;&gt;&gt; data['fit'] = [True, False, False, True, True]</span>
+<span class="sd">        &gt;&gt;&gt; smoother(data, 'count', fit='fit')</span>
+<span class="sd">           age_mid  year_id  super_region  region  country  count  fraction    fit  count_smooth</span>
+<span class="sd">        0      0.5     1980             1       3        5    1.0       0.1   True      1.032967</span>
+<span class="sd">        1      1.5     1990             1       3        5    2.0       0.2  False      1.032967</span>
+<span class="sd">        2      2.5     2000             1       3        6    3.0       0.3  False      1.300000</span>
+<span class="sd">        3      3.5     2010             1       4        7    4.0       0.4   True      3.967033</span>
+<span class="sd">        4      3.5     2020             2       8        9    5.0       0.5   True      5.000000</span>
+
+<span class="sd">        Create a smoothed version of one column for a subset of points</span>
+<span class="sd">        using all points.</span>
+
+<span class="sd">        &gt;&gt;&gt; data['fit'] = [False, True, True, False, False]</span>
+<span class="sd">        &gt;&gt;&gt; smoother(data, 'fraction', predict='predict')</span>
+<span class="sd">           age_mid  year_id  super_region  region  country  count  fraction  predict  fraction_smooth</span>
+<span class="sd">        0      1.5     1990             1       3        5    2.0       0.2     True         0.207043</span>
+<span class="sd">        1      2.5     2000             1       3        6    3.0       0.3     True         0.291380</span>
 <span class="sd">        """</span>
         <span class="c1"># Check input</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_args</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">predict</span><span class="p">,</span> <span class="n">loop</span><span class="p">)</span>
@@ -363,9 +429,9 @@
         <span class="k">for</span> <span class="n">idx_col</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)):</span>
             <span class="n">data_smooth</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_smooth"</span><span class="p">]</span> <span class="o">=</span> <span class="n">cols_smooth</span><span class="p">[:,</span> <span class="n">idx_col</span><span class="p">]</span>
 
-        <span class="k">return</span> <span class="n">data_smooth</span>
+        <span class="k">return</span> <span class="n">data_smooth</span></div>
 
-<div class="viewcode-block" id="Smoother.check_args"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.check_args">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">check_args</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
                    <span class="n">fit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">predict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">loop</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -412,9 +478,9 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`columns` is an empty list.'</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">columns</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`columns` contains duplicates.'</span><span class="p">)</span></div>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`columns` contains duplicates.'</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Smoother.check_data"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.check_data">[docs]</a>    <span class="k">def</span> <span class="nf">check_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+    <span class="k">def</span> <span class="nf">check_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
                    <span class="n">fit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">predict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">"""Check input data.</span>
 
@@ -472,9 +538,9 @@
         <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`data` contains NaNs.'</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">dim_cols</span> <span class="o">+</span> <span class="n">cols</span><span class="p">])</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`data` contains Infs.'</span><span class="p">)</span></div>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`data` contains Infs.'</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Smoother.get_indices"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.get_indices">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_indices</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">indicator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="sd">"""Get indices of `fit` or `predict` data.</span>
 
@@ -493,9 +559,9 @@
 <span class="sd">        """</span>
         <span class="k">if</span> <span class="n">indicator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">indicator</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">indicator</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
 
-<div class="viewcode-block" id="Smoother.get_columns"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.get_columns">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_columns</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
                     <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="sd">"""Get values to smooth.</span>
@@ -516,9 +582,9 @@
 
 <span class="sd">        """</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">idx_fit</span><span class="p">]</span>
-                         <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">T</span></div>
+                         <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
 
-<div class="viewcode-block" id="Smoother.get_points"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.get_points">[docs]</a>    <span class="k">def</span> <span class="nf">get_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">get_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
         <span class="sd">"""Get point locations by dimension.</span>
 
 <span class="sd">        Parameters</span>
@@ -537,9 +603,9 @@
             <span class="n">dim_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">dim</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
             <span class="n">dim_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">dim_array</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
             <span class="n">point_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dim_array</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">point_list</span></div>
+        <span class="k">return</span> <span class="n">point_list</span>
 
-<div class="viewcode-block" id="Smoother.get_typed_dimensions"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.get_typed_dimensions">[docs]</a>    <span class="k">def</span> <span class="nf">get_typed_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TypedDimension</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">get_typed_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TypedDimension</span><span class="p">]:</span>
         <span class="sd">"""Get smoothing dimensions cast as jitclass objects.</span>
 
 <span class="sd">        Returns</span>
@@ -551,10 +617,10 @@
         <span class="n">dim_list</span> <span class="o">=</span> <span class="n">TypedList</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span><span class="p">:</span>
             <span class="n">dim_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_typed_dimension</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">dim_list</span></div></div>
+        <span class="k">return</span> <span class="n">dim_list</span></div>
 
 
-<div class="viewcode-block" id="smooth_data"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.smooth_data">[docs]</a><span class="nd">@njit</span>
+<span class="nd">@njit</span>
 <span class="k">def</span> <span class="nf">smooth_data</span><span class="p">(</span><span class="n">dim_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TypedDimension</span><span class="p">],</span> <span class="n">point_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
                 <span class="n">cols</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                 <span class="n">loop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
@@ -603,10 +669,10 @@
                                             <span class="n">idx_pred</span><span class="p">[</span><span class="n">idx_x</span><span class="p">])</span>
         <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">cols_smooth</span></div>
+    <span class="k">return</span> <span class="n">cols_smooth</span>
 
 
-<div class="viewcode-block" id="get_weights"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_weights">[docs]</a><span class="nd">@njit</span>
+<span class="nd">@njit</span>
 <span class="k">def</span> <span class="nf">get_weights</span><span class="p">(</span><span class="n">dim_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TypedDimension</span><span class="p">],</span> <span class="n">point_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
                 <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">"""Get smoothing weights for current point.</span>
@@ -647,10 +713,10 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">weights</span> <span class="o">*=</span> <span class="n">dim_weights</span>
 
-    <span class="k">return</span> <span class="n">weights</span><span class="o">/</span><span class="n">weights</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+    <span class="k">return</span> <span class="n">weights</span><span class="o">/</span><span class="n">weights</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="get_dim_distances"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_dim_distances">[docs]</a><span class="nd">@njit</span>
+<span class="nd">@njit</span>
 <span class="k">def</span> <span class="nf">get_dim_distances</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">distance</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                       <span class="n">distance_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">])</span> \
         <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
@@ -677,10 +743,10 @@
         <span class="k">return</span> <span class="n">dictionary</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">distance_dict</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">distance</span> <span class="o">==</span> <span class="s1">'euclidean'</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">euclidean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">hierarchical</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">hierarchical</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="get_dim_weights"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.get_dim_weights">[docs]</a><span class="nd">@njit</span>
+<span class="nd">@njit</span>
 <span class="k">def</span> <span class="nf">get_dim_weights</span><span class="p">(</span><span class="n">distance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">kernel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                     <span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">"""Get smoothing weights.</span>
@@ -705,7 +771,7 @@
     <span class="k">if</span> <span class="n">kernel</span> <span class="o">==</span> <span class="s1">'tricubic'</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">tricubic</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">],</span>
                         <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'exponent'</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">])</span></div>
+    <span class="k">return</span> <span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">])</span>
 </pre></div>
         </article>
       </div>

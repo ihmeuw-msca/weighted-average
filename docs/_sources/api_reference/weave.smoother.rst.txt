@@ -2,6 +2,6 @@ weave.smoother
 ==============
 
 .. automodule:: weave.smoother
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+.. autoclass:: weave.smoother::Smoother
+   :special-members: __call__

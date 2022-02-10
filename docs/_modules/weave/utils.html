@@ -175,10 +175,10 @@
 </ul>
 <ul>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../api_reference/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.dimension.html">weave.dimension</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.distance.html">weave.distance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.kernels.html">weave.kernels</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.smoother.html">weave.smoother</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.dimension.html">weave.dimension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.kernels.html">weave.kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.distance.html">weave.distance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.utils.html">weave.utils</a></li>
 </ul>
 </li>
@@ -235,6 +235,7 @@
 <span class="sd">    --------</span>
 <span class="sd">    Single values are cast as a list, while lists remain unchanged.</span>
 
+<span class="sd">    &gt;&gt;&gt; from weave.utils import as_list</span>
 <span class="sd">    &gt;&gt;&gt; as_list('single_value')</span>
 <span class="sd">    ['single_value']</span>
 <span class="sd">    &gt;&gt;&gt; as_list(['list', 'of', 'values'])</span>
@@ -263,6 +264,7 @@
 <span class="sd">    --------</span>
 <span class="sd">    Returns a flattened version of a nested list.</span>
 
+<span class="sd">    &gt;&gt;&gt; from weave.utils import flatten</span>
 <span class="sd">    &gt;&gt;&gt; flatten([1, [2, [3, [4]]]])</span>
 <span class="sd">    [1, 2, 3, 4]</span>
 <span class="sd">    &gt;&gt;&gt; flatten(['age', 'year', ['super_region', 'region', 'country']])</span>
@@ -295,6 +297,7 @@
 <span class="sd">    --------</span>
 <span class="sd">    Returns ``True`` for ints and floats, but ``False`` otherwise.</span>
 
+<span class="sd">    &gt;&gt;&gt; from weave.utils import is_number</span>
 <span class="sd">    &gt;&gt;&gt; is_number(1)</span>
 <span class="sd">    True</span>
 <span class="sd">    &gt;&gt;&gt; is_number(1.0)</span>

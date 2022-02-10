@@ -2,7 +2,7 @@
 <html class="no-js">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="weave.utils" href="weave.utils.html" /><link rel="prev" title="weave.kernels" href="weave.kernels.html" />
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="weave.dimension" href="weave.dimension.html" /><link rel="prev" title="API Reference" href="index.html" />
 
     <meta name="generator" content="sphinx-4.4.0, furo 2022.01.02"/>
         <title>weave.smoother - weave 0.1.0</title>
@@ -175,10 +175,10 @@
 </ul>
 <ul class="current">
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="weave.dimension.html">weave.dimension</a></li>
-<li class="toctree-l2"><a class="reference internal" href="weave.distance.html">weave.distance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="weave.kernels.html">weave.kernels</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">weave.smoother</a></li>
+<li class="toctree-l2"><a class="reference internal" href="weave.dimension.html">weave.dimension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="weave.kernels.html">weave.kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="weave.distance.html">weave.distance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="weave.utils.html">weave.utils</a></li>
 </ul>
 </li>
@@ -211,15 +211,10 @@
           <div class="section" id="module-weave.smoother">
 <span id="weave-smoother"></span><h1>weave.smoother<a class="headerlink" href="#module-weave.smoother" title="Permalink to this headline">¶</a></h1>
 <p>Smooth data across multiple dimensions using weighted averages.</p>
-<p>TODO
-* Write tests
-* Compile with two points first
-* Flag for dict vs. dimension weights on the fly</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="weave.smoother.Smoother">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">Smoother</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dimensions</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Smoother function.</p>
+<dd><p>Smoother function.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="weave.smoother.Smoother.dimensions">
 <span class="sig-name descname"><span class="pre">dimensions</span></span><a class="headerlink" href="#weave.smoother.Smoother.dimensions" title="Permalink to this definition">¶</a></dt>
@@ -230,6 +225,10 @@
 </dd>
 </dl>
 </dd></dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="weave.dimension.html#weave.dimension.Dimension" title="weave.dimension.Dimension"><code class="xref py py-obj docutils literal notranslate"><span class="pre">weave.dimension.Dimension</span></code></a></p>
+</div>
 <p>Create smoother function.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -239,232 +238,113 @@
 <dd class="field-even"><p>None</p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<p>Create a space-time smoother to smooth data across age, year,
+and location.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.smoother</span> <span class="kn">import</span> <span class="n">Smoother</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">age</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
+<span class="go">        name='age',</span>
+<span class="go">        columns='age_mid',</span>
+<span class="go">        kernel='exponential',</span>
+<span class="go">        kernel_pars={'radius': 1}</span>
+<span class="go">    )</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">year</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
+<span class="go">        name='year',</span>
+<span class="go">        columns='year_id',</span>
+<span class="go">        kernel='tricubic',</span>
+<span class="go">        kernel_pars={'radius': 40, 'exponent': 0.5}</span>
+<span class="go">    )</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">location</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
+<span class="go">        name='location',</span>
+<span class="go">        columns=['super_region', 'region', 'country'],</span>
+<span class="go">        kernel='depth',</span>
+<span class="go">        kernel_pars={'radius': 0.9}</span>
+<span class="go">    )</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dimensions</span> <span class="o">=</span> <span class="p">[</span><span class="n">age</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">location</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">smoother</span> <span class="o">=</span> <span class="n">Smoother</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="py method">
-<dt class="sig sig-object py" id="weave.smoother.Smoother.check_args">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.check_args"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.check_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check <cite>smoother</cite> argument types and values.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>DataFrame</em>) – Input data structure.</p></li>
-<li><p><strong>columns</strong> (<em>str</em><em> or </em><em>list of str</em>) – Column names of values to smooth.</p></li>
-<li><p><strong>fit</strong> (<em>str</em><em> or </em><em>None</em>) – Column name indicating points to include in weighted
-averages.</p></li>
-<li><p><strong>predict</strong> (<em>str</em><em> or </em><em>None</em>) – Column name indicating points to predict smoothed values.</p></li>
-<li><p><strong>loop</strong> (<em>bool</em>) – If True, smooth values for each point in <cite>predict</cite>
-separately in a loop. Otherwise, populate a matrix of weights
-for all points in <cite>predict</cite> and smooth values together.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>TypeError</strong> – If <cite>smoother</cite> arguments contain invalid types.</p></li>
-<li><p><strong>ValueError</strong> – If <cite>columns</cite> is an empty list or contains duplicates.</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>None</p>
-</dd>
-</dl>
-</dd></dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="weave.smoother.Smoother.check_data">
-<span class="sig-name descname"><span class="pre">check_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.check_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.check_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check input data.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>DataFrame</em>) – Input data structure.</p></li>
-<li><p><strong>columns</strong> (<em>str</em><em> or </em><em>list of str</em>) – Column names of values to smooth.</p></li>
-<li><p><strong>fit</strong> (<em>str</em><em> or </em><em>None</em>) – Column name indicating points to include in weighted
-averages.</p></li>
-<li><p><strong>predict</strong> (<em>str</em><em> or </em><em>None</em>) – Column name indicating points to predict smoothed values.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>KeyError</strong> – If <cite>dimensions.columns</cite>, <cite>columns</cite>, <cite>fit</cite>, or <cite>predict</cite> not
-    in <cite>data</cite>.</p></li>
-<li><p><strong>TypeError</strong> – If <cite>dimensions.columns</cite>, <cite>columns</cite>, <cite>fit</cite>, or <cite>predict</cite> in
-    <cite>data</cite> contain invalid types.</p></li>
-<li><p><strong>ValueError</strong> – If <cite>data</cite> contains NaNs or Infs.</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>None</p>
-</dd>
-</dl>
-</dd></dl>
-<dl class="py property">
-<dt class="sig sig-object py" id="id0">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dimensions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="weave.dimension.html#weave.dimension.Dimension" title="weave.dimension.Dimension"><span class="pre">weave.dimension.Dimension</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get smoothing dimensions.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Smoothing dimensions.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>list of Dimension</p>
-</dd>
-</dl>
-</dd></dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="weave.smoother.Smoother.get_columns">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_fit</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.get_columns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.get_columns" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get values to smooth.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>pandas.DataFrame</em>) – Input data structure.</p></li>
-<li><p><strong>columns</strong> (<em>str</em><em> or </em><em>list of str</em>) – Column names of values to smooth.</p></li>
-<li><p><strong>idx_fit</strong> (<em>numpy.ndarray of int</em>) – Indices of <cite>fit</cite> points.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Values to smooth.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>2D numpy.ndarray of float</p>
-</dd>
-</dl>
-</dd></dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="weave.smoother.Smoother.get_indices">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indicator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.get_indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.get_indices" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get indices of <cite>fit</cite> or <cite>predict</cite> data.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>DataFrame</em>) – Input data structure.</p></li>
-<li><p><strong>indicator</strong> (<em>str</em><em>, </em><em>optional</em>) – Column name indicating either <cite>fit</cite> or <cite>predict</cite> data.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Indices of <cite>fit</cite> or <cite>predict</cite> points.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>1D numpy.ndarray of int</p>
-</dd>
-</dl>
-</dd></dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="weave.smoother.Smoother.get_points">
-<span class="sig-name descname"><span class="pre">get_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.get_points"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.get_points" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get point locations by dimension.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>data</strong> (<em>pandas.DataFrame</em>) – Input data structure.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Point locations by dimension.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>numba.typed.List of 2D numpy.ndarray of float</p>
-</dd>
-</dl>
-</dd></dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="weave.smoother.Smoother.get_typed_dimensions">
-<span class="sig-name descname"><span class="pre">get_typed_dimensions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.get_typed_dimensions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.get_typed_dimensions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get smoothing dimensions cast as jitclass objects.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Smoothing dimensions cast as jitclass objects.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>numba.typed.List of TypedDimension</p>
-</dd>
-</dl>
-</dd></dl>
-</dd></dl>
-<dl class="py function">
-<dt class="sig sig-object py" id="weave.smoother.get_dim_distances">
-<span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">get_dim_distances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#get_dim_distances"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.get_dim_distances" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get distances between <cite>x</cite> and <cite>y</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>1D numpy.ndarray of float</em>) – Current point.</p></li>
-<li><p><strong>y</strong> (<em>2D numpy.ndarray of float</em>) – Nearby points.</p></li>
-<li><p><strong>distance</strong> (<em>str</em>) – Distance function name.</p></li>
-<li><p><strong>distance_dict</strong> (<em>dict of {</em><em>(</em><em>float</em><em>, </em><em>float</em><em>)</em><em>: float}</em>) – Dictionary of distances between points.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Distances between <cite>x</cite> and <cite>y</cite>.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>1D numpy.ndarray of nonnegative float</p>
-</dd>
-</dl>
-</dd></dl>
-<dl class="py function">
-<dt class="sig sig-object py" id="weave.smoother.get_dim_weights">
-<span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">get_dim_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_pars</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#get_dim_weights"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.get_dim_weights" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get smoothing weights.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>distance</strong> (<em>1D numpy.ndarray of nonnegative float</em>) – Distances between points.</p></li>
-<li><p><strong>kernel</strong> (<em>str</em>) – Kernel function name.</p></li>
-<li><p><strong>kernel_pars</strong> (<em>dict of {str: float}</em>) – Kernel function parameters.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Smoothing weights.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>1D numpy.ndarray of nonnegative float</p>
-</dd>
-</dl>
-</dd></dl>
-<dl class="py function">
-<dt class="sig sig-object py" id="weave.smoother.get_weights">
-<span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">get_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">point_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#get_weights"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.get_weights" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get smoothing weights for current point.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>dim_list</strong> (<em>list of TypedDimension</em>) – Smoothing dimensions.</p></li>
-<li><p><strong>point_list</strong> (<em>list of 2D numpy.ndarray of float</em>) – Point locations by dimension.</p></li>
-<li><p><strong>idx_fit</strong> (<em>1D numpy.ndarray of int</em>) – Indices of nearby points to include in weighted averages.</p></li>
-<li><p><strong>idx_x</strong> (<em>int</em>) – Index of current point to predict smoothed values.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Smoothing weights for current point.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>1D numpy.ndarray of nonnegative float</p>
-</dd>
-</dl>
-</dd></dl>
-<dl class="py function">
-<dt class="sig sig-object py" id="weave.smoother.smooth_data">
-<span class="sig-prename descclassname"><span class="pre">weave.smoother.</span></span><span class="sig-name descname"><span class="pre">smooth_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">point_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#smooth_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.smooth_data" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="weave.smoother.Smoother.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Smooth data across dimensions with weighted averages.</p>
+<p>For each point in <cite>predict</cite>, calculate a smoothed value of each
+column in <cite>columns</cite> using a weighted average of points in
+<cite>fit</cite>, where weights are calculated based on proximity across
+<cite>dimensions</cite>. Return a data frame of points in <cite>predict</cite> with
+added columns ‘{column}_smooth’ containing smoothed values for
+each for each column in <cite>columns</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dim_list</strong> (<em>list of TypedDimension</em>) – Smoothing dimensions.</p></li>
-<li><p><strong>point_list</strong> (<em>list of 2D numpy.ndarray of float</em>) – Point locations by dimension.</p></li>
-<li><p><strong>cols</strong> (<em>2D numpy.ndarray of float</em>) – Values to smooth.</p></li>
-<li><p><strong>idx_fit</strong> (<em>1D numpy.ndarray of int</em>) – Indices of points to include in weighted averages.</p></li>
-<li><p><strong>idx_pred</strong> (<em>1D numpy.ndarray of int</em>) – Indices of points to predict smoothed values.</p></li>
+<li><p><strong>data</strong> (<em>DataFrame</em>) – Input data structure.</p></li>
+<li><p><strong>columns</strong> (<em>str</em><em> or </em><em>list of str</em>) – Column names of values to smooth.</p></li>
+<li><p><strong>fit</strong> (<em>str</em><em>, </em><em>optional</em>) – Column name indicating points to include in weighted
+averages. If None, all points in <cite>data</cite> are used.</p></li>
+<li><p><strong>predict</strong> (<em>str</em><em>, </em><em>optional</em>) – Column name indicating points to predict smoothed values.
+If None, predictions are made for all points in <cite>data</cite>.</p></li>
 <li><p><strong>loop</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, smooth values for each point in <cite>predict</cite>
 separately in a loop. Requires less memory, but is slower.
 Otherwise, populate a matrix of weights for all points in
-<cite>predict</cite> and smooth values together. Requires more
-memory, but is faster. Default is False.</p></li>
+<cite>predict</cite> and smooth values using matrix–vector
+multiplication. Requires more memory, but is faster.
+Default is False.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Smoothed values.</p>
+<dd class="field-even"><p>Points in <cite>predict</cite> with smoothed <cite>columns</cite> values.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>2D numpy.ndarray of float</p>
+<dd class="field-odd"><p>pandas.DataFrame</p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<p>Using the smoother created in the previous example, smooth data
+across age, year, and location. Create smoothed version of
+multiple columns for all points using all points.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">({</span>
+<span class="go">        'age_mid': [0.5, 1.5, 2.5, 3.5, 3.5],</span>
+<span class="go">        'year_id': [1980, 1990, 2000, 2010, 2020],</span>
+<span class="go">        'super_region': [1, 1, 1, 1, 2],</span>
+<span class="go">        'region': [3, 3, 3, 4, 8],</span>
+<span class="go">        'country': [5, 5, 6, 7, 9],</span>
+<span class="go">        'count': [1.0, 2.0, 3.0, 4.0, 5.0],</span>
+<span class="go">        'fraction': [0.1, 0.2, 0.3, 0.4, 0.5]</span>
+<span class="go">    })</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="s1">'count'</span><span class="p">,</span> <span class="s1">'fraction'</span><span class="p">])</span>
+<span class="go">   age_mid  year_id  super_region  region  country  count  fraction</span>
+<span class="go">   count_smooth  fraction_smooth</span>
+<span class="go">0      0.5     1980             1       3        5    1.0       0.1      1.249567         0.124957</span>
+<span class="go">1      1.5     1990             1       3        5    2.0       0.2      2.070433         0.207043</span>
+<span class="go">2      2.5     2000             1       3        6    3.0       0.3      2.913803         0.291380</span>
+<span class="go">3      3.5     2010             1       4        7    4.0       0.4      3.988203         0.398820</span>
+<span class="go">4      3.5     2020             2       8        9    5.0       0.5      5.000000         0.500000</span>
+</pre></div>
+</div>
+<p>Create smoothed version of one column for all points using a
+subset of points.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="p">[</span><span class="s1">'fit'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'count'</span><span class="p">,</span> <span class="n">fit</span><span class="o">=</span><span class="s1">'fit'</span><span class="p">)</span>
+<span class="go">   age_mid  year_id  super_region  region  country  count  fraction    fit  count_smooth</span>
+<span class="go">0      0.5     1980             1       3        5    1.0       0.1   True      1.032967</span>
+<span class="go">1      1.5     1990             1       3        5    2.0       0.2  False      1.032967</span>
+<span class="go">2      2.5     2000             1       3        6    3.0       0.3  False      1.300000</span>
+<span class="go">3      3.5     2010             1       4        7    4.0       0.4   True      3.967033</span>
+<span class="go">4      3.5     2020             2       8        9    5.0       0.5   True      5.000000</span>
+</pre></div>
+</div>
+<p>Create a smoothed version of one column for a subset of points
+using all points.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="p">[</span><span class="s1">'fit'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'fraction'</span><span class="p">,</span> <span class="n">predict</span><span class="o">=</span><span class="s1">'predict'</span><span class="p">)</span>
+<span class="go">   age_mid  year_id  super_region  region  country  count  fraction  predict  fraction_smooth</span>
+<span class="go">0      1.5     1990             1       3        5    2.0       0.2     True         0.207043</span>
+<span class="go">1      2.5     2000             1       3        6    3.0       0.3     True         0.291380</span>
+</pre></div>
+</div>
+</dd></dl>
 </dd></dl>
 </div>
 
@@ -473,23 +353,23 @@ memory, but is faster. Default is False.</p></li>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="weave.utils.html">
+          <a class="next-page" href="weave.dimension.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">weave.utils</div>
+                <div class="title">weave.dimension</div>
               </div>
               <svg><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="weave.kernels.html">
+          <a class="prev-page" href="index.html">
               <svg><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">weave.kernels</div>
+                <div class="title">API Reference</div>
                 
               </div>
             </a>
