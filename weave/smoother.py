@@ -1,12 +1,5 @@
 # pylint: disable=C0103, E0611, R0913
-"""Smooth data across multiple dimensions using weighted averages.
-
-TODO
-* Write tests
-* Compile with two points first
-* Flag for dict vs. dimension weights on the fly
-
-"""
+"""Smooth data across multiple dimensions using weighted averages."""
 from typing import Dict, List, Optional, Tuple, Union
 
 from numba import njit  # type: ignore
@@ -29,6 +22,10 @@ class Smoother:
     dimensions : list of Dimension
         Smoothing dimensions.
 
+    See Also
+    --------
+    weave.dimension.Dimension
+
     """
 
     def __init__(self, dimensions: Union[Dimension, List[Dimension]]) -> None:
@@ -38,6 +35,34 @@ class Smoother:
         ----------
         dimensions : Dimension or list of Dimension
             Smoothing dimensions.
+
+        Examples
+        --------
+        Create a space-time smoother to smooth data across age, year,
+        and location.
+
+        >>> from weave.dimension import Dimension
+        >>> from weave.smoother import Smoother
+        >>> age = Dimension(
+                name='age',
+                columns='age_mid',
+                kernel='exponential',
+                kernel_pars={'radius': 1}
+            )
+        >>> year = Dimension(
+                name='year',
+                columns='year_id',
+                kernel='tricubic',
+                kernel_pars={'radius': 40, 'exponent': 0.5}
+            )
+        >>> location = Dimension(
+                name='location',
+                columns=['super_region', 'region', 'country'],
+                kernel='depth',
+                kernel_pars={'radius': 0.9}
+            )
+        >>> dimensions = [age, year, location]
+        >>> smoother = Smoother(dimensions)
 
         """
         self.dimensions = dimensions  # type: ignore
@@ -95,17 +120,12 @@ class Smoother:
             -> DataFrame:
         """Smooth data across dimensions with weighted averages.
 
-        For each point in `predict`, calculate smoothed value of
-        each column in `columns` using a weighted average of points in
+        For each point in `predict`, calculate a smoothed value of each
+        column in `columns` using a weighted average of points in
         `fit`, where weights are calculated based on proximity across
         `dimensions`. Return a data frame of points in `predict` with
-        added columns '{column}_smooth' for each column in `columns`
-        containing smoothed values.
-
-        Column `fit` should contain booleans indicating whether or not
-        a given point should be used to compute weighted averages.
-        Column `predict` should contain booleans indicating whether or
-        not to calculate a smoothed value for a given point.
+        added columns '{column}_smooth' containing smoothed values for
+        each for each column in `columns`.
 
         Parameters
         ----------
@@ -123,14 +143,59 @@ class Smoother:
             If True, smooth values for each point in `predict`
             separately in a loop. Requires less memory, but is slower.
             Otherwise, populate a matrix of weights for all points in
-            `predict` and smooth values together. Requires more
-            memory, but is faster. Default is False.
+            `predict` and smooth values using matrix--vector
+            multiplication. Requires more memory, but is faster.
+            Default is False.
 
         Returns
         -------
         pandas.DataFrame
             Points in `predict` with smoothed `columns` values.
 
+        Examples
+        --------
+        Using the smoother created in the previous example, smooth data
+        across age, year, and location. Create smoothed version of
+        multiple columns for all points using all points.
+
+        >>> from pandas import DataFrame
+        >>> data = DataFrame({
+                'age_mid': [0.5, 1.5, 2.5, 3.5, 3.5],
+                'year_id': [1980, 1990, 2000, 2010, 2020],
+                'super_region': [1, 1, 1, 1, 2],
+                'region': [3, 3, 3, 4, 8],
+                'country': [5, 5, 6, 7, 9],
+                'count': [1.0, 2.0, 3.0, 4.0, 5.0],
+                'fraction': [0.1, 0.2, 0.3, 0.4, 0.5]
+            })
+        >>> smoother(data, ['count', 'fraction'])
+           age_mid  year_id  super_region  region  country  count  fraction  count_smooth  fraction_smooth
+        0      0.5     1980             1       3        5    1.0       0.1      1.249567         0.124957
+        1      1.5     1990             1       3        5    2.0       0.2      2.070433         0.207043
+        2      2.5     2000             1       3        6    3.0       0.3      2.913803         0.291380
+        3      3.5     2010             1       4        7    4.0       0.4      3.988203         0.398820
+        4      3.5     2020             2       8        9    5.0       0.5      5.000000         0.500000
+
+        Create smoothed version of one column for all points using a
+        subset of points.
+
+        >>> data['fit'] = [True, False, False, True, True]
+        >>> smoother(data, 'count', fit='fit')
+           age_mid  year_id  super_region  region  country  count  fraction    fit  count_smooth
+        0      0.5     1980             1       3        5    1.0       0.1   True      1.032967
+        1      1.5     1990             1       3        5    2.0       0.2  False      1.032967
+        2      2.5     2000             1       3        6    3.0       0.3  False      1.300000
+        3      3.5     2010             1       4        7    4.0       0.4   True      3.967033
+        4      3.5     2020             2       8        9    5.0       0.5   True      5.000000
+
+        Create a smoothed version of one column for a subset of points
+        using all points.
+
+        >>> data['fit'] = [False, True, True, False, False]
+        >>> smoother(data, 'fraction', predict='predict')
+           age_mid  year_id  super_region  region  country  count  fraction  predict  fraction_smooth
+        0      1.5     1990             1       3        5    2.0       0.2     True         0.207043
+        1      2.5     2000             1       3        6    3.0       0.3     True         0.291380
         """
         # Check input
         self.check_args(data, columns, fit, predict, loop)

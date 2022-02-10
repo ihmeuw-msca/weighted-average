@@ -103,6 +103,7 @@ def exponential(distance: float, radius: float) -> float:
     >>> from weave.kernels import exponential
     >>> radius = 0.5
     >>> distance = np.array([0., 1., 2.])
+    >>> exponential(distance, radius)
     array([1., 0.13533528, 0.01831564])
 
     """

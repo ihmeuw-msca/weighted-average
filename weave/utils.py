@@ -24,6 +24,7 @@ def as_list(values: Union[Any, List[Any]]) -> List[Any]:
     --------
     Single values are cast as a list, while lists remain unchanged.
 
+    >>> from weave.utils import as_list
     >>> as_list('single_value')
     ['single_value']
     >>> as_list(['list', 'of', 'values'])
@@ -52,6 +53,7 @@ def flatten(values: List[Union[Any, List[Any]]]) -> List[Any]:
     --------
     Returns a flattened version of a nested list.
 
+    >>> from weave.utils import flatten
     >>> flatten([1, [2, [3, [4]]]])
     [1, 2, 3, 4]
     >>> flatten(['age', 'year', ['super_region', 'region', 'country']])
@@ -84,6 +86,7 @@ def is_number(value: Any) -> bool:
     --------
     Returns ``True`` for ints and floats, but ``False`` otherwise.
 
+    >>> from weave.utils import is_number
     >>> is_number(1)
     True
     >>> is_number(1.0)

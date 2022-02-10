@@ -194,6 +194,7 @@ def dictionary(x: np.ndarray, Y: np.ndarray,
     Get user-defined distances between points based on scalar point
     IDs.
 
+    >>> import numpy as np
     >>> from weave.distance import dictionary, get_typed_dict
     >>> distance_dict = {
             (4, 4): 0,
