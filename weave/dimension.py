@@ -33,7 +33,7 @@ class Dimension:
         Column names in data frame containing the coordinates of points
         in the given dimension.
 
-    kernel : {'exponential', 'tricubic', 'depth'}
+    kernel : {'exponential', 'tricubic', 'depth', 'identity'}
         Kernel function name.
 
         Name of kernel function to compute smoothing weights.
@@ -73,7 +73,8 @@ class Dimension:
     """
 
     def __init__(self, name: str, columns: Union[str, List[str]], kernel: str,
-                 kernel_pars: Dict[str, pars], distance: Optional[str] = None,
+                 kernel_pars: Optional[Dict[str, pars]] = None,
+                 distance: Optional[str] = None,
                  distance_dict: Optional[DistanceDict] = None) -> None:
         """Create smoothing dimension.
 
@@ -83,9 +84,9 @@ class Dimension:
             Dimension name.
         columns : str or list of str
             Dimension column names.
-        kernel : {'exponential', 'tricubic', 'depth'}
+        kernel : {'exponential', 'tricubic', 'depth', 'identity'}
             Kernel function name.
-        kernel_pars : dict of {str: number or bool}
+        kernel_pars : dict of {str: number or bool}, optional
             Kernel function parameters.
         distance : {'dictionary', 'euclidean', 'hierarchical'}, optional
             Distance function name. If None, default distance function
@@ -130,6 +131,10 @@ class Dimension:
                - ``normalize``
                - Boolean, optional (default is ``True``)
                -
+             * - ``identity``
+               -
+               -
+               -  ``euclidean``
 
         * The optional depth kernel function parameter `normalize`
           indicates whether or not dimension weights should be
@@ -143,6 +148,12 @@ class Dimension:
           .. math:: w_{i, j} = w_{\\ell_{i, j}} \\cdot
                     \\frac{w_{a_{i, j}} w_{t_{i, j}}} {\\sum_{k}
                     w_{a_{i, k}} w_{t_{i, k}}}
+
+        * The identity kernel does not have any kernel parameters
+          because the weight values are equal to the distance values.
+          For increased efficiency, you can pre-compute all dimension
+          weights as a dictionary and then use the identity kernel
+          with the dictionary distance.
 
         * The dictionary `distance_dict` contains the user-defined
           distances between points if the distance attribute is
@@ -213,6 +224,15 @@ class Dimension:
                 columns=['super_region', 'region', 'country'],
                 kernel='depth',
                 kernel_pars={'radius': 0.9}
+            )
+
+        Dimension with identity kernel and default Euclidean distance.
+
+        >>> from weave.dimension import Dimension
+        >>> location = Dimension(
+                name='location',
+                columns=['lat', 'lon'],
+                kernel='identity'
             )
 
         """
@@ -328,7 +348,7 @@ class Dimension:
 
         Parameters
         ----------
-        kernel : {'exponential', 'tricubic', 'depth'}
+        kernel : {'exponential', 'tricubic', 'depth', 'identity'}
             Kernel function name.
 
         Raises
@@ -350,7 +370,7 @@ class Dimension:
             raise TypeError('`kernel` is not a str.')
 
         # Check value
-        if kernel not in ('exponential', 'tricubic', 'depth'):
+        if kernel not in ('exponential', 'tricubic', 'depth', 'identity'):
             raise ValueError('`kernel` is not a valid kernel function.')
 
         self._kernel = kernel
@@ -378,22 +398,22 @@ class Dimension:
 
         """
         # Check parameter values
-        if self._kernel == 'exponential':
-            _check_pars(kernel_pars, 'radius', 'pos_num')
-            kernel_pars = {'radius': kernel_pars['radius']}
-        elif self._kernel == 'tricubic':
-            _check_pars(kernel_pars, ['radius', 'exponent'], 'pos_num')
-            kernel_pars = {key: kernel_pars[key]
-                           for key in ['radius', 'exponent']}
-        else:  # 'depth'
-            if 'normalize' not in kernel_pars:
-                kernel_pars['normalize'] = True
-            _check_pars(kernel_pars, ['radius', 'normalize'],
-                        ['pos_frac', 'bool'])
-            kernel_pars = {key: kernel_pars[key]
-                           for key in ['radius', 'normalize']}
-
-        self._kernel_pars = kernel_pars
+        if self._kernel != 'identity':
+            if self._kernel == 'exponential':
+                _check_pars(kernel_pars, 'radius', 'pos_num')
+                kernel_pars = {'radius': kernel_pars['radius']}
+            elif self._kernel == 'tricubic':
+                _check_pars(kernel_pars, ['radius', 'exponent'], 'pos_num')
+                kernel_pars = {key: kernel_pars[key]
+                               for key in ['radius', 'exponent']}
+            else:  # depth
+                if 'normalize' not in kernel_pars:
+                    kernel_pars['normalize'] = True
+                _check_pars(kernel_pars, ['radius', 'normalize'],
+                            ['pos_frac', 'bool'])
+                kernel_pars = {key: kernel_pars[key]
+                               for key in ['radius', 'normalize']}
+            self._kernel_pars = kernel_pars
 
     @property
     def distance(self) -> str:
@@ -543,7 +563,10 @@ def get_typed_dimension(dim: Dimension) -> TypedDimension:
     """
     # Get typed version of attributes
     columns = TypedList(dim.columns)
-    kernel_pars = get_typed_pars(dim.kernel_pars)
+    if hasattr(dim, 'kernel_pars'):
+        kernel_pars = get_typed_pars(dim.kernel_pars)
+    else:
+        kernel_pars = get_typed_pars()
     if hasattr(dim, 'distance_dict'):
         distance_dict = get_typed_dict(dim.distance_dict)
     else:

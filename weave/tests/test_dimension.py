@@ -15,6 +15,9 @@ other examples of valid input. Could do this with 'parametrize' or
     - `dimension` in {'dummy', ['dummy1', 'dummy2']}
     - `pars` == {'radius': 0.5, 'normalize': True}
     - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
+* `kernel` == 'identity'
+    - `dimension` in {'dummy', ['dummy1', 'dummy2']}
+    - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
 
 TODO:
 * Add test for `get_typed_dimension()`
@@ -97,7 +100,7 @@ def test_depth_radius_type(radius):
 def test_depth_normalize_type(normalize):
     """Raise TypeError if `normalize` is not a bool."""
     with pytest.raises(TypeError):
-        bad_pars = {'radius': 0.5, 'normalize': not_bool}
+        bad_pars = {'radius': 0.5, 'normalize': normalize}
         Dimension('dummy', 'dummy', 'depth', bad_pars)
 
 
@@ -270,6 +273,12 @@ def test_depth_distance_default():
     """`distance` is set to 'hierarchical' if not supplied."""
     dim = Dimension('dummy', ['dummy1', 'dummy2'], 'depth', kernel_pars)
     assert dim.distance == 'hierarchical'
+
+
+def test_identity_distance_default():
+    """`distance` is set to 'euclidean' if not supplied."""
+    dim = Dimension('dummy', 'dummy', 'identity')
+    assert dim.distance == 'euclidean'
 
 
 def test_dictionary_columns_one():

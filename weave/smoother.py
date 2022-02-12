@@ -490,7 +490,11 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
         dim_points = point_list[idx_dim]
         dim_dists = get_dim_distances(dim_points[idx_x], dim_points[idx_fit],
                                       dim.distance, dim.distance_dict)
-        dim_weights = get_dim_weights(dim_dists, dim.kernel, dim.kernel_pars)
+        if dim.kernel == 'identity':
+            dim_weights = dim_dists
+        else:
+            dim_weights = get_dim_weights(dim_dists, dim.kernel,
+                                          dim.kernel_pars)
 
         # Optional normalize by subgroup
         if dim.kernel == 'depth' and dim.kernel_pars['normalize'] == 1.0:

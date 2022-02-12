@@ -258,10 +258,12 @@
 <span class="sd">       &lt;https://en.wikipedia.org/wiki/Kernel_(statistics)#Kernel_functions_in_common_use&gt;`_</span>
 
 <span class="sd">"""</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">njit</span><span class="p">,</span> <span class="n">vectorize</span>  <span class="c1"># type: ignore</span>
 <span class="kn">from</span> <span class="nn">numba.typed</span> <span class="kn">import</span> <span class="n">Dict</span> <span class="k">as</span> <span class="n">TypedDict</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">float64</span><span class="p">,</span> <span class="n">unicode_type</span>  <span class="c1"># type: ignore</span>
+
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">is_number</span>
@@ -443,12 +445,13 @@
     <span class="k">return</span> <span class="mf">0.0</span>
 
 
-<span class="k">def</span> <span class="nf">get_typed_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="k">def</span> <span class="nf">get_typed_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
     <span class="sd">"""Get typed version of `kernel_pars`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    kernel_pars : dict of {str: int, float, or bool}</span>
+<span class="sd">    kernel_pars : dict of {str: int, float, or bool}, optional</span>
 <span class="sd">        Kernel function parameters.</span>
 
 <span class="sd">    Returns</span>
@@ -457,9 +460,13 @@
 <span class="sd">        Typed version of `kernel_pars`.</span>
 
 <span class="sd">    """</span>
-    <span class="n">typed_pars</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
-        <span class="n">typed_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+    <span class="n">typed_pars</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
+        <span class="n">key_type</span><span class="o">=</span><span class="n">unicode_type</span><span class="p">,</span>
+        <span class="n">value_type</span><span class="o">=</span><span class="n">float64</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">kernel_pars</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
+            <span class="n">typed_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">typed_pars</span>
 
 

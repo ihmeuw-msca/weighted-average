@@ -47,10 +47,12 @@ References
        <https://en.wikipedia.org/wiki/Kernel_(statistics)#Kernel_functions_in_common_use>`_
 
 """
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from numba import njit, vectorize  # type: ignore
 from numba.typed import Dict as TypedDict  # type: ignore
+from numba.types import float64, unicode_type  # type: ignore
+
 import numpy as np
 
 from weave.utils import as_list, is_number
@@ -232,12 +234,13 @@ def depth(distance: float, radius: float) -> float:
     return 0.0
 
 
-def get_typed_pars(kernel_pars: Dict[str, pars]) -> Dict[str, float]:
+def get_typed_pars(kernel_pars: Optional[Dict[str, pars]] = None) \
+        -> Dict[str, float]:
     """Get typed version of `kernel_pars`.
 
     Parameters
     ----------
-    kernel_pars : dict of {str: int, float, or bool}
+    kernel_pars : dict of {str: int, float, or bool}, optional
         Kernel function parameters.
 
     Returns
@@ -246,9 +249,13 @@ def get_typed_pars(kernel_pars: Dict[str, pars]) -> Dict[str, float]:
         Typed version of `kernel_pars`.
 
     """
-    typed_pars = TypedDict()
-    for key in kernel_pars:
-        typed_pars[key] = float(kernel_pars[key])
+    typed_pars = TypedDict.empty(
+        key_type=unicode_type,
+        value_type=float64
+    )
+    if kernel_pars is not None:
+        for key in kernel_pars:
+            typed_pars[key] = float(kernel_pars[key])
     return typed_pars
 
 

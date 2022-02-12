@@ -213,7 +213,7 @@
 <p>Smoothing dimension specifications.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="weave.dimension.Dimension">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weave.dimension.</span></span><span class="sig-name descname"><span class="pre">Dimension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_pars</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/dimension.html#Dimension"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.dimension.Dimension" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weave.dimension.</span></span><span class="sig-name descname"><span class="pre">Dimension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_pars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/dimension.html#Dimension"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.dimension.Dimension" title="Permalink to this definition">¶</a></dt>
 <dd><p>Smoothing dimension specifications.</p>
 <p>Dimension class to specify smoothing dimension column names, kernel
 function, distance function, and relevant parameters.</p>
@@ -250,7 +250,7 @@ in the given dimension.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>{‘exponential’, ‘tricubic’, ‘depth’}</p>
+<dd class="field-odd"><p>{‘exponential’, ‘tricubic’, ‘depth’, ‘identity’}</p>
 </dd>
 </dl>
 </dd></dl>
@@ -306,8 +306,8 @@ symmetric, point IDs are listed from smallest to largest.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>name</strong> (<em>str</em>) – Dimension name.</p></li>
 <li><p><strong>columns</strong> (<em>str</em><em> or </em><em>list of str</em>) – Dimension column names.</p></li>
-<li><p><strong>kernel</strong> (<em>{'exponential'</em><em>, </em><em>'tricubic'</em><em>, </em><em>'depth'}</em>) – Kernel function name.</p></li>
-<li><p><strong>kernel_pars</strong> (<em>dict of {str: number</em><em> or </em><em>bool}</em>) – Kernel function parameters.</p></li>
+<li><p><strong>kernel</strong> (<em>{'exponential'</em><em>, </em><em>'tricubic'</em><em>, </em><em>'depth'</em><em>, </em><em>'identity'}</em>) – Kernel function name.</p></li>
+<li><p><strong>kernel_pars</strong> (<em>dict of {str: number</em><em> or </em><em>bool}</em><em>, </em><em>optional</em>) – Kernel function parameters.</p></li>
 <li><p><strong>distance</strong> (<em>{'dictionary'</em><em>, </em><em>'euclidean'</em><em>, </em><em>'hierarchical'}</em><em>, </em><em>optional</em>) – Distance function name. If None, default distance function
 is used.</p></li>
 <li><p><strong>distance_dict</strong> (<em>dict of {</em><em>(</em><em>number</em><em>, </em><em>number</em><em>)</em><em>: number}</em><em>, </em><em>optional</em>) – Dictionary of distances between points if <cite>distance</cite> is
@@ -364,6 +364,11 @@ within <a class="reference internal" href="weave.smoother.html#weave.smoother.Sm
 <td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">True</span></code>)</p></td>
 <td></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">identity</span></code></p></td>
+<td></td>
+<td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
+</tr>
 </tbody>
 </table></div>
 </li>
@@ -380,6 +385,11 @@ from the same country:</p>
 \frac{w_{a_{i, j}} w_{t_{i, j}}} {\sum_{k}
 w_{a_{i, k}} w_{t_{i, k}}}\]</div></div>
 </li>
+<li><p>The identity kernel does not have any kernel parameters
+because the weight values are equal to the distance values.
+For increased efficiency, you can pre-compute all dimension
+weights as a dictionary and then use the identity kernel
+with the dictionary distance.</p></li>
 <li><p>The dictionary <cite>distance_dict</cite> contains the user-defined
 distances between points if the distance attribute is
 ‘dictionary’. Dictionary keys are tuples of point ID pairs,
@@ -447,6 +457,15 @@ distance.</p>
 <span class="go">        columns=['super_region', 'region', 'country'],</span>
 <span class="go">        kernel='depth',</span>
 <span class="go">        kernel_pars={'radius': 0.9}</span>
+<span class="go">    )</span>
+</pre></div>
+</div>
+<p>Dimension with identity kernel and default Euclidean distance.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">location</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
+<span class="go">        name='location',</span>
+<span class="go">        columns=['lat', 'lon'],</span>
+<span class="go">        kernel='identity'</span>
 <span class="go">    )</span>
 </pre></div>
 </div>

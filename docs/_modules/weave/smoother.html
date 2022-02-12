@@ -380,8 +380,7 @@
 <span class="sd">                'fraction': [0.1, 0.2, 0.3, 0.4, 0.5]</span>
 <span class="sd">            })</span>
 <span class="sd">        &gt;&gt;&gt; smoother(data, ['count', 'fraction'])</span>
-<span class="sd">           age_mid  year_id  super_region  region  country  count  fraction  </span>
-<span class="sd">           count_smooth  fraction_smooth</span>
+<span class="sd">           age_mid  year_id  super_region  region  country  count  fraction  count_smooth  fraction_smooth</span>
 <span class="sd">        0      0.5     1980             1       3        5    1.0       0.1      1.249567         0.124957</span>
 <span class="sd">        1      1.5     1990             1       3        5    2.0       0.2      2.070433         0.207043</span>
 <span class="sd">        2      2.5     2000             1       3        6    3.0       0.3      2.913803         0.291380</span>
@@ -702,7 +701,11 @@
         <span class="n">dim_points</span> <span class="o">=</span> <span class="n">point_list</span><span class="p">[</span><span class="n">idx_dim</span><span class="p">]</span>
         <span class="n">dim_dists</span> <span class="o">=</span> <span class="n">get_dim_distances</span><span class="p">(</span><span class="n">dim_points</span><span class="p">[</span><span class="n">idx_x</span><span class="p">],</span> <span class="n">dim_points</span><span class="p">[</span><span class="n">idx_fit</span><span class="p">],</span>
                                       <span class="n">dim</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span> <span class="n">dim</span><span class="o">.</span><span class="n">distance_dict</span><span class="p">)</span>
-        <span class="n">dim_weights</span> <span class="o">=</span> <span class="n">get_dim_weights</span><span class="p">(</span><span class="n">dim_dists</span><span class="p">,</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel</span><span class="p">,</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel_pars</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel</span> <span class="o">==</span> <span class="s1">'identity'</span><span class="p">:</span>
+            <span class="n">dim_weights</span> <span class="o">=</span> <span class="n">dim_dists</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dim_weights</span> <span class="o">=</span> <span class="n">get_dim_weights</span><span class="p">(</span><span class="n">dim_dists</span><span class="p">,</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel</span><span class="p">,</span>
+                                          <span class="n">dim</span><span class="o">.</span><span class="n">kernel_pars</span><span class="p">)</span>
 
         <span class="c1"># Optional normalize by subgroup</span>
         <span class="k">if</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel</span> <span class="o">==</span> <span class="s1">'depth'</span> <span class="ow">and</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
