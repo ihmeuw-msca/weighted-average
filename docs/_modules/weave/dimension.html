@@ -297,8 +297,9 @@
 <span class="sd">            Dimension column names.</span>
 <span class="sd">        kernel : {'exponential', 'tricubic', 'depth', 'identity'}</span>
 <span class="sd">            Kernel function name.</span>
-<span class="sd">        kernel_pars : dict of {str: number or bool}, optional</span>
-<span class="sd">            Kernel function parameters.</span>
+<span class="sd">        kernel_pars : dict of {str: number or bool}</span>
+<span class="sd">            Kernel function parameters. Optional if `kernel` is</span>
+<span class="sd">            'identity'.</span>
 <span class="sd">        distance : {'dictionary', 'euclidean', 'hierarchical'}, optional</span>
 <span class="sd">            Distance function name. If None, default distance function</span>
 <span class="sd">            is used.</span>
@@ -326,10 +327,18 @@
 <span class="sd">               - ``radius``</span>
 <span class="sd">               - Positive number</span>
 <span class="sd">               - ``euclidean``</span>
+<span class="sd">             * -</span>
+<span class="sd">               - ``normalize``</span>
+<span class="sd">               - Boolean, optional (default is ``False``)</span>
+<span class="sd">               -</span>
 <span class="sd">             * - ``tricubic``</span>
 <span class="sd">               - ``radius``</span>
 <span class="sd">               - Positive number</span>
 <span class="sd">               - ``euclidean``</span>
+<span class="sd">             * -</span>
+<span class="sd">               - ``normalize``</span>
+<span class="sd">               - Boolean, optional (default is ``False``)</span>
+<span class="sd">               -</span>
 <span class="sd">             * -</span>
 <span class="sd">               - ``exponent``</span>
 <span class="sd">               - Positive number</span>
@@ -343,30 +352,33 @@
 <span class="sd">               - Boolean, optional (default is ``True``)</span>
 <span class="sd">               -</span>
 <span class="sd">             * - ``identity``</span>
-<span class="sd">               -</span>
-<span class="sd">               -</span>
+<span class="sd">               - ``normalize``</span>
+<span class="sd">               - Boolean, optional (default is ``False``)</span>
 <span class="sd">               -  ``euclidean``</span>
 
-<span class="sd">        * The optional depth kernel function parameter `normalize`</span>
-<span class="sd">          indicates whether or not dimension weights should be</span>
-<span class="sd">          normalized in groups based on depth kernel weight values.</span>
-<span class="sd">          This corresponds to the CODEm [1]_ framework where the</span>
-<span class="sd">          product of age and time weights are normalized in groups</span>
-<span class="sd">          based on the location hierarchy before being multiplied by</span>
-<span class="sd">          location weights. For example, for points :math:`i, j, k`</span>
-<span class="sd">          from the same country:</span>
+<span class="sd">        * The optional kernel parameter `normalize` indicates whether</span>
+<span class="sd">          or not the preceding dimension weights should be normalized</span>
+<span class="sd">          in groups based on the current dimension weight values. This</span>
+<span class="sd">          corresponds to the CODEm [1]_ framework where the product of</span>
+<span class="sd">          age and time weights are normalized in groups based on the</span>
+<span class="sd">          location hierarchy before being multiplied by location</span>
+<span class="sd">          weights. For example, for points :math:`i, j, k` from the</span>
+<span class="sd">          same country:</span>
 
 <span class="sd">          .. math:: w_{i, j} = w_{\\ell_{i, j}} \\cdot</span>
 <span class="sd">                    \\frac{w_{a_{i, j}} w_{t_{i, j}}} {\\sum_{k}</span>
 <span class="sd">                    w_{a_{i, k}} w_{t_{i, k}}}</span>
 
-<span class="sd">        * The identity kernel does not have any kernel parameters</span>
-<span class="sd">          because the weight values are equal to the distance values.</span>
-<span class="sd">          For increased efficiency, you can pre-compute all dimension</span>
-<span class="sd">          weights as a dictionary and then use the identity kernel</span>
-<span class="sd">          with the dictionary distance.</span>
+<span class="sd">          This option may be inefficient if there is a large number of</span>
+<span class="sd">          possible weight values for the given dimension.</span>
 
-<span class="sd">        * The dictionary `distance_dict` contains the user-defined</span>
+<span class="sd">        * The parameters for the identity kernel are optional because</span>
+<span class="sd">          the weight values are equal to the distance values. For</span>
+<span class="sd">          increased efficiency, you can pre-compute all dimension</span>
+<span class="sd">          weights as a dictionary and then use the identity kernel with</span>
+<span class="sd">          the dictionary distance.</span>
+
+<span class="sd">        * The parameter `distance_dict` contains the user-defined</span>
 <span class="sd">          distances between points if the distance attribute is</span>
 <span class="sd">          'dictionary'. Dictionary keys are tuples of point ID pairs,</span>
 <span class="sd">          and dictionary values are the corresponding distances.</span>
@@ -599,32 +611,40 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_pars</span>
 
     <span class="nd">@kernel_pars</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">kernel_pars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">kernel_pars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">"""Set kernel function parameters.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        kernel_pars : dict of {str: number or bool}</span>
+<span class="sd">        kernel_pars : dict of {str: number or bool} or None</span>
 <span class="sd">            Kernel function parameters.</span>
 
 <span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">kernel_pars</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{}</span>
+
         <span class="c1"># Check parameter values</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">!=</span> <span class="s1">'identity'</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'depth'</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">'normalize'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
+                <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">],</span>
+                        <span class="p">[</span><span class="s1">'pos_frac'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
+            <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                           <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">'normalize'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
+                <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'exponential'</span><span class="p">:</span>
-                <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'pos_num'</span><span class="p">)</span>
-                <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'radius'</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">]}</span>
-            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'tricubic'</span><span class="p">:</span>
-                <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">],</span> <span class="s1">'pos_num'</span><span class="p">)</span>
-                <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-                               <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">]}</span>
-            <span class="k">else</span><span class="p">:</span>  <span class="c1"># depth</span>
-                <span class="k">if</span> <span class="s1">'normalize'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
-                    <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">],</span>
-                            <span class="p">[</span><span class="s1">'pos_frac'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
+                            <span class="p">[</span><span class="s1">'pos_num'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
                 <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
                                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_pars</span> <span class="o">=</span> <span class="n">kernel_pars</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'tricubic'</span><span class="p">:</span>
+                <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">],</span>
+                            <span class="p">[</span><span class="s1">'pos_num'</span><span class="p">,</span> <span class="s1">'pos_num'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
+                <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                               <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_pars</span> <span class="o">=</span> <span class="n">kernel_pars</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>

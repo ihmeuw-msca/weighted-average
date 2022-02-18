@@ -307,7 +307,8 @@ symmetric, point IDs are listed from smallest to largest.</p>
 <li><p><strong>name</strong> (<em>str</em>) – Dimension name.</p></li>
 <li><p><strong>columns</strong> (<em>str</em><em> or </em><em>list of str</em>) – Dimension column names.</p></li>
 <li><p><strong>kernel</strong> (<em>{'exponential'</em><em>, </em><em>'tricubic'</em><em>, </em><em>'depth'</em><em>, </em><em>'identity'}</em>) – Kernel function name.</p></li>
-<li><p><strong>kernel_pars</strong> (<em>dict of {str: number</em><em> or </em><em>bool}</em><em>, </em><em>optional</em>) – Kernel function parameters.</p></li>
+<li><p><strong>kernel_pars</strong> (<em>dict of {str: number</em><em> or </em><em>bool}</em>) – Kernel function parameters. Optional if <cite>kernel</cite> is
+‘identity’.</p></li>
 <li><p><strong>distance</strong> (<em>{'dictionary'</em><em>, </em><em>'euclidean'</em><em>, </em><em>'hierarchical'}</em><em>, </em><em>optional</em>) – Distance function name. If None, default distance function
 is used.</p></li>
 <li><p><strong>distance_dict</strong> (<em>dict of {</em><em>(</em><em>number</em><em>, </em><em>number</em><em>)</em><em>: number}</em><em>, </em><em>optional</em>) – Dictionary of distances between points if <cite>distance</cite> is
@@ -344,10 +345,20 @@ within <a class="reference internal" href="weave.smoother.html#weave.smoother.Sm
 <td><p>Positive number</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tricubic</span></code></p></td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
+<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tricubic</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
 <td><p>Positive number</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
+<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">exponent</span></code></p></td>
@@ -365,32 +376,34 @@ within <a class="reference internal" href="weave.smoother.html#weave.smoother.Sm
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">identity</span></code></p></td>
-<td></td>
-<td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
+<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
 </tr>
 </tbody>
 </table></div>
 </li>
-<li><p>The optional depth kernel function parameter <cite>normalize</cite>
-indicates whether or not dimension weights should be
-normalized in groups based on depth kernel weight values.
-This corresponds to the CODEm <a class="footnote-reference brackets" href="#id3" id="id1">1</a> framework where the
-product of age and time weights are normalized in groups
-based on the location hierarchy before being multiplied by
-location weights. For example, for points <span class="math notranslate nohighlight">\(i, j, k\)</span>
-from the same country:</p>
+<li><p>The optional kernel parameter <cite>normalize</cite> indicates whether
+or not the preceding dimension weights should be normalized
+in groups based on the current dimension weight values. This
+corresponds to the CODEm <a class="footnote-reference brackets" href="#id3" id="id1">1</a> framework where the product of
+age and time weights are normalized in groups based on the
+location hierarchy before being multiplied by location
+weights. For example, for points <span class="math notranslate nohighlight">\(i, j, k\)</span> from the
+same country:</p>
 <div class="math-wrapper"><div class="math notranslate nohighlight">
 \[w_{i, j} = w_{\ell_{i, j}} \cdot
 \frac{w_{a_{i, j}} w_{t_{i, j}}} {\sum_{k}
 w_{a_{i, k}} w_{t_{i, k}}}\]</div></div>
+<p>This option may be inefficient if there is a large number of
+possible weight values for the given dimension.</p>
 </li>
-<li><p>The identity kernel does not have any kernel parameters
-because the weight values are equal to the distance values.
-For increased efficiency, you can pre-compute all dimension
-weights as a dictionary and then use the identity kernel
-with the dictionary distance.</p></li>
-<li><p>The dictionary <cite>distance_dict</cite> contains the user-defined
+<li><p>The parameters for the identity kernel are optional because
+the weight values are equal to the distance values. For
+increased efficiency, you can pre-compute all dimension
+weights as a dictionary and then use the identity kernel with
+the dictionary distance.</p></li>
+<li><p>The parameter <cite>distance_dict</cite> contains the user-defined
 distances between points if the distance attribute is
 ‘dictionary’. Dictionary keys are tuples of point ID pairs,
 and dictionary values are the corresponding distances.

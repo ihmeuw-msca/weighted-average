@@ -86,8 +86,9 @@ class Dimension:
             Dimension column names.
         kernel : {'exponential', 'tricubic', 'depth', 'identity'}
             Kernel function name.
-        kernel_pars : dict of {str: number or bool}, optional
-            Kernel function parameters.
+        kernel_pars : dict of {str: number or bool}
+            Kernel function parameters. Optional if `kernel` is
+            'identity'.
         distance : {'dictionary', 'euclidean', 'hierarchical'}, optional
             Distance function name. If None, default distance function
             is used.
@@ -115,10 +116,18 @@ class Dimension:
                - ``radius``
                - Positive number
                - ``euclidean``
+             * -
+               - ``normalize``
+               - Boolean, optional (default is ``False``)
+               -
              * - ``tricubic``
                - ``radius``
                - Positive number
                - ``euclidean``
+             * -
+               - ``normalize``
+               - Boolean, optional (default is ``False``)
+               -
              * -
                - ``exponent``
                - Positive number
@@ -132,30 +141,33 @@ class Dimension:
                - Boolean, optional (default is ``True``)
                -
              * - ``identity``
-               -
-               -
+               - ``normalize``
+               - Boolean, optional (default is ``False``)
                -  ``euclidean``
 
-        * The optional depth kernel function parameter `normalize`
-          indicates whether or not dimension weights should be
-          normalized in groups based on depth kernel weight values.
-          This corresponds to the CODEm [1]_ framework where the
-          product of age and time weights are normalized in groups
-          based on the location hierarchy before being multiplied by
-          location weights. For example, for points :math:`i, j, k`
-          from the same country:
+        * The optional kernel parameter `normalize` indicates whether
+          or not the preceding dimension weights should be normalized
+          in groups based on the current dimension weight values. This
+          corresponds to the CODEm [1]_ framework where the product of
+          age and time weights are normalized in groups based on the
+          location hierarchy before being multiplied by location
+          weights. For example, for points :math:`i, j, k` from the
+          same country:
 
           .. math:: w_{i, j} = w_{\\ell_{i, j}} \\cdot
                     \\frac{w_{a_{i, j}} w_{t_{i, j}}} {\\sum_{k}
                     w_{a_{i, k}} w_{t_{i, k}}}
 
-        * The identity kernel does not have any kernel parameters
-          because the weight values are equal to the distance values.
-          For increased efficiency, you can pre-compute all dimension
-          weights as a dictionary and then use the identity kernel
-          with the dictionary distance.
+          This option may be inefficient if there is a large number of
+          possible weight values for the given dimension.
 
-        * The dictionary `distance_dict` contains the user-defined
+        * The parameters for the identity kernel are optional because
+          the weight values are equal to the distance values. For
+          increased efficiency, you can pre-compute all dimension
+          weights as a dictionary and then use the identity kernel with
+          the dictionary distance.
+
+        * The parameter `distance_dict` contains the user-defined
           distances between points if the distance attribute is
           'dictionary'. Dictionary keys are tuples of point ID pairs,
           and dictionary values are the corresponding distances.
@@ -388,32 +400,40 @@ class Dimension:
         return self._kernel_pars
 
     @kernel_pars.setter
-    def kernel_pars(self, kernel_pars: Dict[str, pars]) -> None:
+    def kernel_pars(self, kernel_pars: Optional[Dict[str, pars]]) -> None:
         """Set kernel function parameters.
 
         Parameters
         ----------
-        kernel_pars : dict of {str: number or bool}
+        kernel_pars : dict of {str: number or bool} or None
             Kernel function parameters.
 
         """
+        if kernel_pars is None:
+            kernel_pars = {}
+
         # Check parameter values
-        if self._kernel != 'identity':
+        if self._kernel == 'depth':
+            if 'normalize' not in kernel_pars:
+                kernel_pars['normalize'] = True
+            _check_pars(kernel_pars, ['radius', 'normalize'],
+                        ['pos_frac', 'bool'])
+            kernel_pars = {key: kernel_pars[key]
+                           for key in ['radius', 'normalize']}
+        else:
+            if 'normalize' not in kernel_pars:
+                kernel_pars['normalize'] = False
             if self._kernel == 'exponential':
-                _check_pars(kernel_pars, 'radius', 'pos_num')
-                kernel_pars = {'radius': kernel_pars['radius']}
-            elif self._kernel == 'tricubic':
-                _check_pars(kernel_pars, ['radius', 'exponent'], 'pos_num')
-                kernel_pars = {key: kernel_pars[key]
-                               for key in ['radius', 'exponent']}
-            else:  # depth
-                if 'normalize' not in kernel_pars:
-                    kernel_pars['normalize'] = True
                 _check_pars(kernel_pars, ['radius', 'normalize'],
-                            ['pos_frac', 'bool'])
+                            ['pos_num', 'bool'])
                 kernel_pars = {key: kernel_pars[key]
                                for key in ['radius', 'normalize']}
-            self._kernel_pars = kernel_pars
+            elif self._kernel == 'tricubic':
+                _check_pars(kernel_pars, ['radius', 'exponent', 'normalize'],
+                            ['pos_num', 'pos_num', 'bool'])
+                kernel_pars = {key: kernel_pars[key]
+                               for key in ['radius', 'exponent', 'normalize']}
+        self._kernel_pars = kernel_pars
 
     @property
     def distance(self) -> str:
