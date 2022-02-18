@@ -497,7 +497,7 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
                                           dim.kernel_pars)
 
         # Optional normalize by subgroup
-        if dim.kernel == 'depth' and dim.kernel_pars['normalize'] == 1.0:
+        if dim.kernel_pars['normalize'] == 1.0:
             for weight in list(set(dim_weights)):
                 idx_weight = np.where(dim_weights == weight)[0]
                 if weights[idx_weight].sum() != 0.0:
