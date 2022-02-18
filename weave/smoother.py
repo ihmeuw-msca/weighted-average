@@ -169,33 +169,34 @@ class Smoother:
                 'fraction': [0.1, 0.2, 0.3, 0.4, 0.5]
             })
         >>> smoother(data, ['count', 'fraction'])
-           age_mid  year_id  super_region  region  country  count  fraction  count_smooth  fraction_smooth
-        0      0.5     1980             1       3        5    1.0       0.1      1.249567         0.124957
-        1      1.5     1990             1       3        5    2.0       0.2      2.070433         0.207043
-        2      2.5     2000             1       3        6    3.0       0.3      2.913803         0.291380
-        3      3.5     2010             1       4        7    4.0       0.4      3.988203         0.398820
-        4      3.5     2020             2       8        9    5.0       0.5      5.000000         0.500000
+           age_mid  ...  count  fraction  count_smooth  fraction_smooth
+        0      0.5  ...    1.0       0.1      1.249567         0.124957
+        1      1.5  ...    2.0       0.2      2.070433         0.207043
+        2      2.5  ...    3.0       0.3      2.913803         0.291380
+        3      3.5  ...    4.0       0.4      3.988203         0.398820
+        4      3.5  ...    5.0       0.5      5.000000         0.500000
 
         Create smoothed version of one column for all points using a
         subset of points.
 
         >>> data['fit'] = [True, False, False, True, True]
         >>> smoother(data, 'count', fit='fit')
-           age_mid  year_id  super_region  region  country  count  fraction    fit  count_smooth
-        0      0.5     1980             1       3        5    1.0       0.1   True      1.032967
-        1      1.5     1990             1       3        5    2.0       0.2  False      1.032967
-        2      2.5     2000             1       3        6    3.0       0.3  False      1.300000
-        3      3.5     2010             1       4        7    4.0       0.4   True      3.967033
-        4      3.5     2020             2       8        9    5.0       0.5   True      5.000000
+           age_mid  ...  count  fraction    fit  count_smooth
+        0      0.5  ...    1.0       0.1   True      1.032967
+        1      1.5  ...    2.0       0.2  False      1.032967
+        2      2.5  ...    3.0       0.3  False      1.300000
+        3      3.5  ...    4.0       0.4   True      3.967033
+        4      3.5  ...    5.0       0.5   True      5.000000
 
         Create a smoothed version of one column for a subset of points
         using all points.
 
-        >>> data['fit'] = [False, True, True, False, False]
+        >>> data['predict'] = [False, True, True, False, False]
         >>> smoother(data, 'fraction', predict='predict')
-           age_mid  year_id  super_region  region  country  count  fraction  predict  fraction_smooth
-        0      1.5     1990             1       3        5    2.0       0.2     True         0.207043
-        1      2.5     2000             1       3        6    3.0       0.3     True         0.291380
+           age_mid  ...  count  fraction  predict  fraction_smooth
+        0      1.5  ...    2.0       0.2     True         0.207043
+        1      2.5  ...    3.0       0.3     True         0.291380
+
         """
         # Check input
         self.check_args(data, columns, fit, predict, loop)
