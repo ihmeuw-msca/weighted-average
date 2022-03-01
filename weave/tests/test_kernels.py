@@ -15,6 +15,9 @@ import pytest
 from weave.kernels import exponential, tricubic, depth, _check_pars
 
 # Hypothesis types
+my_exp = floats(min_value=0.0, max_value=1e1, allow_nan=False,
+                allow_infinity=False, allow_subnormal=False, exclude_min=True,
+                exclude_max=True)
 my_pos = floats(min_value=0.0, max_value=1e5, allow_nan=False,
                 allow_infinity=False, allow_subnormal=False, exclude_min=True)
 my_nonpos = floats(min_value=-1e5, max_value=0.0, allow_nan=False,
@@ -52,7 +55,7 @@ def test_exponential_type(distance, radius):
 
 
 @settings(deadline=None)
-@given(my_nonneg, my_pos, my_pos)
+@given(my_nonneg, my_pos, my_exp)
 def test_tricubic_type(distance, radius, exponent):
     """Tricubic output satisfies property 1."""
     weight = tricubic(distance, radius, exponent)
@@ -63,7 +66,7 @@ def test_tricubic_type(distance, radius, exponent):
 @given(my_nonneg, my_frac)
 def test_depth_type(distance, radius):
     """Depth output satisfies property 1."""
-    weight = depth(np.ndarray([distance]), radius)[0]
+    weight = depth(np.array([distance]), radius)[0]
     property_1(weight)
 
 
@@ -84,7 +87,7 @@ def test_exponential_direction(distance_a, distance_b, radius):
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 
-@given(my_nonneg, my_nonneg, my_pos, my_pos)
+@given(my_nonneg, my_nonneg, my_pos, my_exp)
 def test_tricubic_direction(distance_a, distance_b, radius, exponent):
     """Tricubic output satisfies property 2."""
     weight_a = tricubic(distance_a, radius, exponent)
