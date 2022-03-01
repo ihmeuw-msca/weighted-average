@@ -2,13 +2,11 @@
 """Smooth data across multiple dimensions using weighted averages."""
 from typing import Dict, List, Optional, Tuple, Union
 
-from numba import njit  # type: ignore
-from numba.typed import List as TypedList  # type: ignore
 import numpy as np
 from pandas import DataFrame  # type: ignore
 from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
-from weave.dimension import Dimension, TypedDimension, get_typed_dimension
+from weave.dimension import Dimension
 from weave.distance import dictionary, euclidean, hierarchical
 from weave.kernels import exponential, depth, tricubic
 from weave.utils import as_list, flatten
@@ -207,7 +205,7 @@ class Smoother:
         idx_pred = self.get_indices(data, predict)
         cols = self.get_columns(data, columns, idx_fit)
         point_list = self.get_points(data)
-        dim_list = self.get_typed_dimensions()
+        dim_list = self._dimensions
 
         # Calculate smoothed values
         cols_smooth = smooth_data(dim_list, point_list, cols, idx_fit,
@@ -383,41 +381,26 @@ class Smoother:
 
         Returns
         -------
-        numba.typed.List of 2D numpy.ndarray of float
+        list of 2D numpy.ndarray of float
             Point locations by dimension.
 
         """
-        point_list = TypedList()
+        point_list = []
         for dim in self._dimensions:
             dim_array = np.atleast_2d(data[dim.columns].values)
             dim_array = np.ascontiguousarray(dim_array, dtype=float)
             point_list.append(dim_array)
         return point_list
 
-    def get_typed_dimensions(self) -> List[TypedDimension]:
-        """Get smoothing dimensions cast as jitclass objects.
 
-        Returns
-        -------
-        numba.typed.List of TypedDimension
-            Smoothing dimensions cast as jitclass objects.
-
-        """
-        dim_list = TypedList()
-        for dim in self._dimensions:
-            dim_list.append(get_typed_dimension(dim))
-        return dim_list
-
-
-@njit
-def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
+def smooth_data(dim_list: List[Dimension], point_list: List[np.ndarray],
                 cols: np.ndarray, idx_fit: np.ndarray, idx_pred: np.ndarray,
                 loop: bool = False) -> np.ndarray:
     """Smooth data across dimensions with weighted averages.
 
     Parameters
     ----------
-    dim_list : list of TypedDimension
+    dim_list : list of Dimension
         Smoothing dimensions.
     point_list : list of 2D numpy.ndarray of float
         Point locations by dimension.
@@ -461,14 +444,13 @@ def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
     return cols_smooth
 
 
-@njit
-def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
+def get_weights(dim_list: List[Dimension], point_list: List[np.ndarray],
                 idx_fit: np.ndarray, idx_x: int) -> np.ndarray:
     """Get smoothing weights for current point.
 
     Parameters
     ----------
-    dim_list : list of TypedDimension
+    dim_list : list of Dimension
         Smoothing dimensions.
     point_list : list of 2D numpy.ndarray of float
         Point locations by dimension.
@@ -509,7 +491,6 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
     return weights/weights.sum()
 
 
-@njit
 def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
                       distance_dict: Dict[Tuple[float, float], float]) \
         -> np.ndarray:
@@ -539,7 +520,6 @@ def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
     return hierarchical(x, y)
 
 
-@njit
 def get_dim_weights(distance: np.ndarray, kernel: str,
                     kernel_pars: Dict[str, float]) -> np.ndarray:
     """Get smoothing weights.
