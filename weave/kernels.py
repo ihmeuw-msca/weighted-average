@@ -47,33 +47,29 @@ References
        <https://en.wikipedia.org/wiki/Kernel_(statistics)#Kernel_functions_in_common_use>`_
 
 """
-from typing import Dict, List, Optional, Union
-
-from numba import njit, vectorize  # type: ignore
-from numba.typed import Dict as TypedDict  # type: ignore
-from numba.types import float64, unicode_type  # type: ignore
+from typing import Dict, List, Union
 
 import numpy as np
 
 from weave.utils import as_list, is_number
 
-pars = Union[int, float, bool]
+number = Union[int, float]
+pars = Union[number, bool]
 
 
-@njit
-def exponential(distance: float, radius: float) -> float:
+def exponential(distance: np.ndarray, radius: number) -> np.ndarray:
     """Get exponential smoothing weight.
 
     Parameters
     ----------
-    distance : nonnegative float
+    distance : 1D numpy.ndarray of nonnegative float
         Distance between points.
-    radius : positive float
+    radius : positive number
         Kernel radius.
 
     Returns
     -------
-    nonnegative float
+    1D numpy.ndarray of nonnegative float
         Exponential smoothing weight.
 
     Notes
@@ -112,22 +108,22 @@ def exponential(distance: float, radius: float) -> float:
     return 1.0/np.exp(distance/radius)
 
 
-@njit
-def tricubic(distance: float, radius: float, exponent: float) -> float:
+def tricubic(distance: np.ndarray, radius: number, exponent: number) \
+        -> np.ndarray:
     """Get tricubic smoothing weight.
 
     Parameters
     ----------
-    distance : nonnegative float
+    distance : 1D numpy.ndarray of nonnegative float
         Distance between points.
-    radius : positive float
+    radius : positive number
         Kernel radius.
-    exponent : positive float
+    exponent : positive number
         Exponent value.
 
     Returns
     -------
-    nonnegative float
+    1D numpy.ndarray of nonnegative float
         Tricubic smoothing weight.
 
     Notes
@@ -172,20 +168,19 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
     return np.maximum(0.0, (1.0 - (distance/radius)**exponent)**3)
 
 
-@vectorize(['float64(float64,float64)'])
-def depth(distance: float, radius: float) -> float:
+def depth(distance: np.ndarray, radius: float) -> np.ndarray:
     """Get depth smoothing weight.
 
     Parameters
     ----------
-    distance : nonnegative float
+    distance : 1D numpy.ndarray of nonnegative float
         Distance between points.
     radius : float in (0, 1)
         Kernel radius.
 
     Returns
     -------
-    nonnegative float
+    1D numpy.ndarray of nonnegative float
         Depth smoothing weight.
 
     Notes
@@ -225,38 +220,22 @@ def depth(distance: float, radius: float) -> float:
     array([0.9, 0.09, 0.01, 0.])
 
     """
-    if distance == 0.0:
-        return radius
-    if distance <= 1.0:
-        return radius*(1.0 - radius)
-    if distance <= 2.0:
-        return (1.0 - radius)**2
-    return 0.0
+    # Get weight for one nearby point
+    def get_weight(distance, radius):
+        if distance == 0.0:
+            return radius
+        if distance <= 1.0:
+            return radius*(1.0 - radius)
+        if distance <= 2.0:
+            return (1.0 - radius)**2
+        return 0.0
 
+    # Get weights between all nearby points
+    weights = np.empty(len(distance))
+    for ii, dist in enumerate(distance):
+        weights[ii] = get_weight(dist, radius)
 
-def get_typed_pars(kernel_pars: Optional[Dict[str, pars]] = None) \
-        -> Dict[str, float]:
-    """Get typed version of `kernel_pars`.
-
-    Parameters
-    ----------
-    kernel_pars : dict of {str: int, float, or bool}, optional
-        Kernel function parameters.
-
-    Returns
-    -------
-    numba.typed.Dict of {unicode_type: float64}
-        Typed version of `kernel_pars`.
-
-    """
-    typed_pars = TypedDict.empty(
-        key_type=unicode_type,
-        value_type=float64
-    )
-    if kernel_pars is not None:
-        for key in kernel_pars:
-            typed_pars[key] = float(kernel_pars[key])
-    return typed_pars
+    return weights
 
 
 def _check_pars(kernel_pars: Dict[str, pars], names: Union[str, List[str]],

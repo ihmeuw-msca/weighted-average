@@ -66,7 +66,7 @@ def test_tricubic_type(distance, radius, exponent):
 @given(my_nonneg, my_frac)
 def test_depth_type(distance, radius):
     """Depth output satisfies property 1."""
-    weight = depth(distance, radius)
+    weight = depth(np.ndarray([distance]), radius)[0]
     property_1(weight)
 
 
@@ -98,8 +98,8 @@ def test_tricubic_direction(distance_a, distance_b, radius, exponent):
 @given(my_nonneg, my_nonneg, my_pos)
 def test_depth_direction(distance_a, distance_b, radius):
     """Depth output satisfies property 2."""
-    weight_a = depth(distance_a, radius)
-    weight_b = depth(distance_b, radius)
+    weight_a = depth(np.array([distance_a]), radius)[0]
+    weight_b = depth(np.array([distance_b]), radius)[0]
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 
@@ -108,7 +108,7 @@ def test_same_country():
     """Test depth kernel with same country."""
     distance = 0
     radius = 0.9
-    weight = depth(distance, radius)
+    weight = depth(np.array([distance]), radius)[0]
     assert np.isclose(weight, 0.9)
 
 
@@ -116,7 +116,7 @@ def test_same_region():
     """Test depth kernel with same region."""
     distance = 1
     radius = 0.9
-    weight = depth(distance, radius)
+    weight = depth(np.array([distance]), radius)[0]
     assert np.isclose(weight, 0.09)
 
 
@@ -124,7 +124,7 @@ def test_same_super_region():
     """Test depth kernel with same super region."""
     distance = 2
     radius = 0.9
-    weight = depth(distance, radius)
+    weight = depth(np.array([distance]), radius)[0]
     assert np.isclose(weight, 0.01)
 
 
@@ -132,7 +132,7 @@ def test_different_super_region():
     """Test depth kernel with different super regions."""
     distance = 3
     radius = 0.9
-    weight = depth(distance, radius)
+    weight = depth(np.array([distance]), radius)[0]
     assert np.isclose(weight, 0.0)
 
 
