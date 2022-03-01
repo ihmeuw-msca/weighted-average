@@ -11,6 +11,9 @@ from weave.distance import dictionary, euclidean, hierarchical
 from weave.kernels import exponential, depth, tricubic
 from weave.utils import as_list, flatten
 
+number = Union[int, float]
+DistanceDict = Dict[Tuple[number, number], number]
+
 
 class Smoother:
     """Smoother function.
@@ -471,8 +474,14 @@ def get_weights(dim_list: List[Dimension], point_list: List[np.ndarray],
     # Calculate weights one dimension at at a time
     for idx_dim, dim in enumerate(dim_list):
         dim_points = point_list[idx_dim]
+
+        if hasattr(dim, 'distance_dict'):
+            distance_dict = dim.distance_dict
+        else:
+            distance_dict = None
         dim_dists = get_dim_distances(dim_points[idx_x], dim_points[idx_fit],
-                                      dim.distance, dim.distance_dict)
+                                      dim.distance, distance_dict)
+
         if dim.kernel == 'identity':
             dim_weights = dim_dists
         else:
@@ -492,7 +501,7 @@ def get_weights(dim_list: List[Dimension], point_list: List[np.ndarray],
 
 
 def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
-                      distance_dict: Dict[Tuple[float, float], float]) \
+                      distance_dict: Optional[DistanceDict] = None) \
         -> np.ndarray:
     """Get distances between `x` and `y`.
 
