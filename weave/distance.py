@@ -3,9 +3,7 @@
 
 Distance functions to calculate the distances between the current point
 and a vector of nearby points. While points can be either scalars or
-vectors, scalars must be cast as 1D vectors to comply with `Numba
-<https://numba.readthedocs.io/en/stable/index.html>`_ just-in-time
-compilation.
+vectors, scalars must be cast as 1D vectors for consistency.
 
 Notes
 -----
@@ -23,11 +21,8 @@ References
        <https://en.wikipedia.org/wiki/Metric_(mathematics)>`_
 
 """
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Tuple, Union
 
-from numba import njit  # type: ignore
-from numba.typed import Dict as TypedDict  # type: ignore
-from numba.types import float64, UniTuple  # type: ignore
 import numpy as np
 
 from weave.utils import is_number
@@ -36,7 +31,6 @@ number = Union[int, float]
 DistanceDict = Dict[Tuple[number, number], number]
 
 
-@njit
 def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Get Euclidean distances between `x` and `Y`.
 
@@ -103,7 +97,6 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     return distance
 
 
-@njit
 def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Get hierarchical distances between `x` and `Y`.
 
@@ -155,7 +148,6 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     return distance
 
 
-@njit
 def dictionary(x: np.ndarray, Y: np.ndarray,
                distance_dict: Dict[Tuple[float, float], float]) -> np.ndarray:
     """Get dictionary distances between `x` and `Y`.
@@ -173,21 +165,13 @@ def dictionary(x: np.ndarray, Y: np.ndarray,
         Current point.
     Y : 2D numpy.ndarray of float
         Matrix of nearby points.
-    distance_dict : numba.typed.Dict of {(float64, float64): float64}
-        Typed dictionary of distances between points.
+    distance_dict : dict of {(number, number): number}
+        Dictionary of distances between points.
 
     Returns
     -------
     1D numpy.ndarray of nonnegative float
         Dictionary distances between `x` and `Y`.
-
-    Notes
-    -----
-    Because this is a Numba just-in-time function, the parameter
-    `distance_dict` must be of type `numba.typed.Dict
-    <https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict>`_.
-    Dictionaries can be cast as a typed dictionary using the function
-    :func:`get_typed_dict`, but values are not checked for validity.
 
     Examples
     --------
@@ -195,17 +179,16 @@ def dictionary(x: np.ndarray, Y: np.ndarray,
     IDs.
 
     >>> import numpy as np
-    >>> from weave.distance import dictionary, get_typed_dict
+    >>> from weave.distance import dictionary
     >>> distance_dict = {
-            (4, 4): 0,
-            (4, 5): 1,
-            (4, 6): 2,
-            (5, 6): 2
+            (4, 4): 0.,
+            (4, 5): 1.,
+            (4, 6): 2.,
+            (5, 6): 2.
         }
-    >>> typed_dict = get_typed_dict(distance_dict)
     >>> x = np.array([4.])
     >>> y = np.array([[4.], [5.], [6.]])
-    >>> dictionary(x, y, typed_dict)
+    >>> dictionary(x, y, distance_dict)
     array([0., 1., 2.])
 
     """
@@ -220,45 +203,9 @@ def dictionary(x: np.ndarray, Y: np.ndarray,
     # Get distance from all nearby points
     distance = np.empty(len(Y))
     for ii, y in enumerate(Y):
-        distance[ii] = get_distance(x, y)
+        distance[ii] = float(get_distance(x, y))
 
     return distance
-
-
-def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
-        -> Dict[Tuple[float, float], float]:
-    """Get typed version of `distance_dict`.
-
-    Parameters
-    ----------
-    distance_dict : dict of {(number, number): number}, optional
-        Dictionary of distances between points.
-
-    Returns
-    -------
-    : numba.typed.Dict of {(float64, float64): float64}
-        Typed version of `distance_dict`.
-
-    Examples
-    --------
-    Cast a dictionary as an instance of `numba.typed.Dict
-    <https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict>`_.
-
-    >>> from weave.distance import get_typed_dict
-    >>> distance_dict = {(1, 1): 0}
-    >>> get_typed_dict(distance_dict)
-    DictType[UniTuple(float64 x 2),float64]<iv=None>({(1.0, 1.0): 0.0})
-
-    """
-    typed_dict = TypedDict.empty(
-        key_type=UniTuple(float64, 2),
-        value_type=float64
-    )
-    if distance_dict is not None:
-        for key in distance_dict:
-            float_key = tuple(float(point) for point in key)
-            typed_dict[float_key] = float(distance_dict[key])
-    return typed_dict
 
 
 def _check_dict(distance_dict: Dict[Tuple[number, number], number]) -> None:
