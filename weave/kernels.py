@@ -52,7 +52,6 @@ from typing import Dict, List, Optional, Union
 from numba import njit, vectorize  # type: ignore
 from numba.typed import Dict as TypedDict  # type: ignore
 from numba.types import float64, unicode_type  # type: ignore
-
 import numpy as np
 
 from weave.utils import as_list, is_number
