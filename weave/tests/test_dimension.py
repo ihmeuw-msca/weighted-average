@@ -19,9 +19,6 @@ other examples of valid input. Could do this with 'parametrize' or
     - `dimension` in {'dummy', ['dummy1', 'dummy2']}
     - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
 
-TODO:
-* Add test for `get_typed_dimension()`
-
 """
 import pytest
 

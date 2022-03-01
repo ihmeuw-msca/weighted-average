@@ -2,13 +2,8 @@
 """Smoothing dimension specifications."""
 from typing import Dict, List, Optional, Tuple, Union
 
-from numba.experimental import jitclass  # type: ignore
-from numba.typed import List as TypedList  # type: ignore
-from numba.types import DictType, ListType, UniTuple  # type: ignore
-from numba.types import float64, unicode_type  # type: ignore
-
-from weave.distance import get_typed_dict, _check_dict
-from weave.kernels import get_typed_pars, _check_pars
+from weave.distance import _check_dict
+from weave.kernels import _check_pars
 from weave.utils import as_list
 
 number = Union[int, float]
@@ -100,10 +95,7 @@ class Dimension:
         -----
 
         * Kernel-specific parameters and default distance functions are
-          given in the table below. The given dictionary `kernel_pars`
-          is converted to an instance of `numba.typed.Dict
-          <https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict>`_
-          within :func:`weave.smoother.Smoother`.
+          given in the table below.
 
           .. list-table::
              :header-rows: 1
@@ -172,10 +164,7 @@ class Dimension:
           'dictionary'. Dictionary keys are tuples of point ID pairs,
           and dictionary values are the corresponding distances.
           Because distances are assumed to be symmetric, point IDs are
-          listed from smallest to largest. The given `distance_dict` is
-          converted to an instance of `numba.typed.Dict
-          <https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict>`_
-          within :func:`weave.smoother.Smoother`.
+          listed from smallest to largest.
 
         References
         ----------
@@ -532,67 +521,3 @@ class Dimension:
                 raise ValueError(msg)
             _check_dict(distance_dict)
             self._distance_dict = distance_dict
-
-
-@jitclass([('name', unicode_type),
-           ('columns', ListType(unicode_type)),
-           ('kernel', unicode_type),
-           ('kernel_pars', DictType(unicode_type, float64)),
-           ('distance', unicode_type),
-           ('distance_dict', DictType(UniTuple(float64, 2), float64))])
-class TypedDimension:
-    """Smoothing dimension specifications."""
-    def __init__(self, name: str, columns: List[str], kernel: str,
-                 kernel_pars: Dict[str, float], distance: str,
-                 distance_dict: Dict[Tuple[float, float], float]) -> None:
-        """Create smoothing dimension.
-
-        Parameters
-        ----------
-        name : unicode_type
-            Dimension name.
-        columns : numba.typed.List of unicode_type
-            Dimension column names.
-        kernel : {'exponential', 'tricubic', 'depth'}
-            Kernel function name.
-        kernel_pars : numba.typed.Dict of {unicode_type: float64}
-            Kernel function parameters.
-        distance : {'dictionary', 'euclidean', 'hierarchical'}
-            Distance function name.
-        distance_dict : numba.typed.Dict of {(float64, float64): float64}
-            Dictionary of distances between points if `distance` is
-            'dictionary'.
-
-        """
-        self.name = name
-        self.columns = columns
-        self.kernel = kernel
-        self.kernel_pars = kernel_pars
-        self.distance = distance
-        self.distance_dict = distance_dict
-
-
-def get_typed_dimension(dim: Dimension) -> TypedDimension:
-    """Get smoothing dimension cast as jitclass object.
-
-    Returns
-    -------
-    TypedDimension
-        Smoothing dimension cast as jitclass object.
-
-    """
-    # Get typed version of attributes
-    columns = TypedList(dim.columns)
-    if hasattr(dim, 'kernel_pars'):
-        kernel_pars = get_typed_pars(dim.kernel_pars)
-    else:
-        kernel_pars = get_typed_pars()
-    if hasattr(dim, 'distance_dict'):
-        distance_dict = get_typed_dict(dim.distance_dict)
-    else:
-        distance_dict = get_typed_dict()
-
-    # Create typed dimension
-    typed_dim = TypedDimension(dim.name, columns, dim.kernel, kernel_pars,
-                               dim.distance, distance_dict)
-    return typed_dim
