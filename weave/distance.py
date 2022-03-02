@@ -27,7 +27,7 @@ from typing import Dict, Optional, Tuple, Union
 
 from numba import njit  # type: ignore
 from numba.typed import Dict as TypedDict  # type: ignore
-from numba.types import float64, UniTuple  # type: ignore
+from numba.types import float32, UniTuple  # type: ignore
 import numpy as np
 
 from weave.utils import is_number
@@ -93,12 +93,12 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """
     # Scalars
     if len(x) == 1:
-        return 1.0*np.abs(x - Y).flatten()
+        return np.abs(x - Y).flatten()
 
     # Vectors
-    distance = np.empty(len(Y))
+    distance = np.empty(len(Y), x.dtype)
     for ii, y in enumerate(Y):
-        distance[ii] = 1.0*np.linalg.norm(x - y)
+        distance[ii] = np.linalg.norm(x - y)
 
     return distance
 
@@ -141,14 +141,14 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     # Get distance from one nearby point
     def get_distance(x, y):
         if (x == y).all():
-            return 0.0
+            return 0
         for ii in range(1, len(x)):
             if (x[:-ii] == y[:-ii]).all():
-                return 1.0*ii
-        return 1.0*len(x)
+                return ii
+        return len(x)
 
     # Get distance between all nearby points
-    distance = np.empty(len(Y))
+    distance = np.empty(len(Y), dtype=x.dtype)
     for ii, y in enumerate(Y):
         distance[ii] = get_distance(x, y)
 
@@ -218,7 +218,7 @@ def dictionary(x: np.ndarray, Y: np.ndarray,
         return distance_dict[(y0, x0)]
 
     # Get distance from all nearby points
-    distance = np.empty(len(Y))
+    distance = np.empty(len(Y), dtype=x.dtype)
     for ii, y in enumerate(Y):
         distance[ii] = get_distance(x, y)
 
@@ -236,7 +236,7 @@ def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
 
     Returns
     -------
-    : numba.typed.Dict of {(float64, float64): float64}
+    : numba.typed.Dict of {(float32, float32): float32}
         Typed version of `distance_dict`.
 
     Examples
@@ -247,12 +247,12 @@ def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
     >>> from weave.distance import get_typed_dict
     >>> distance_dict = {(1, 1): 0}
     >>> get_typed_dict(distance_dict)
-    DictType[UniTuple(float64 x 2),float64]<iv=None>({(1.0, 1.0): 0.0})
+    DictType[UniTuple(float32 x 2),float64]<iv=None>({(1.0, 1.0): 0.0})
 
     """
     typed_dict = TypedDict.empty(
-        key_type=UniTuple(float64, 2),
-        value_type=float64
+        key_type=UniTuple(float32, 2),
+        value_type=float32
     )
     if distance_dict is not None:
         for key in distance_dict:
