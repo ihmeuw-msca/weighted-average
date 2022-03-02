@@ -212,6 +212,7 @@ class Smoother:
         # Calculate smoothed values
         cols_smooth = smooth_data(dim_list, point_list, cols, idx_fit,
                                   idx_pred, loop)
+        print(cols_smooth.dtype)
 
         # Construct smoothed data frame
         data_smooth = data.iloc[idx_pred].reset_index(drop=True)
@@ -347,8 +348,8 @@ class Smoother:
 
         """
         if indicator is None:
-            return np.arange(len(data))
-        return np.where(data[indicator])[0]
+            return np.arange(len(data)).astype('int32')
+        return np.where(data[indicator])[0].astype('int32')
 
     @staticmethod
     def get_columns(data: DataFrame, columns: Union[str, List[str]],
@@ -371,7 +372,7 @@ class Smoother:
 
         """
         return np.array([data[col].values[idx_fit]
-                         for col in as_list(columns)], dtype=float).T
+                         for col in as_list(columns)], dtype=np.float32).T
 
     def get_points(self, data: DataFrame) -> List[np.ndarray]:
         """Get point locations by dimension.
@@ -390,7 +391,7 @@ class Smoother:
         point_list = TypedList()
         for dim in self._dimensions:
             dim_array = np.atleast_2d(data[dim.columns].values)
-            dim_array = np.ascontiguousarray(dim_array, dtype=float)
+            dim_array = np.ascontiguousarray(dim_array, dtype=np.float32)
             point_list.append(dim_array)
         return point_list
 
@@ -446,13 +447,13 @@ def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
     n_pred = len(idx_pred)
 
     if loop:  # Calculate smoothed values one point at a time
-        cols_smooth = np.empty((n_pred, n_cols))
+        cols_smooth = np.empty((n_pred, n_cols), dtype=np.float32)
         for idx_x in range(n_pred):
             weights = get_weights(dim_list, point_list, idx_fit,
                                   idx_pred[idx_x])
             cols_smooth[idx_x, :] = weights.dot(cols)
     else:  # Calculate smoothed values together
-        weights = np.empty((n_pred, n_fit))
+        weights = np.empty((n_pred, n_fit), dtype=np.float32)
         for idx_x in range(n_pred):
             weights[idx_x, :] = get_weights(dim_list, point_list, idx_fit,
                                             idx_pred[idx_x])
@@ -484,7 +485,7 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
 
     """
     # Initialize weight vector
-    weights = np.ones(len(idx_fit))
+    weights = np.ones(len(idx_fit), dtype=np.float32)
 
     # Calculate weights one dimension at at a time
     for idx_dim, dim in enumerate(dim_list):
@@ -498,10 +499,10 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
                                           dim.kernel_pars)
 
         # Optional normalize by subgroup
-        if dim.kernel_pars['normalize'] == 1.0:
+        if dim.kernel_pars['normalize'] == 1:
             for weight in list(set(dim_weights)):
                 idx_weight = np.where(dim_weights == weight)[0]
-                if weights[idx_weight].sum() != 0.0:
+                if weights[idx_weight].sum() != 0:
                     weights[idx_weight] *= weight/weights[idx_weight].sum()
         else:
             weights *= dim_weights
