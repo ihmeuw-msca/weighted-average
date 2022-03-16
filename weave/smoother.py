@@ -409,7 +409,7 @@ class Smoother:
         return dim_list
 
 
-@njit
+@njit(parallel=True)
 def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
                 cols: np.ndarray, idx_fit: np.ndarray, idx_pred: np.ndarray,
                 loop: bool = False) -> np.ndarray:
@@ -447,13 +447,13 @@ def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
 
     if loop:  # Calculate smoothed values one point at a time
         cols_smooth = np.empty((n_pred, n_cols))
-        for idx_x in range(n_pred):
+        for idx_x in prange(n_pred):
             weights = get_weights(dim_list, point_list, idx_fit,
                                   idx_pred[idx_x])
             cols_smooth[idx_x, :] = weights.dot(cols)
     else:  # Calculate smoothed values together
         weights = np.empty((n_pred, n_fit))
-        for idx_x in range(n_pred):
+        for idx_x in prange(n_pred):
             weights[idx_x, :] = get_weights(dim_list, point_list, idx_fit,
                                             idx_pred[idx_x])
         cols_smooth = weights.dot(cols)
