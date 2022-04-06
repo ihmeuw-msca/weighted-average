@@ -177,14 +177,14 @@ def depth(distance: float, radius: float) -> float:
 
     Parameters
     ----------
-    distance : nonnegative float
+    distance : nonnegative float32
         Distance between points.
-    radius : float in (0, 1)
+    radius : float32 in (0, 1)
         Kernel radius.
 
     Returns
     -------
-    nonnegative float
+    nonnegative float32
         Depth smoothing weight.
 
     Notes
@@ -208,20 +208,21 @@ def depth(distance: float, radius: float) -> float:
     --------
     Get weight for a pair of points.
 
+    >>> import numpy as np
     >>> from weave.kernels import depth
-    >>> radius = 0.9
-    >>> distance = 1.
+    >>> radius = np.float32(0.9)
+    >>> distance = np.float32(1.)
     >>> depth(distance, radius)
-    0.08999999999999998
+    0.09000002
 
     Get weights for a vector of point pairs.
 
     >>> import numpy as np
     >>> from weave.kernels import depth
-    >>> radius = 0.9
-    >>> distance = np.array([0., 1., 2., 3.])
+    >>> radius = np.float32(0.9)
+    >>> distance = np.array([0., 1., 2., 3.]).astype(np.float32)
     >>> depth(distance, radius)
-    array([0.9, 0.09, 0.01, 0.])
+    array([0.9, 0.09000002, 0.01, 0.], dtype=float32)
 
     """
     if distance == 0:
