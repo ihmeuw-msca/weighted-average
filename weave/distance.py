@@ -49,7 +49,7 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
 
     Returns
     -------
-    1D numpy.ndarray of nonnegative float
+    1D numpy.ndarray of nonnegative float32
         Euclidean distances between `x` and `Y`.
 
     Notes
@@ -79,7 +79,7 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     >>> x = np.array([0.])
     >>> Y = np.array([[-1.], [0.], [1.]])
     >>> euclidean(x, Y)
-    array([1., 0., 1.])
+    array([1., 0., 1.], dtype=float32)
 
     Get distances between vector points.
 
@@ -88,15 +88,15 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     >>> x = np.array([0., 0.])
     >>> Y = np.array([[-1., -1.], [0., 0.], [1., 1.]])
     >>> euclidean(x, Y)
-    array([1.41421356, 0., 1.41421356])
+    array([1.4142135, 0., 1.4142135], dtype=float32)
 
     """
     # Scalars
     if len(x) == 1:
-        return np.abs(x - Y).flatten()
+        return np.abs(x - Y).flatten().astype(np.float32)
 
     # Vectors
-    distance = np.empty(len(Y), x.dtype)
+    distance = np.empty(len(Y), dtype=np.float32)
     for ii, y in enumerate(Y):
         distance[ii] = np.linalg.norm(x - y)
 
@@ -121,7 +121,7 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
 
     Returns
     -------
-    1D numpy.ndarray of nonnegative float
+    1D numpy.ndarray of nonnegative float32
         Hierarchical distances between `x` and `Y`.
 
     Examples
@@ -135,7 +135,7 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     >>> x = np.array([1., 2., 4.])
     >>> Y = np.array([[1., 2., 4.], [1., 2., 5.], [1., 3., 6.]])
     >>> hierarchical(x, Y)
-    array([0., 1., 2.])
+    array([0., 1., 2.], dtype=float32)
 
     """
     # Get distance from one nearby point
@@ -148,7 +148,7 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
         return len(x)
 
     # Get distance between all nearby points
-    distance = np.empty(len(Y), dtype=x.dtype)
+    distance = np.empty(len(Y), dtype=np.float32)
     for ii, y in enumerate(Y):
         distance[ii] = get_distance(x, y)
 
@@ -173,12 +173,12 @@ def dictionary(x: np.ndarray, Y: np.ndarray,
         Current point.
     Y : 2D numpy.ndarray of float
         Matrix of nearby points.
-    distance_dict : numba.typed.Dict of {(float64, float64): float64}
+    distance_dict : numba.typed.Dict of {(float32, float32): float32}
         Typed dictionary of distances between points.
 
     Returns
     -------
-    1D numpy.ndarray of nonnegative float
+    1D numpy.ndarray of nonnegative float32
         Dictionary distances between `x` and `Y`.
 
     Notes
@@ -206,19 +206,19 @@ def dictionary(x: np.ndarray, Y: np.ndarray,
     >>> x = np.array([4.])
     >>> y = np.array([[4.], [5.], [6.]])
     >>> dictionary(x, y, typed_dict)
-    array([0., 1., 2.])
+    array([0., 1., 2.], dtype=float32)
 
     """
     # Get distance from one nearby point
     def get_distance(x, y):
-        x0 = float(x[0])
-        y0 = float(y[0])
+        x0 = np.float32(x[0])
+        y0 = np.float32(y[0])
         if x0 <= y0:
             return distance_dict[(x0, y0)]
         return distance_dict[(y0, x0)]
 
     # Get distance from all nearby points
-    distance = np.empty(len(Y), dtype=x.dtype)
+    distance = np.empty(len(Y), dtype=np.float32)
     for ii, y in enumerate(Y):
         distance[ii] = get_distance(x, y)
 
@@ -247,7 +247,7 @@ def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
     >>> from weave.distance import get_typed_dict
     >>> distance_dict = {(1, 1): 0}
     >>> get_typed_dict(distance_dict)
-    DictType[UniTuple(float32 x 2),float64]<iv=None>({(1.0, 1.0): 0.0})
+    DictType[UniTuple(float32 x 2),float32]<iv=None>({(1.0, 1.0): 0.0})
 
     """
     typed_dict = TypedDict.empty(
@@ -256,8 +256,8 @@ def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
     )
     if distance_dict is not None:
         for key in distance_dict:
-            float_key = tuple(float(point) for point in key)
-            typed_dict[float_key] = float(distance_dict[key])
+            float_key = tuple(np.float32(point) for point in key)
+            typed_dict[float_key] = np.float32(distance_dict[key])
     return typed_dict
 
 
