@@ -212,7 +212,6 @@ class Smoother:
         # Calculate smoothed values
         cols_smooth = smooth_data(dim_list, point_list, cols, idx_fit,
                                   idx_pred, loop)
-        print(cols_smooth.dtype)
 
         # Construct smoothed data frame
         data_smooth = data.iloc[idx_pred].reset_index(drop=True)
@@ -343,13 +342,13 @@ class Smoother:
 
         Returns
         -------
-        1D numpy.ndarray of int
+        1D numpy.ndarray of int32
             Indices of `fit` or `predict` points.
 
         """
         if indicator is None:
-            return np.arange(len(data)).astype('int32')
-        return np.where(data[indicator])[0].astype('int32')
+            return np.arange(len(data)).astype(np.int32)
+        return np.where(data[indicator])[0].astype(np.int32)
 
     @staticmethod
     def get_columns(data: DataFrame, columns: Union[str, List[str]],
@@ -367,7 +366,7 @@ class Smoother:
 
         Returns
         -------
-        2D numpy.ndarray of float
+        2D numpy.ndarray of float32
             Values to smooth.
 
         """
@@ -384,7 +383,7 @@ class Smoother:
 
         Returns
         -------
-        numba.typed.List of 2D numpy.ndarray of float
+        numba.typed.List of 2D numpy.ndarray of float32
             Point locations by dimension.
 
         """
@@ -437,7 +436,7 @@ def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
 
     Returns
     -------
-    2D numpy.ndarray of float
+    2D numpy.ndarray of float32
         Smoothed values.
 
     """
@@ -459,7 +458,7 @@ def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
                                             idx_pred[idx_x])
         cols_smooth = weights.dot(cols)
 
-    return cols_smooth
+    return cols_smooth.astype(np.float32)
 
 
 @njit
@@ -480,7 +479,7 @@ def get_weights(dim_list: List[TypedDimension], point_list: List[np.ndarray],
 
     Returns
     -------
-    1D numpy.ndarray of nonnegative float
+    1D numpy.ndarray of nonnegative float32
         Smoothing weights for current point.
 
     """
@@ -524,12 +523,12 @@ def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
         Nearby points.
     distance : str
         Distance function name.
-    distance_dict : dict of {(float, float): float}
+    distance_dict : numba.typed.Dict of {(float32, float32): float32}
         Dictionary of distances between points.
 
     Returns
     -------
-    1D numpy.ndarray of nonnegative float
+    1D numpy.ndarray of nonnegative float32
         Distances between `x` and `y`.
 
     """
@@ -547,22 +546,22 @@ def get_dim_weights(distance: np.ndarray, kernel: str,
 
     Parameters
     ----------
-    distance : 1D numpy.ndarray of nonnegative float
+    distance : 1D numpy.ndarray of nonnegative float32
         Distances between points.
     kernel : str
         Kernel function name.
-    kernel_pars : dict of {str: float}
+    kernel_pars : numba.typed.Dict of {unicode_type: float32}
         Kernel function parameters.
 
     Returns
     -------
-    1D numpy.ndarray of nonnegative float
+    1D numpy.ndarray of nonnegative float32
         Smoothing weights.
 
     """
     if kernel == 'exponential':
-        return exponential(distance, kernel_pars['radius'])
+        return exponential(distance, kernel_pars['radius']).astype(np.float32)
     if kernel == 'tricubic':
         return tricubic(distance, kernel_pars['radius'],
-                        kernel_pars['exponent'])
+                        kernel_pars['exponent']).astype(np.float32)
     return depth(distance, kernel_pars['radius'])
