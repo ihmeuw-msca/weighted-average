@@ -51,8 +51,7 @@ from typing import Dict, List, Optional, Union
 
 from numba import njit, vectorize  # type: ignore
 from numba.typed import Dict as TypedDict  # type: ignore
-from numba.types import float64, unicode_type  # type: ignore
-
+from numba.types import float32, unicode_type  # type: ignore
 import numpy as np
 
 from weave.utils import as_list, is_number
@@ -109,7 +108,7 @@ def exponential(distance: float, radius: float) -> float:
     array([1., 0.13533528, 0.01831564])
 
     """
-    return 1.0/np.exp(distance/radius)
+    return 1/np.exp(distance/radius)
 
 
 @njit
@@ -169,23 +168,23 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
     array([1., 0.66992188, 0.])
 
     """
-    return np.maximum(0.0, (1.0 - (distance/radius)**exponent)**3)
+    return np.maximum(0, (1 - (distance/radius)**exponent)**3)
 
 
-@vectorize(['float64(float64,float64)'])
+@vectorize(['float32(float32,float32)'])
 def depth(distance: float, radius: float) -> float:
     """Get depth smoothing weight.
 
     Parameters
     ----------
-    distance : nonnegative float
+    distance : nonnegative float32
         Distance between points.
-    radius : float in (0, 1)
+    radius : float32 in (0, 1)
         Kernel radius.
 
     Returns
     -------
-    nonnegative float
+    nonnegative float32
         Depth smoothing weight.
 
     Notes
@@ -209,29 +208,30 @@ def depth(distance: float, radius: float) -> float:
     --------
     Get weight for a pair of points.
 
+    >>> import numpy as np
     >>> from weave.kernels import depth
-    >>> radius = 0.9
-    >>> distance = 1.
+    >>> radius = np.float32(0.9)
+    >>> distance = np.float32(1.)
     >>> depth(distance, radius)
-    0.08999999999999998
+    0.09000002
 
     Get weights for a vector of point pairs.
 
     >>> import numpy as np
     >>> from weave.kernels import depth
-    >>> radius = 0.9
-    >>> distance = np.array([0., 1., 2., 3.])
+    >>> radius = np.float32(0.9)
+    >>> distance = np.array([0., 1., 2., 3.]).astype(np.float32)
     >>> depth(distance, radius)
-    array([0.9, 0.09, 0.01, 0.])
+    array([0.9, 0.09000002, 0.01, 0.], dtype=float32)
 
     """
-    if distance == 0.0:
+    if distance == 0:
         return radius
-    if distance <= 1.0:
-        return radius*(1.0 - radius)
-    if distance <= 2.0:
-        return (1.0 - radius)**2
-    return 0.0
+    if distance <= 1:
+        return radius*(1 - radius)
+    if distance <= 2:
+        return (1 - radius)**2
+    return 0
 
 
 def get_typed_pars(kernel_pars: Optional[Dict[str, pars]] = None) \
@@ -245,17 +245,17 @@ def get_typed_pars(kernel_pars: Optional[Dict[str, pars]] = None) \
 
     Returns
     -------
-    numba.typed.Dict of {unicode_type: float64}
+    numba.typed.Dict of {unicode_type: float32}
         Typed version of `kernel_pars`.
 
     """
     typed_pars = TypedDict.empty(
         key_type=unicode_type,
-        value_type=float64
+        value_type=float32
     )
     if kernel_pars is not None:
         for key in kernel_pars:
-            typed_pars[key] = float(kernel_pars[key])
+            typed_pars[key] = np.float32(kernel_pars[key])
     return typed_pars
 
 
