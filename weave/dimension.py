@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from numba.experimental import jitclass  # type: ignore
 from numba.typed import List as TypedList  # type: ignore
 from numba.types import DictType, ListType, UniTuple  # type: ignore
-from numba.types import float64, unicode_type  # type: ignore
+from numba.types import float32, unicode_type  # type: ignore
 
 from weave.distance import get_typed_dict, _check_dict
 from weave.kernels import get_typed_pars, _check_pars
@@ -537,9 +537,9 @@ class Dimension:
 @jitclass([('name', unicode_type),
            ('columns', ListType(unicode_type)),
            ('kernel', unicode_type),
-           ('kernel_pars', DictType(unicode_type, float64)),
+           ('kernel_pars', DictType(unicode_type, float32)),
            ('distance', unicode_type),
-           ('distance_dict', DictType(UniTuple(float64, 2), float64))])
+           ('distance_dict', DictType(UniTuple(float32, 2), float32))])
 class TypedDimension:
     """Smoothing dimension specifications."""
     def __init__(self, name: str, columns: List[str], kernel: str,
@@ -555,11 +555,11 @@ class TypedDimension:
             Dimension column names.
         kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
-        kernel_pars : numba.typed.Dict of {unicode_type: float64}
+        kernel_pars : numba.typed.Dict of {unicode_type: float32}
             Kernel function parameters.
         distance : {'dictionary', 'euclidean', 'hierarchical'}
             Distance function name.
-        distance_dict : numba.typed.Dict of {(float64, float64): float64}
+        distance_dict : numba.typed.Dict of {(float32, float32): float32}
             Dictionary of distances between points if `distance` is
             'dictionary'.
 

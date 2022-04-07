@@ -54,7 +54,7 @@ def property_1(distance):
     assert np.isreal(distance)
     assert np.isfinite(distance)
     assert distance >= 0.0
-    assert isinstance(distance, float)
+    assert isinstance(distance, np.float32)
 
 
 @settings(deadline=None)
