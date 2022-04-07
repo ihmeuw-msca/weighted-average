@@ -1,4 +1,4 @@
-# pylint: disable=C0103, E0611, R0913
+# pylint: disable=C0103, E0602, E0611, R0913
 """Smooth data across multiple dimensions using weighted averages."""
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -447,13 +447,13 @@ def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
 
     if loop:  # Calculate smoothed values one point at a time
         cols_smooth = np.empty((n_pred, n_cols))
-        for idx_x in prange(n_pred):
+        for idx_x in prange(n_pred):  # noqa: F821
             weights = get_weights(dim_list, point_list, idx_fit,
                                   idx_pred[idx_x])
             cols_smooth[idx_x, :] = weights.dot(cols)
     else:  # Calculate smoothed values together
         weights = np.empty((n_pred, n_fit))
-        for idx_x in prange(n_pred):
+        for idx_x in prange(n_pred):  # noqa: F821
             weights[idx_x, :] = get_weights(dim_list, point_list, idx_fit,
                                             idx_pred[idx_x])
         cols_smooth = weights.dot(cols)
