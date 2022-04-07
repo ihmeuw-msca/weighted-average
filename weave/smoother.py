@@ -2,7 +2,7 @@
 """Smooth data across multiple dimensions using weighted averages."""
 from typing import Dict, List, Optional, Tuple, Union
 
-from numba import njit  # type: ignore
+from numba import njit, prange  # type: ignore
 from numba.typed import List as TypedList  # type: ignore
 import numpy as np
 from pandas import DataFrame  # type: ignore
@@ -405,7 +405,7 @@ class Smoother:
         return dim_list
 
 
-@njit
+@njit(parallel=True)
 def smooth_data(dim_list: List[TypedDimension], points: np.ndarray,
                 cols: np.ndarray, idx_fit: np.ndarray, idx_pred: np.ndarray,
                 loop: bool = False) -> np.ndarray:
@@ -446,13 +446,13 @@ def smooth_data(dim_list: List[TypedDimension], points: np.ndarray,
 
     if loop:  # Calculate smoothed values one point at a time
         cols_smooth = np.empty((n_pred, n_cols), dtype=np.float32)
-        for idx_x in range(n_pred):
+        for idx_x in prange(n_pred):
             pred_point = points[idx_pred[idx_x], :]
             weights = get_weights(dim_list, fit_points, pred_point)
             cols_smooth[idx_x, :] = weights.dot(cols)
     else:  # Calculate smoothed values together
         weights = np.empty((n_pred, n_fit), dtype=np.float32)
-        for idx_x in range(n_pred):
+        for idx_x in prange(n_pred):
             pred_point = points[idx_pred[idx_x]]
             weights[idx_x, :] = get_weights(dim_list, fit_points, pred_point)
         cols_smooth = weights.dot(cols)
