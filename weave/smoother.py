@@ -206,12 +206,12 @@ class Smoother:
         idx_fit = self.get_indices(data, fit)
         idx_pred = self.get_indices(data, predict)
         cols = self.get_columns(data, columns, idx_fit)
-        point_list = self.get_points(data)
+        points = self.get_points(data)
         dim_list = self.get_typed_dimensions()
 
         # Calculate smoothed values
-        cols_smooth = smooth_data(dim_list, point_list, cols, idx_fit,
-                                  idx_pred, loop)
+        cols_smooth = smooth_data(dim_list, points, cols, idx_fit, idx_pred,
+                                  loop)
 
         # Construct smoothed data frame
         data_smooth = data.iloc[idx_pred].reset_index(drop=True)
@@ -373,8 +373,8 @@ class Smoother:
         return np.array([data[col].values[idx_fit]
                          for col in as_list(columns)], dtype=float).T
 
-    def get_points(self, data: DataFrame) -> List[np.ndarray]:
-        """Get point locations by dimension.
+    def get_points(self, data: DataFrame) -> np.ndarray:
+        """Get point coordinates.
 
         Parameters
         ----------
@@ -383,16 +383,12 @@ class Smoother:
 
         Returns
         -------
-        numba.typed.List of 2D numpy.ndarray of float
-            Point locations by dimension.
+        2D numpy.ndarray of float
+            Point coordinates.
 
         """
-        point_list = TypedList()
-        for dim in self._dimensions:
-            dim_array = np.atleast_2d(data[dim.columns].values)
-            dim_array = np.ascontiguousarray(dim_array, dtype=float)
-            point_list.append(dim_array)
-        return point_list
+        dim_cols = [col for dim in self._dimensions for col in dim.columns]
+        return np.ascontiguousarray(data[dim_cols].values, dtype=float)
 
     def get_typed_dimensions(self) -> List[TypedDimension]:
         """Get smoothing dimensions cast as jitclass objects.
@@ -410,7 +406,7 @@ class Smoother:
 
 
 @njit
-def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
+def smooth_data(dim_list: List[TypedDimension], points: np.ndarray,
                 cols: np.ndarray, idx_fit: np.ndarray, idx_pred: np.ndarray,
                 loop: bool = False) -> np.ndarray:
     """Smooth data across dimensions with weighted averages.
@@ -419,8 +415,8 @@ def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
     ----------
     dim_list : list of TypedDimension
         Smoothing dimensions.
-    point_list : list of 2D numpy.ndarray of float
-        Point locations by dimension.
+    points : 2D numpy.ndarray of float
+        Point coordinates.
     cols : 2D numpy.ndarray of float
         Values to smooth.
     idx_fit : 1D numpy.ndarray of int
@@ -446,20 +442,18 @@ def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
     n_pred = len(idx_pred)
 
     # Extract fit points
-    fit_points = TypedList([points[idx_fit] for points in point_list])
+    fit_points = points[idx_fit, :]
 
     if loop:  # Calculate smoothed values one point at a time
         cols_smooth = np.empty((n_pred, n_cols))
         for idx_x in range(n_pred):
-            pred_point = TypedList([point[idx_pred[idx_x]]
-                                    for point in point_list])
+            pred_point = points[idx_pred[idx_x], :]
             weights = get_weights(dim_list, fit_points, pred_point)
             cols_smooth[idx_x, :] = weights.dot(cols)
     else:  # Calculate smoothed values together
         weights = np.empty((n_pred, n_fit))
         for idx_x in range(n_pred):
-            pred_point = TypedList([point[idx_pred[idx_x]]
-                                    for point in point_list])
+            pred_point = points[idx_pred[idx_x]]
             weights[idx_x, :] = get_weights(dim_list, fit_points, pred_point)
         cols_smooth = weights.dot(cols)
 
@@ -467,20 +461,18 @@ def smooth_data(dim_list: List[TypedDimension], point_list: List[np.ndarray],
 
 
 @njit
-def get_weights(dim_list: List[TypedDimension], fit_points: List[np.ndarray],
-                pred_point: List[np.ndarray]) -> np.ndarray:
+def get_weights(dim_list: List[TypedDimension], fit_points: np.ndarray,
+                pred_point: np.ndarray) -> np.ndarray:
     """Get smoothing weights for current point.
 
     Parameters
     ----------
     dim_list : list of TypedDimension
         Smoothing dimensions.
-    point_list : list of 2D numpy.ndarray of float
-        Point locations by dimension.
-    fit_points : list of 2D numpy.ndarray of float
-        Fit point locations by dimension.
-    pred_point : list of 2D numpy.ndarray of float
-        Predict point location by dimension.
+    fit_points : 2D numpy.ndarray of float
+        Fit point coordinates.
+    pred_point : 1D numpy.ndarray of float
+        Predict point coordinates.
 
     Returns
     -------
@@ -489,17 +481,22 @@ def get_weights(dim_list: List[TypedDimension], fit_points: List[np.ndarray],
 
     """
     # Initialize weight vector
-    weights = np.ones(len(fit_points[0]))
+    weights = np.ones(len(fit_points))
 
-    # Calculate weights one dimension at at a time
-    for idx_dim, dim in enumerate(dim_list):
-        dim_dists = get_dim_distances(pred_point[idx_dim], fit_points[idx_dim],
-                                      dim.distance, dim.distance_dict)
+    # Calculate weights one dimension at a time
+    idx_start = 0
+    for dim in dim_list:
+        idx_stop = idx_start + len(dim.columns)
+        idx_dim = np.arange(idx_start, idx_stop)
+        dim_dists = get_dim_distances(pred_point[idx_dim],
+                                      fit_points[:, idx_dim], dim.distance,
+                                      dim.distance_dict)
         if dim.kernel == 'identity':
             dim_weights = dim_dists
         else:
             dim_weights = get_dim_weights(dim_dists, dim.kernel,
                                           dim.kernel_pars)
+        idx_start = idx_stop
 
         # Optional normalize by subgroup
         if dim.kernel_pars['normalize'] == 1.0:
