@@ -25,7 +25,7 @@ References
 """
 from typing import Dict, Optional, Tuple, Union
 
-from numba import njit  # type: ignore
+from numba import njit, prange  # type: ignore
 from numba.typed import Dict as TypedDict  # type: ignore
 from numba.types import float32, UniTuple  # type: ignore
 import numpy as np
@@ -36,7 +36,7 @@ number = Union[int, float]
 DistanceDict = Dict[Tuple[number, number], number]
 
 
-@njit
+@njit(parallel=True)
 def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Get Euclidean distances between `x` and `Y`.
 
@@ -97,13 +97,13 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
 
     # Vectors
     distance = np.empty(len(Y), dtype=np.float32)
-    for ii, y in enumerate(Y):
-        distance[ii] = np.linalg.norm(x - y)
-
+    for ii in prange(len(Y)):
+        diff = x - Y[ii]
+        distance[ii] = np.sqrt(diff.dot(diff))
     return distance
 
 
-@njit
+@njit(parallel=True)
 def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Get hierarchical distances between `x` and `Y`.
 
@@ -149,13 +149,13 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
 
     # Get distance between all nearby points
     distance = np.empty(len(Y), dtype=np.float32)
-    for ii, y in enumerate(Y):
-        distance[ii] = get_distance(x, y)
+    for ii in prange(len(Y)):
+        distance[ii] = get_distance(x, Y[ii])
 
     return distance
 
 
-@njit
+@njit(parallel=True)
 def dictionary(x: np.ndarray, Y: np.ndarray,
                distance_dict: Dict[Tuple[float, float], float]) -> np.ndarray:
     """Get dictionary distances between `x` and `Y`.
@@ -219,8 +219,8 @@ def dictionary(x: np.ndarray, Y: np.ndarray,
 
     # Get distance from all nearby points
     distance = np.empty(len(Y), dtype=np.float32)
-    for ii, y in enumerate(Y):
-        distance[ii] = get_distance(x, y)
+    for ii in prange(len(Y)):
+        distance[ii] = get_distance(x, Y[ii])
 
     return distance
 
