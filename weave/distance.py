@@ -25,7 +25,7 @@ References
 """
 from typing import Dict, Optional, Tuple, Union
 
-from numba import njit, prange  # type: ignore
+from numba import njit  # type: ignore
 from numba.typed import Dict as TypedDict  # type: ignore
 from numba.types import float32, UniTuple  # type: ignore
 import numpy as np
@@ -36,7 +36,7 @@ number = Union[int, float]
 DistanceDict = Dict[Tuple[number, number], number]
 
 
-@njit(parallel=True)
+@njit
 def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Get Euclidean distances between `x` and `Y`.
 
@@ -96,14 +96,10 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
         return np.abs(x - Y).flatten().astype(np.float32)
 
     # Vectors
-    distance = np.empty(len(Y), dtype=np.float32)
-    for ii in prange(len(Y)):
-        diff = x - Y[ii]
-        distance[ii] = np.sqrt(diff.dot(diff))
-    return distance
+    return np.array([np.linalg.norm(x - y) for y in Y], dtype=np.float32)
 
 
-@njit(parallel=True)
+@njit
 def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Get hierarchical distances between `x` and `Y`.
 
@@ -148,14 +144,10 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
         return len(x)
 
     # Get distance between all nearby points
-    distance = np.empty(len(Y), dtype=np.float32)
-    for ii in prange(len(Y)):
-        distance[ii] = get_distance(x, Y[ii])
-
-    return distance
+    return np.array([get_distance(x, y) for y in Y], dtype=np.float32)
 
 
-@njit(parallel=True)
+@njit
 def dictionary(x: np.ndarray, Y: np.ndarray,
                distance_dict: Dict[Tuple[float, float], float]) -> np.ndarray:
     """Get dictionary distances between `x` and `Y`.
@@ -218,11 +210,7 @@ def dictionary(x: np.ndarray, Y: np.ndarray,
         return distance_dict[(y0, x0)]
 
     # Get distance from all nearby points
-    distance = np.empty(len(Y), dtype=np.float32)
-    for ii in prange(len(Y)):
-        distance[ii] = get_distance(x, Y[ii])
-
-    return distance
+    return np.array([get_distance(x, y) for y in Y], dtype=np.float32)
 
 
 def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
