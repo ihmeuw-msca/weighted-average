@@ -202,7 +202,7 @@ class Smoother:
 
         """
         # Check input
-        self.check_args(data, columns, fit, predict, loop)
+        self.check_args(data, columns, fit, predict, loop, parallel)
         self.check_data(data, columns, fit, predict)
 
         # Extract data
@@ -229,8 +229,8 @@ class Smoother:
 
     @staticmethod
     def check_args(data: DataFrame, columns: Union[str, List[str]],
-                   fit: Optional[str], predict: Optional[str], loop: bool) \
-            -> None:
+                   fit: Optional[str], predict: Optional[str], loop: bool,
+                   parallel: bool) -> None:
         """Check `smoother` argument types and values.
 
         Parameters
@@ -248,6 +248,8 @@ class Smoother:
             If True, smooth values for each point in `predict`
             separately in a loop. Otherwise, populate a matrix of weights
             for all points in `predict` and smooth values together.
+        parallel : bool
+            If True, parallelize the loop over the predict points.
 
         Raises
         ------
@@ -269,6 +271,8 @@ class Smoother:
             raise TypeError('`predict` is not a str.')
         if not isinstance(loop, bool):
             raise TypeError('`loop` is not a bool.')
+        if not isinstance(parallel, bool):
+            raise TypeError('`parallel` is not a bool.')
 
         # Check values
         if len(columns) == 0:
