@@ -122,6 +122,13 @@ def test_loop_type(loop):
         smoother(data, 'residual', loop=loop)
 
 
+@pytest.mark.parametrize('parallel', not_bool)
+def test_parallel_type(parallel):
+    """RaiseTypeError if `parallel` is not a bool."""
+    with pytest.raises(TypeError):
+        smoother(data, 'residual', parallel=parallel)
+
+
 # Test input values
 def test_columns_values():
     """Raise ValueError if `columns` is an empty list."""
