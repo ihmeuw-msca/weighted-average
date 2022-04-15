@@ -117,7 +117,7 @@ class Smoother:
 
     def __call__(self, data: DataFrame, columns: Union[str, List[str]],
                  fit: str = None, predict: str = None, loop: bool = False,
-                 parallel: bool = True) -> DataFrame:
+                 precompute: bool = True, parallel: bool = True) -> DataFrame:
         """Smooth data across dimensions with weighted averages.
 
         For each point in `predict`, calculate a smoothed value of each
@@ -146,6 +146,11 @@ class Smoother:
             `predict` and smooth values using matrix--vector
             multiplication. Requires more memory, but is faster.
             Default is False.
+        precompute : bool, optional
+            If True, precompute all dimension weights and store in a
+            dictionary. Requires more memory, but is faster. Otherwise,
+            compute all dimension distances and weights on-the-fly.
+            Requires less memory, but is slower. Default is True.
         parallel : bool, optional
             If True, parallelize the loop over the predict points.
             Default is True.
@@ -202,7 +207,8 @@ class Smoother:
 
         """
         # Check input
-        self.check_args(data, columns, fit, predict, loop, parallel)
+        self.check_args(data, columns, fit, predict, loop, precompute,
+                        parallel)
         self.check_data(data, columns, fit, predict)
 
         # Extract data
@@ -210,6 +216,8 @@ class Smoother:
         idx_pred = self.get_indices(data, predict)
         cols = self.get_columns(data, columns, idx_fit)
         points = self.get_points(data)
+
+        # Cast dimensions as jitclass objects
         dim_list = self.get_typed_dimensions()
 
         # Calculate smoothed values
@@ -230,7 +238,7 @@ class Smoother:
     @staticmethod
     def check_args(data: DataFrame, columns: Union[str, List[str]],
                    fit: Optional[str], predict: Optional[str], loop: bool,
-                   parallel: bool) -> None:
+                   precompute: bool, parallel: bool) -> None:
         """Check `smoother` argument types and values.
 
         Parameters
@@ -248,6 +256,10 @@ class Smoother:
             If True, smooth values for each point in `predict`
             separately in a loop. Otherwise, populate a matrix of weights
             for all points in `predict` and smooth values together.
+        precompute : bool
+            If True, precompute all dimension weights and store in a
+            dictionary. Otherwise, compute all dimension distances and
+            weights on-the-fly.
         parallel : bool
             If True, parallelize the loop over the predict points.
 
@@ -271,6 +283,8 @@ class Smoother:
             raise TypeError('`predict` is not a str.')
         if not isinstance(loop, bool):
             raise TypeError('`loop` is not a bool.')
+        if not isinstance(precompute, bool):
+            raise TypeError('`precompute` is not a bool.')
         if not isinstance(parallel, bool):
             raise TypeError('`parallel` is not a bool.')
 
