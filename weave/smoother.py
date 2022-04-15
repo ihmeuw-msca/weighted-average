@@ -442,7 +442,7 @@ class Smoother:
             if data is None:
                 dim_list.append(get_typed_dimension(dim))
             else:
-                dim_new = Dimension(
+                dim_precompute = Dimension(
                     name=dim.name,
                     columns=dim.columns,
                     kernel='identity',
@@ -450,7 +450,7 @@ class Smoother:
                     distance='dictionary',
                     distance_dict=get_weight_dict(dim, data)
                 )
-                dim_list.append(get_typed_dimension(dim_new))
+                dim_list.append(get_typed_dimension(dim_precompute))
         return dim_list
 
 
