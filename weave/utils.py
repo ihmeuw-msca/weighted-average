@@ -3,7 +3,6 @@
 from typing import Any, List, Union
 
 from numba.typed import List as TypedList
-
 import numpy as np
 
 
