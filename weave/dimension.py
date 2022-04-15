@@ -1,14 +1,5 @@
 # pylint: disable=C0103, E0611, R0902, R0903, R0913
-"""Smoothing dimension specifications.
-
-New requirements for Dimension:
-* `name` must correspond to column name with unique ids
-* `columns` is optional if each dimension point is only 1D
-    - will be automatically assigned value from `name`
-* update documentation
-* may need updates to checks and tests (smoother, dimension, tests)
-
-"""
+"""Smoothing dimension specifications."""
 from typing import Dict, List, Optional, Tuple, Union
 
 from numba.experimental import jitclass  # type: ignore
@@ -36,11 +27,16 @@ class Dimension:
     name : str
         Dimension name.
 
-    columns : list of str
-        Dimension column names.
+        Column in data frame containing the ID of points in the given
+        dimension. For example, 'age_id', 'year_id', or 'location_id'.
 
-        Column names in data frame containing the coordinates of points
-        in the given dimension.
+    coordinates : list of str
+        Dimension coordinates.
+
+        Column(s) in data frame containing the coordinates of points in
+        the given dimension. For example, `['lat', 'lon']` or
+        `['super_region', 'region', 'country']`. Can be equivalent to
+        `name` attribute if dimension is 1D.
 
     kernel : {'exponential', 'tricubic', 'depth', 'identity'}
         Kernel function name.
@@ -81,8 +77,8 @@ class Dimension:
 
     """
 
-    def __init__(self, name: str, columns: Union[str, List[str]], kernel: str,
-                 kernel_pars: Optional[Dict[str, pars]] = None,
+    def __init__(self, name: str, coordinates: Union[str, List[str]],
+                 kernel: str, kernel_pars: Optional[Dict[str, pars]] = None,
                  distance: Optional[str] = None,
                  distance_dict: Optional[DistanceDict] = None) -> None:
         """Create smoothing dimension.
@@ -91,8 +87,8 @@ class Dimension:
         ----------
         name : str
             Dimension name.
-        columns : str or list of str
-            Dimension column names.
+        coordinates : str or list of str
+            Dimension coordinates.
         kernel : {'exponential', 'tricubic', 'depth', 'identity'}
             Kernel function name.
         kernel_pars : dict of {str: number or bool}
@@ -198,14 +194,14 @@ class Dimension:
 
         >>> from weave.dimension import Dimension
         >>> age = Dimension(
-                name='age',
-                columns='age_mid',
+                name='age_id',
+                coordinates='age_mean',
                 kernel='exponential',
                 kernel_pars={'radius': 0.5}
             )
         >>> location = Dimension(
-                name='location',
-                columns=['lat', 'lon'],
+                name='location_id',
+                coordinates=['lat', 'lon'],
                 kernel='exponential',
                 kernel_pars={'radius': 0.5}
             )
@@ -214,8 +210,8 @@ class Dimension:
 
         >>> from weave.dimension import Dimension
         >>> year = Dimension(
-                name='year',
-                columns='year_id',
+                name='year_id',
+                coordinates='year_id',
                 kernel='tricubic',
                 kernel_pars={'radius': 2, 'exponent': 3}
             )
@@ -224,8 +220,8 @@ class Dimension:
 
         >>> from weave.dimension import Dimension
         >>> location = Dimension(
-                name='location',
-                columns='location_id',
+                name='location_id',
+                coordinates='location_id',
                 kernel='tricubic',
                 kernel_pars={'radius': 2, 'exponent': 3},
                 distance='dictionary',
@@ -241,8 +237,8 @@ class Dimension:
 
         >>> from weave.dimension import Dimension
         >>> location = Dimension(
-                name='location',
-                columns=['super_region', 'region', 'country'],
+                name='location_id',
+                coordinates=['super_region', 'region', 'country'],
                 kernel='depth',
                 kernel_pars={'radius': 0.9}
             )
@@ -251,14 +247,14 @@ class Dimension:
 
         >>> from weave.dimension import Dimension
         >>> location = Dimension(
-                name='location',
-                columns=['lat', 'lon'],
+                name='location_id',
+                coordinates=['lat', 'lon'],
                 kernel='identity'
             )
 
         """
         self.name = name
-        self.columns = columns  # type: ignore
+        self.coordinates = coordinates  # type: ignore
         self.kernel = kernel
         self.kernel_pars = kernel_pars  # type: ignore
         self.distance = distance  # type: ignore
@@ -304,52 +300,52 @@ class Dimension:
         self._name = name
 
     @property
-    def columns(self) -> List[str]:
-        """Get dimension column names.
+    def coordinates(self) -> List[str]:
+        """Get dimension coordinates.
 
         Returns
         -------
         list of str
-            Dimension column names.
+            Dimension coordinates.
 
         """
-        return self._columns
+        return self._coordinates
 
-    @columns.setter
-    def columns(self, columns: Union[str, List[str]]) -> None:
-        """Set dimension column names.
+    @coordinates.setter
+    def coordinates(self, coordinates: Union[str, List[str]]) -> None:
+        """Set dimension coordinates.
 
         Parameters
         ----------
-        columns : str or list of str
-            Dimension column names.
+        coordinates : str or list of str
+            Dimension coordinates.
 
         Raises
         ------
         AttributeError
-            If `columns` has already been set.
+            If `coordinates` has already been set.
         TypeError
-            If `columns` not a str or list of str.
+            If `coordinates` not a str or list of str.
         ValueError
-            If `columns` is an empty list or contains duplicates.
+            If `coordinates` is an empty list or contains duplicates.
 
         """
-        # Once set, `columns` cannot be changed
-        if hasattr(self, 'columns'):
-            raise AttributeError('`columns` cannot be changed.')
+        # Once set, `coordinates` cannot be changed
+        if hasattr(self, 'coordinates'):
+            raise AttributeError('`coordinates` cannot be changed.')
 
         # Check types
-        columns = as_list(columns)
-        if not all(isinstance(col, str) for col in columns):
-            raise TypeError('`columns` contains invalid types.')
+        coordinates = as_list(coordinates)
+        if not all(isinstance(coord, str) for coord in coordinates):
+            raise TypeError('`coordinates` contains invalid types.')
 
         # Check values
-        if len(columns) == 0:
-            raise ValueError('`columns` is an empty list.')
-        if len(columns) > len(set(columns)):
-            raise ValueError('`columns` contains duplicates.')
+        if len(coordinates) == 0:
+            raise ValueError('`coordinates` is an empty list.')
+        if len(coordinates) > len(set(coordinates)):
+            raise ValueError('`coordinates` contains duplicates.')
 
-        self._columns = columns
+        self._coordinates = coordinates
 
     @property
     def kernel(self) -> str:
@@ -494,9 +490,6 @@ class Dimension:
         if distance not in ('dictionary', 'euclidean', 'hierarchical'):
             msg = '`distance` is not a valid distance function.'
             raise ValueError(msg)
-        if distance == 'dictionary' and len(self._columns) > 1:
-            msg = 'Too many column names for `dictionary` distance.'
-            raise ValueError(msg)
 
         self._distance = distance
 
@@ -544,14 +537,14 @@ class Dimension:
 
 
 @jitclass([('name', unicode_type),
-           ('columns', ListType(unicode_type)),
+           ('coordinates', ListType(unicode_type)),
            ('kernel', unicode_type),
            ('kernel_pars', DictType(unicode_type, float32)),
            ('distance', unicode_type),
            ('distance_dict', DictType(UniTuple(float32, 2), float32))])
 class TypedDimension:
     """Smoothing dimension specifications."""
-    def __init__(self, name: str, columns: List[str], kernel: str,
+    def __init__(self, name: str, coordinates: List[str], kernel: str,
                  kernel_pars: Dict[str, float], distance: str,
                  distance_dict: Dict[Tuple[float, float], float]) -> None:
         """Create smoothing dimension.
@@ -560,8 +553,8 @@ class TypedDimension:
         ----------
         name : unicode_type
             Dimension name.
-        columns : numba.typed.List of unicode_type
-            Dimension column names.
+        coordinates : numba.typed.List of unicode_type
+            Dimension coordinates.
         kernel : {'exponential', 'tricubic', 'depth'}
             Kernel function name.
         kernel_pars : numba.typed.Dict of {unicode_type: float32}
@@ -574,7 +567,7 @@ class TypedDimension:
 
         """
         self.name = name
-        self.columns = columns
+        self.coordinates = coordinates
         self.kernel = kernel
         self.kernel_pars = kernel_pars
         self.distance = distance
@@ -591,7 +584,7 @@ def get_typed_dimension(dim: Dimension) -> TypedDimension:
 
     """
     # Get typed version of attributes
-    columns = TypedList(dim.columns)
+    coordinates = TypedList(dim.coordinates)
     if hasattr(dim, 'kernel_pars'):
         kernel_pars = get_typed_pars(dim.kernel_pars)
     else:
@@ -602,6 +595,6 @@ def get_typed_dimension(dim: Dimension) -> TypedDimension:
         distance_dict = get_typed_dict()
 
     # Create typed dimension
-    typed_dim = TypedDimension(dim.name, columns, dim.kernel, kernel_pars,
+    typed_dim = TypedDimension(dim.name, coordinates, dim.kernel, kernel_pars,
                                dim.distance, distance_dict)
     return typed_dim

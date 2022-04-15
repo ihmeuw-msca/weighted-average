@@ -33,7 +33,7 @@ not_numeric = ['dummy', True, None, [], (), {}]
 not_str = [1, 1.0, True, None, [], (), {}]
 not_bool = [1, 1.0, 'dummy', None, [], (), {}]
 not_tuple = [1, 1.0, 'dummy', True, None, [], {}]
-not_columns = not_str + [[value] for value in not_str]
+not_coordinates = not_str + [[value] for value in not_str]
 not_dict = [1, 1.0, 'dummy', True, None, [], ()]
 
 # Example kernel parameters and distance dictionary
@@ -49,12 +49,12 @@ def test_name_type(name):
         Dimension(name, 'dummy', 'exponential', kernel_pars)
 
 
-@pytest.mark.parametrize('columns', not_columns)
-def test_columns_type(columns):
-    """Raise TypeError if `columns` is not a str or list of str."""
-    if columns != []:
+@pytest.mark.parametrize('coordinates', not_coordinates)
+def test_coordinates_type(coordinates):
+    """Raise TypeError if `coordinates` is not a str or list of str."""
+    if coordinates != []:
         with pytest.raises(TypeError):
-            Dimension('dummy', columns, 'exponential', kernel_pars)
+            Dimension('dummy', coordinates, 'exponential', kernel_pars)
 
 
 @pytest.mark.parametrize('kernel', not_str)
@@ -154,14 +154,14 @@ def test_distance_dict_value_type(key1, key2, value):
 
 
 # Test constructor values
-def test_columns_empty():
-    """Raise ValueError if `columns` is an empty list."""
+def test_coordinates_empty():
+    """Raise ValueError if `coordinates` is an empty list."""
     with pytest.raises(ValueError):
         Dimension('dummy', [], 'exponential', kernel_pars)
 
 
-def test_columns_duplicates():
-    """Raise ValueError if duplicates found in `columns`."""
+def test_coordinates_duplicates():
+    """Raise ValueError if duplicates found in `coordinates`."""
     with pytest.raises(ValueError):
         Dimension('dummy', ['dummy', 'dummy'], 'exponential', kernel_pars)
 
@@ -281,13 +281,6 @@ def test_identity_distance_default():
     assert dim.distance == 'euclidean'
 
 
-def test_dictionary_columns_one():
-    """Raise ValueError if length of `columns` > 1."""
-    with pytest.raises(ValueError):
-        Dimension('dummy', ['dummy1', 'dummy2'], 'dictionary', kernel_pars,
-                  distance_dict)
-
-
 def test_dictionary_distance_dict():
     """Raise ValueError if `distance_dict` if not passed."""
     with pytest.raises(ValueError):
@@ -330,11 +323,11 @@ def test_name_immutable():
         dim.name = 'spam'
 
 
-def test_columns_immutable():
-    """Raise AttributeError if attempt to reset `columns`."""
+def test_coordinates_immutable():
+    """Raise AttributeError if attempt to reset `coordinates`."""
     with pytest.raises(AttributeError):
         dim = Dimension('dummy', 'dummy', 'exponential', kernel_pars)
-        dim.columns = ['dummy1', 'dummy2']
+        dim.coordinates = ['dummy1', 'dummy2']
 
 
 def test_kernel_immutable():
