@@ -9,9 +9,11 @@ from pandas import DataFrame  # type: ignore
 from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
 from weave.dimension import Dimension, TypedDimension, get_typed_dimension
-from weave.distance import dictionary, euclidean, hierarchical
+from weave.distance import dictionary, euclidean, hierarchical, get_typed_dict
 from weave.kernels import exponential, depth, tricubic
 from weave.utils import as_list, flatten
+
+WeightDict = Dict[Tuple[float, float], float]
 
 
 class Smoother:
@@ -218,7 +220,10 @@ class Smoother:
         points = self.get_points(data)
 
         # Cast dimensions as jitclass objects
-        dim_list = self.get_typed_dimensions()
+        if precompute:
+            dim_list = self.get_typed_dimensions(data)
+        else:
+            dim_list = self.get_typed_dimensions()
 
         # Calculate smoothed values
         if parallel:
@@ -415,8 +420,16 @@ class Smoother:
         dim_cols = [col for dim in self._dimensions for col in dim.columns]
         return np.ascontiguousarray(data[dim_cols].values, dtype=np.float32)
 
-    def get_typed_dimensions(self) -> List[TypedDimension]:
+    def get_typed_dimensions(self, data=None) -> List[TypedDimension]:
         """Get smoothing dimensions cast as jitclass objects.
+
+        If `data` is not None, precompute dimension weights and store
+        in `distance_dict`.
+
+        Parameters
+        ----------
+        data : pandas.DataFrame, optional
+            Input data structure.
 
         Returns
         -------
@@ -426,8 +439,63 @@ class Smoother:
         """
         dim_list = TypedList()
         for dim in self._dimensions:
-            dim_list.append(get_typed_dimension(dim))
+            if data is None:
+                dim_list.append(get_typed_dimension(dim))
+            else:
+                dim_new = Dimension(
+                    name=dim.name,
+                    columns=dim.columns,
+                    kernel='identity',
+                    kernel_pars=dim.kernel_pars,
+                    distance='dictionary',
+                    distance_dict=get_weight_dict(dim, data)
+                )
+                dim_list.append(get_typed_dimension(dim_new))
         return dim_list
+
+
+def get_weight_dict(dim: Dimension, data: DataFrame) -> WeightDict:
+    """Get dictionary of precomputed dimension smoothing weights.
+
+    Parameters
+    ----------
+    dim : Dimension
+        Smoothing dimension specifications.
+    data : pandas.DataFrame
+        Input data strucutre.
+
+    Returns
+    -------
+    dict of {(float, float): float}
+        Dictionary of smoothing weights.
+
+    """
+    if hasattr(dim, 'distance_dict'):
+        if dim.kernel == 'identity':
+            dim_dict = dim.distance_dict
+        else:
+            dim_dists = np.array(list(dim_dict.values()))
+            dim_weights = get_dim_weights(dim_dists, dim.kernel,
+                                          dim.kernel_pars)
+            dim_dict = {key: dim_weights[ii]
+                        for ii, key in enumerate(dim_dict.keys())}
+    else:
+        dim_names = np.array(data[dim.name].unique, dtype=np.float32)
+        if dim.columns is None:
+            dim_cols = np.atleast_2d(dim_names).T
+        else:
+            dim_cols = np.array(data[dim.columns].drop_duplicates().values,
+                                dtype=np.float32)
+        dim_dict = {}
+        for idx_x, x in enumerate(dim_names):
+            idx_Y = np.where(dim_names >= x)[0]
+            dim_dists = get_dim_distances(dim_cols[idx_x], dim_cols[idx_Y],
+                                          dim.distance, get_typed_dict())
+            dim_weights = get_dim_weights(dim_dists, dim.kernel,
+                                          dim.kernel_pars)
+            dim_dict.update({(x, dim_names[idx_y]): dim_weights[ii]
+                             for ii, idx_y in enumerate(idx_Y)})
+    return dim_dict
 
 
 @njit
