@@ -1,5 +1,14 @@
 # pylint: disable=C0103, E0611, R0902, R0903, R0913
-"""Smoothing dimension specifications."""
+"""Smoothing dimension specifications.
+
+New requirements for Dimension:
+* `name` must correspond to column name with unique ids
+* `columns` is optional if each dimension point is only 1D
+    - will be automatically assigned value from `name`
+* update documentation
+* may need updates to checks and tests (smoother, dimension, tests)
+
+"""
 from typing import Dict, List, Optional, Tuple, Union
 
 from numba.experimental import jitclass  # type: ignore
