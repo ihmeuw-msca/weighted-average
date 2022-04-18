@@ -1,4 +1,4 @@
-# pylint: disable=C0103, E0611, E1133, R0913, R0914
+# pylint: disable=C0103, E0611, E1133, R0912, R0913, R0914
 """Smooth data across multiple dimensions using weighted averages."""
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -46,20 +46,20 @@ class Smoother:
         >>> from weave.dimension import Dimension
         >>> from weave.smoother import Smoother
         >>> age = Dimension(
-                name='age',
-                columns='age_mid',
+                name='age_id',
+                coordinates='age_mean',
                 kernel='exponential',
                 kernel_pars={'radius': 1}
             )
         >>> year = Dimension(
-                name='year',
-                columns='year_id',
+                name='year_id',
+                coordinates='year_id',
                 kernel='tricubic',
                 kernel_pars={'radius': 40, 'exponent': 0.5}
             )
         >>> location = Dimension(
-                name='location',
-                columns=['super_region', 'region', 'country'],
+                name='location_id',
+                coordinates=['super_region', 'region', 'country'],
                 kernel='depth',
                 kernel_pars={'radius': 0.9}
             )
@@ -111,9 +111,9 @@ class Smoother:
         name_list = [dim.name for dim in dimensions]
         if len(name_list) > len(set(name_list)):
             raise ValueError('Duplicate names found in `dimensions`.')
-        col_list = flatten([dim.columns for dim in dimensions])
-        if len(col_list) > len(set(col_list)):
-            raise ValueError('Duplicate columns found in `dimensions`.')
+        coord_list = flatten([dim.coordinates for dim in dimensions])
+        if len(coord_list) > len(set(coord_list)):
+            raise ValueError('Duplicate coordinates found in `dimensions`.')
 
         self._dimensions = dimensions
 
@@ -170,8 +170,10 @@ class Smoother:
 
         >>> from pandas import DataFrame
         >>> data = DataFrame({
-                'age_mid': [0.5, 1.5, 2.5, 3.5, 3.5],
+                'age_id': [1, 2, 3, 4, 4],
+                'age_mean': [0.5, 1.5, 2.5, 3.5, 3.5],
                 'year_id': [1980, 1990, 2000, 2010, 2020],
+                'location_id': [5, 5, 6, 7, 9],
                 'super_region': [1, 1, 1, 1, 2],
                 'region': [3, 3, 3, 4, 8],
                 'country': [5, 5, 6, 7, 9],
@@ -179,33 +181,33 @@ class Smoother:
                 'fraction': [0.1, 0.2, 0.3, 0.4, 0.5]
             })
         >>> smoother(data, ['count', 'fraction'])
-           age_mid  ...  count  fraction  count_smooth  fraction_smooth
-        0      0.5  ...    1.0       0.1      1.249567         0.124957
-        1      1.5  ...    2.0       0.2      2.070433         0.207043
-        2      2.5  ...    3.0       0.3      2.913803         0.291380
-        3      3.5  ...    4.0       0.4      3.988203         0.398820
-        4      3.5  ...    5.0       0.5      5.000000         0.500000
+           age_id  ...  count  fraction  count_smooth  fraction_smooth
+        0      1  ...    1.0       0.1      1.249567         0.124957
+        1      2  ...    2.0       0.2      2.070433         0.207043
+        2      3  ...    3.0       0.3      2.913803         0.291380
+        3      4  ...    4.0       0.4      3.988203         0.398820
+        4      4  ...    5.0       0.5      5.000000         0.500000
 
         Create smoothed version of one column for all points using a
         subset of points.
 
         >>> data['fit'] = [True, False, False, True, True]
         >>> smoother(data, 'count', fit='fit')
-           age_mid  ...  count  fraction    fit  count_smooth
-        0      0.5  ...    1.0       0.1   True      1.032967
-        1      1.5  ...    2.0       0.2  False      1.032967
-        2      2.5  ...    3.0       0.3  False      1.300000
-        3      3.5  ...    4.0       0.4   True      3.967033
-        4      3.5  ...    5.0       0.5   True      5.000000
+           age_id  ...  count  fraction    fit  count_smooth
+        0      1  ...    1.0       0.1   True      1.032967
+        1      2  ...    2.0       0.2  False      1.032967
+        2      3  ...    3.0       0.3  False      1.300000
+        3      4  ...    4.0       0.4   True      3.967033
+        4      4  ...    5.0       0.5   True      5.000000
 
         Create a smoothed version of one column for a subset of points
         using all points.
 
         >>> data['predict'] = [False, True, True, False, False]
         >>> smoother(data, 'fraction', predict='predict')
-           age_mid  ...  count  fraction  predict  fraction_smooth
-        0      1.5  ...    2.0       0.2     True         0.207043
-        1      2.5  ...    3.0       0.3     True         0.291380
+           age_id  ...  count  fraction  predict  fraction_smooth
+        0      2  ...    2.0       0.2     True         0.207043
+        1      3  ...    3.0       0.3     True         0.291380
 
         """
         # Check input
@@ -318,22 +320,25 @@ class Smoother:
         Raises
         ------
         KeyError
-            If `dimensions.columns`, `columns`, `fit`, or `predict` not
-            in `data`.
+            If `dimension.name`, `dimensions.coordinates`, `columns`,
+            `fit`, or `predict` not in `data`.
         TypeError
-            If `dimensions.columns`, `columns`, `fit`, or `predict` in
-            `data` contain invalid types.
+            If `dimension.name`, `dimensions.coordinates`, `columns`,
+            `fit`, or `predict` in `data` contain invalid types.
         ValueError
             If `data` contains NaNs or Infs.
 
         """
         # Get column names
-        dim_cols = [col for dim in self._dimensions for col in dim.columns]
+        names = [dim.name for dim in self._dimensions]
+        coords = flatten([dim.coordinates for dim in self._dimensions])
         cols = as_list(columns)
 
         # Check keys
-        if not all(col in data for col in dim_cols):
-            raise KeyError('Not all `dimensions.columns` in `data`.')
+        if not all(name in data for name in names):
+            raise KeyError('Not all `dimension.name` in `data`.')
+        if not all(coord in data for coord in coords):
+            raise KeyError('Not all `dimension.coordinates` in `data`.')
         if not all(col in data for col in cols):
             raise KeyError('Not all `columns` in `data`.')
         if fit is not None and fit not in data:
@@ -342,8 +347,11 @@ class Smoother:
             raise KeyError('`predict` not in `data`.')
 
         # Check types
-        if not all(is_numeric_dtype(data[col]) for col in dim_cols):
-            raise TypeError('Not all `dimensions.columns` data int or float.')
+        if not all(is_numeric_dtype(data[name]) for name in names):
+            raise TypeError('Not all `dimension.name` data int or float.')
+        if not all(is_numeric_dtype(data[coord]) for coord in coords):
+            msg = 'Not all `dimension.coordinates` data int or float.'
+            raise TypeError(msg)
         if not all(is_numeric_dtype(data[col]) for col in cols):
             raise TypeError('Not all `columns` data int or float.')
         if fit is not None:
@@ -356,7 +364,7 @@ class Smoother:
         # Check values
         if data.isna().any(None):
             raise ValueError('`data` contains NaNs.')
-        if np.isinf(data[dim_cols + cols]).any(None):
+        if np.isinf(data[names + coords + cols]).any(None):
             raise ValueError('`data` contains Infs.')
 
     @staticmethod
@@ -417,8 +425,8 @@ class Smoother:
             Point coordinates.
 
         """
-        dim_cols = [col for dim in self._dimensions for col in dim.columns]
-        return np.ascontiguousarray(data[dim_cols].values, dtype=np.float32)
+        coords = flatten([dim.coordinates for dim in self._dimensions])
+        return np.ascontiguousarray(data[coords].values, dtype=np.float32)
 
     def get_typed_dimensions(self, data=None) -> List[TypedDimension]:
         """Get smoothing dimensions cast as jitclass objects.
@@ -444,7 +452,7 @@ class Smoother:
             else:
                 dim_precompute = Dimension(
                     name=dim.name,
-                    columns=dim.columns,
+                    coordinates=dim.coordinates,
                     kernel='identity',
                     kernel_pars=dim.kernel_pars,
                     distance='dictionary',
@@ -481,15 +489,12 @@ def get_weight_dict(dim: Dimension, data: DataFrame) -> WeightDict:
                         for ii, key in enumerate(dim_dict.keys())}
     else:
         dim_names = np.array(data[dim.name].unique, dtype=np.float32)
-        if dim.columns is None:
-            dim_cols = np.atleast_2d(dim_names).T
-        else:
-            dim_cols = np.array(data[dim.columns].drop_duplicates().values,
-                                dtype=np.float32)
+        dim_coords = np.array(data[dim.coordinates].drop_duplicates().values,
+                              dtype=np.float32)
         dim_dict = {}
         for idx_x, x in enumerate(dim_names):
             idx_Y = np.where(dim_names >= x)[0]
-            dim_dists = get_dim_distances(dim_cols[idx_x], dim_cols[idx_Y],
+            dim_dists = get_dim_distances(dim_coords[idx_x], dim_coords[idx_Y],
                                           dim.distance, get_typed_dict())
             dim_weights = get_dim_weights(dim_dists, dim.kernel,
                                           dim.kernel_pars)
