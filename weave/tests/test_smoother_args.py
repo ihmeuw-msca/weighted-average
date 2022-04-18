@@ -30,7 +30,8 @@ smoother = Smoother([age, year, location])
 
 # Example data
 data = DataFrame({
-    'age_id': [10, 20, 30, 40, 50],
+    'age_id': [1, 2, 3, 4, 4],
+    'age_mean': [0.5, 1.5, 2.5, 3.5, 3.5],
     'year_id': [1980, 1990, 2000, 2010, 2020],
     'location_id': [5, 5, 6, 7, 9],
     'level_1': [1, 1, 1, 1, 2],
