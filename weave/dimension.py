@@ -38,7 +38,7 @@ class Dimension:
         `['super_region', 'region', 'country']`. Can be equivalent to
         `name` attribute if dimension is 1D.
 
-    kernel : {'exponential', 'tricubic', 'depth', 'identity'}
+    kernel : {'identity', 'exponential', 'tricubic', 'depth'}
         Kernel function name.
 
         Name of kernel function to compute smoothing weights.
@@ -53,7 +53,7 @@ class Dimension:
         Dictionary of kernel function parameters corresponding to
         `kernel` attribute.
 
-    distance : {'dictionary', 'euclidean', 'hierarchical'}
+    distance : {'euclidean', 'hierarchical', 'dictionary'}
         Distance function name.
 
         Name of distance function to compute distance between points.
@@ -77,8 +77,9 @@ class Dimension:
 
     """
 
-    def __init__(self, name: str, coordinates: Union[str, List[str]],
-                 kernel: str, kernel_pars: Optional[Dict[str, pars]] = None,
+    def __init__(self, name: str, coordinates: Union[str, List[str]] = None,
+                 kernel: str = 'identity',
+                 kernel_pars: Optional[Dict[str, pars]] = None,
                  distance: Optional[str] = None,
                  distance_dict: Optional[DistanceDict] = None) -> None:
         """Create smoothing dimension.
@@ -87,10 +88,12 @@ class Dimension:
         ----------
         name : str
             Dimension name.
-        coordinates : str or list of str
-            Dimension coordinates.
-        kernel : {'exponential', 'tricubic', 'depth', 'identity'}
-            Kernel function name.
+        coordinates : str or list of str, optional
+            Dimension coordinates, if different from `name`. If None,
+            set equal to `name`.
+        kernel : {'identity', 'exponential', 'tricubic', 'depth'}, optional
+            Kernel function name. Default is 'identity', where weights
+            are equal to distances.
         kernel_pars : dict of {str: number or bool}
             Kernel function parameters. Optional if `kernel` is
             'identity'.
@@ -117,6 +120,10 @@ class Dimension:
                - Parameter
                - Parameter type
                - Default distance
+            * - ``identity``
+               - ``normalize``
+               - Boolean, optional (default is ``False``)
+               -  ``euclidean``
              * - ``exponential``
                - ``radius``
                - Positive number
@@ -145,10 +152,6 @@ class Dimension:
                - ``normalize``
                - Boolean, optional (default is ``True``)
                -
-             * - ``identity``
-               - ``normalize``
-               - Boolean, optional (default is ``False``)
-               -  ``euclidean``
 
         * The optional kernel parameter `normalize` indicates whether
           or not the preceding dimension weights should be normalized
@@ -168,9 +171,10 @@ class Dimension:
 
         * The parameters for the identity kernel are optional because
           the weight values are equal to the distance values. For
-          increased efficiency, you can pre-compute all dimension
+          increased efficiency, you can precompute all dimension
           weights as a dictionary and then use the identity kernel with
-          the dictionary distance.
+          the dictionary distance. This is done automatically within
+          :func:`weave.smoother.__call__` if `precompute` is True.
 
         * The parameter `distance_dict` contains the user-defined
           distances between points if the distance attribute is
@@ -211,7 +215,6 @@ class Dimension:
         >>> from weave.dimension import Dimension
         >>> year = Dimension(
                 name='year_id',
-                coordinates='year_id',
                 kernel='tricubic',
                 kernel_pars={'radius': 2, 'exponent': 3}
             )
@@ -221,7 +224,6 @@ class Dimension:
         >>> from weave.dimension import Dimension
         >>> location = Dimension(
                 name='location_id',
-                coordinates='location_id',
                 kernel='tricubic',
                 kernel_pars={'radius': 2, 'exponent': 3},
                 distance='dictionary',
@@ -312,20 +314,21 @@ class Dimension:
         return self._coordinates
 
     @coordinates.setter
-    def coordinates(self, coordinates: Union[str, List[str]]) -> None:
+    def coordinates(self, coordinates: Optional[Union[str, List[str]]]) \
+            -> None:
         """Set dimension coordinates.
 
         Parameters
         ----------
-        coordinates : str or list of str
-            Dimension coordinates.
+        coordinates : str or list of str, optional
+            Dimension coordinates. If None, set equal to `name`.
 
         Raises
         ------
         AttributeError
             If `coordinates` has already been set.
         TypeError
-            If `coordinates` not a str or list of str.
+            If `coordinates` not a str or list of str or None.
         ValueError
             If `coordinates` is an empty list or contains duplicates.
 
@@ -333,6 +336,10 @@ class Dimension:
         # Once set, `coordinates` cannot be changed
         if hasattr(self, 'coordinates'):
             raise AttributeError('`coordinates` cannot be changed.')
+
+        # Set default
+        if coordinates is None:
+            coordinates = self._name
 
         # Check types
         coordinates = as_list(coordinates)
@@ -365,7 +372,7 @@ class Dimension:
 
         Parameters
         ----------
-        kernel : {'exponential', 'tricubic', 'depth', 'identity'}
+        kernel : {'identity', 'exponential', 'tricubic', 'depth'}
             Kernel function name.
 
         Raises
@@ -387,7 +394,7 @@ class Dimension:
             raise TypeError('`kernel` is not a str.')
 
         # Check value
-        if kernel not in ('exponential', 'tricubic', 'depth', 'identity'):
+        if kernel not in ('identity', 'exponential', 'tricubic', 'depth'):
             raise ValueError('`kernel` is not a valid kernel function.')
 
         self._kernel = kernel
@@ -469,6 +476,7 @@ class Dimension:
             If `distance` is not a str or None.
         ValueError
             If `distance` is not a valid distance function.
+            If `distance` is 'dictionary' but `coordinates` not 1D.
 
         """
         # Once set, `distance` cannot be changed
@@ -489,6 +497,9 @@ class Dimension:
         # Check value
         if distance not in ('dictionary', 'euclidean', 'hierarchical'):
             msg = '`distance` is not a valid distance function.'
+            raise ValueError(msg)
+        if distance == 'dictionary' and len(self._coordinates) > 1:
+            msg = "`distance` is 'dictionary' but `coordinates` not 1D."
             raise ValueError(msg)
 
         self._distance = distance
@@ -585,10 +596,7 @@ def get_typed_dimension(dim: Dimension) -> TypedDimension:
     """
     # Get typed version of attributes
     coordinates = TypedList(dim.coordinates)
-    if hasattr(dim, 'kernel_pars'):
-        kernel_pars = get_typed_pars(dim.kernel_pars)
-    else:
-        kernel_pars = get_typed_pars()
+    kernel_pars = get_typed_pars(dim.kernel_pars)
     if hasattr(dim, 'distance_dict'):
         distance_dict = get_typed_dict(dim.distance_dict)
     else:

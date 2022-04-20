@@ -22,6 +22,10 @@ other examples of valid input. Could do this with 'parametrize' or
 TODO:
 * Add test for `get_typed_dimension()`
 
+* Behavior for default `coordinates`, now an optional kwarg
+* Kernel default
+* If distance is dictionary, coordinates must be 1D
+
 """
 import pytest
 
@@ -52,7 +56,7 @@ def test_name_type(name):
 @pytest.mark.parametrize('coordinates', not_coordinates)
 def test_coordinates_type(coordinates):
     """Raise TypeError if `coordinates` is not a str or list of str."""
-    if coordinates != []:
+    if coordinates is not None and coordinates != []:
         with pytest.raises(TypeError):
             Dimension('dummy', coordinates, 'exponential', kernel_pars)
 
