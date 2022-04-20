@@ -22,10 +22,6 @@ other examples of valid input. Could do this with 'parametrize' or
 TODO:
 * Add test for `get_typed_dimension()`
 
-* Behavior for default `coordinates`, now an optional kwarg
-* Kernel default
-* If distance is dictionary, coordinates must be 1D
-
 """
 import pytest
 

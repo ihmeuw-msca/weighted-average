@@ -10,7 +10,7 @@ from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
 from weave.dimension import Dimension, TypedDimension, get_typed_dimension
 from weave.distance import dictionary, euclidean, hierarchical, get_typed_dict
-from weave.kernels import exponential, depth, tricubic
+from weave.kernels import exponential, depth, tricubic, get_typed_pars
 from weave.utils import as_list, flatten
 
 WeightDict = Dict[Tuple[float, float], float]
@@ -483,12 +483,12 @@ def get_weight_dict(dim: Dimension, data: DataFrame) -> WeightDict:
             dim_dict = dim.distance_dict
         else:
             dim_dists = np.array(list(dim_dict.values()))
-            dim_weights = get_dim_weights(dim_dists, dim.kernel,
-                                          dim.kernel_pars)
+            kernel_pars = get_typed_pars(dim.kernel_pars)
+            dim_weights = get_dim_weights(dim_dists, dim.kernel, kernel_pars)
             dim_dict = {key: dim_weights[ii]
                         for ii, key in enumerate(dim_dict.keys())}
     else:
-        dim_names = np.array(data[dim.name].unique, dtype=np.float32)
+        dim_names = np.array(data[dim.name].unique(), dtype=np.float32)
         dim_coords = np.array(data[dim.coordinates].drop_duplicates().values,
                               dtype=np.float32)
         dim_dict = {}
@@ -496,8 +496,8 @@ def get_weight_dict(dim: Dimension, data: DataFrame) -> WeightDict:
             idx_Y = np.where(dim_names >= x)[0]
             dim_dists = get_dim_distances(dim_coords[idx_x], dim_coords[idx_Y],
                                           dim.distance, get_typed_dict())
-            dim_weights = get_dim_weights(dim_dists, dim.kernel,
-                                          dim.kernel_pars)
+            kernel_pars = get_typed_pars(dim.kernel_pars)
+            dim_weights = get_dim_weights(dim_dists, dim.kernel, kernel_pars)
             dim_dict.update({(x, dim_names[idx_y]): dim_weights[ii]
                              for ii, idx_y in enumerate(idx_Y)})
     return dim_dict
@@ -639,7 +639,7 @@ def get_weights(dim_list: List[TypedDimension], fit_points: np.ndarray,
     # Calculate weights one dimension at a time
     idx_start = 0
     for dim in dim_list:
-        idx_stop = idx_start + len(dim.columns)
+        idx_stop = idx_start + len(dim.coordinates)
         idx_dim = np.arange(idx_start, idx_stop)
         dim_dists = get_dim_distances(pred_point[idx_dim],
                                       fit_points[:, idx_dim], dim.distance,
