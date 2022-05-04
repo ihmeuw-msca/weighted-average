@@ -458,7 +458,6 @@ class Smoother:
             else:
                 dim_precompute = Dimension(
                     name=dim.name,
-                    coordinates=dim.coordinates,
                     kernel='identity',
                     kernel_pars=dim.kernel_pars,
                     distance='dictionary',
