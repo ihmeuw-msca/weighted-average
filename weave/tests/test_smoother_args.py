@@ -188,6 +188,15 @@ def test_predict_in_data():
         smoother(data, 'residual', predict='dummy')
 
 
+def test_coordinates_in_distance_dict():
+    """Raise KeyError if not all `coordinates` in `distance_dict`."""
+    with pytest.raises(KeyError):
+        dummy = Dimension('age_id', distance='dictionary',
+                          distance_dict={(1, 1): 0})
+        smoother2 = Smoother([dummy, year, location])
+        smoother2(data, 'residual')
+
+
 # Test data types
 def test_data_name_type():
     """Raise TypeError if `dimension.name` not int or float."""

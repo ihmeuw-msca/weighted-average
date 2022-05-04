@@ -1,5 +1,6 @@
 # pylint: disable=C0103, E0611, E1133, R0912, R0913, R0914
 """Smooth data across multiple dimensions using weighted averages."""
+from itertools import product
 from typing import Dict, List, Optional, Tuple, Union
 
 from numba import njit, prange  # type: ignore
@@ -322,6 +323,8 @@ class Smoother:
         KeyError
             If `dimension.name`, `dimensions.coordinates`, `columns`,
             `fit`, or `predict` not in `data`.
+            If `dimension.distance` is 'dictionary', but not all
+            `dimension.coordinates` in `dimension.distance_dict`.
         TypeError
             If `dimension.name`, `dimensions.coordinates`, `columns`,
             `fit`, or `predict` in `data` contain invalid types.
@@ -345,6 +348,16 @@ class Smoother:
             raise KeyError('`fit` not in `data`.')
         if predict is not None and predict not in data:
             raise KeyError('`predict` not in `data`.')
+
+        # Check dictionary keys
+        for dim in self._dimensions:
+            if dim.distance == 'dictionary':
+                coordinates = data[dim.coordinates[0]].unique()
+                for key in product(coordinates, repeat=2):
+                    if key[0] <= key[1] and key not in dim.distance_dict:
+                        msg = 'Not all `dimension.coordinates` in '
+                        msg += '`dimension.distance_dict`.'
+                        raise KeyError(msg)
 
         # Check types
         if not all(is_numeric_dtype(data[name]) for name in names):
@@ -496,20 +509,29 @@ def get_weight_dict(dim: Dimension, data: DataFrame) -> WeightDict:
         if any(dim_points.groupby(dim.coordinates).size() != 1):
             raise ValueError('`coordinates` maps to multiple `name`.')
 
-    # Create weight dictionary
+    # Get points, kernel, and distance_dict
     dim_points = np.array(dim_points.values, dtype=np.float32)
     dim_names = dim_points[:, 0]
     dim_coords = dim_points[:, 1:]
-    dim_dict = {}
+    kernel_pars = get_typed_pars(dim.kernel_pars)
+    if dim.distance == 'dictionary':
+        distance_dict = get_typed_dict(dim.distance_dict)
+    else:
+        distance_dict = get_typed_dict()
+
+    # Create weight dictionary
+    weight_dict = {}
     for idx_x, x in enumerate(dim_names):
         idx_Y = np.where(dim_names >= x)[0]
         dim_dists = get_dim_distances(dim_coords[idx_x], dim_coords[idx_Y],
-                                      dim.distance, get_typed_dict())
-        kernel_pars = get_typed_pars(dim.kernel_pars)
-        dim_weights = get_dim_weights(dim_dists, dim.kernel, kernel_pars)
-        dim_dict.update({(x, dim_names[idx_y]): dim_weights[ii]
-                         for ii, idx_y in enumerate(idx_Y)})
-    return dim_dict
+                                      dim.distance, distance_dict)
+        if dim.kernel == 'identity':
+            dim_weights = dim_dists
+        else:
+            dim_weights = get_dim_weights(dim_dists, dim.kernel, kernel_pars)
+        weight_dict.update({(x, dim_names[idx_y]): dim_weights[ii]
+                            for ii, idx_y in enumerate(idx_Y)})
+    return weight_dict
 
 
 @njit
