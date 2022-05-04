@@ -493,9 +493,10 @@ def get_weight_dict(dim: Dimension, data: DataFrame) -> WeightDict:
             dim_dict = {key: dim_weights[ii]
                         for ii, key in enumerate(dim_dict.keys())}
     else:
-        dim_names = np.array(data[dim.name].unique(), dtype=np.float32)
-        dim_coords = np.array(data[dim.coordinates].drop_duplicates().values,
-                              dtype=np.float32)
+        dim_points = data[[dim.name] + dim.coordinates].drop_duplicates()
+        dim_points = np.array(dim_points.values, dtype=np.float32)
+        dim_names = dim_points[:, 0]
+        dim_coords = dim_points[:, 1:]
         dim_dict = {}
         for idx_x, x in enumerate(dim_names):
             idx_Y = np.where(dim_names >= x)[0]
