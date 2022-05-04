@@ -2,22 +2,7 @@
 
 Currently only testing a simple example for most cases, not testing
 other examples of valid input. Could do this with 'parametrize' or
-'hypothesis'. Examples of valid input:
-* `kernel` == 'exponential'
-    - `dimension` in {'dummy', ['dummy1', 'dummy2']}
-    - `pars` == {'radius': 0.5}
-    - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
-* `kernel == 'tricubic'
-    - `dimension` in {'dummy', ['dummy1', 'dummy2']}
-    - `pars` == {'radius': 0.5, 'exponent': 3}
-    - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
-* `kernel == 'depth'
-    - `dimension` in {'dummy', ['dummy1', 'dummy2']}
-    - `pars` == {'radius': 0.5, 'normalize': True}
-    - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
-* `kernel` == 'identity'
-    - `dimension` in {'dummy', ['dummy1', 'dummy2']}
-    - `distance` in {'dictionary', 'euclidean', 'hierarchical', None}
+'hypothesis'.
 
 TODO:
 * Add test for `get_typed_dimension()`
@@ -162,10 +147,22 @@ def test_coordinates_duplicates():
         Dimension('dummy', ['dummy', 'dummy'])
 
 
+def test_coordinates_default():
+    """`coordinates` set to [`name`] if not supplied."""
+    dim = Dimension('dummy')
+    assert dim.coordinates == [dim.name]
+
+
 def test_kernel_value():
     """Raise ValueError if `kernel` is not valid."""
     with pytest.raises(ValueError):
         Dimension('dummy', kernel='dummy')
+
+
+def test_kernel_default():
+    """`kernel` set to 'identity' if not supplied."""
+    dim = Dimension('dummy')
+    assert dim.kernel == 'identity'
 
 
 def test_exponential_radius_exist():
@@ -302,6 +299,13 @@ def test_distance_dict_value_nonnegative(key1, key2, value):
     with pytest.raises(ValueError):
         bad_dict = {(key1, key2): value}
         Dimension('dummy', distance='dictionary', distance_dict=bad_dict)
+
+
+def test_distance_dict_coordinates():
+    """Raise ValueError if `coordinates` not 1D."""
+    with pytest.raises(ValueError):
+        Dimension('dummy', ['dummy1', 'dummy2'], distance='dictionary',
+                  distance_dict=distance_dict)
 
 
 # Test setter behavior
