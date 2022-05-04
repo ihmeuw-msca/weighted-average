@@ -2,6 +2,7 @@
 
 TODO:
 * Test behavior of functions within smoother module
+  (create separate module)
 
 """
 import pytest
@@ -20,16 +21,17 @@ not_dimensions = value_list + [[value] for value in value_list]
 not_columns = not_str + [[value] for value in not_str]
 
 # Example smoother
-age = Dimension('age', 'age_id', 'exponential', {'radius': 1}, 'euclidean')
-year = Dimension('year', 'year_id', 'tricubic',
+age = Dimension('age_id', 'age_id', 'exponential', {'radius': 1}, 'euclidean')
+year = Dimension('year_id', 'year_id', 'tricubic',
                  {'radius': 40, 'exponent': 0.5}, 'euclidean')
-location = Dimension('location', ['level_1', 'level_2', 'level_3'], 'depth',
+location = Dimension('location_id', ['level_1', 'level_2', 'level_3'], 'depth',
                      {'radius': 0.9}, 'hierarchical')
 smoother = Smoother([age, year, location])
 
 # Example data
 data = DataFrame({
-    'age_id': [10, 20, 30, 40, 50],
+    'age_id': [1, 2, 3, 4, 4],
+    'age_mean': [0.5, 1.5, 2.5, 3.5, 3.5],
     'year_id': [1980, 1990, 2000, 2010, 2020],
     'location_id': [5, 5, 6, 7, 9],
     'level_1': [1, 1, 1, 1, 2],
@@ -70,16 +72,16 @@ def test_duplicate_names(kernel1, kernel2):
         Smoother([dim1, dim2])
 
 
-@pytest.mark.parametrize('columns1', ['dummy1', ['dummy1', 'dummy2']])
-@pytest.mark.parametrize('columns2', ['dummy1', ['dummy1', 'dummy2']])
+@pytest.mark.parametrize('coords1', ['dummy1', ['dummy1', 'dummy2']])
+@pytest.mark.parametrize('coords2', ['dummy1', ['dummy1', 'dummy2']])
 @pytest.mark.parametrize('kernel1', ['exponential', 'tricubic', 'depth'])
 @pytest.mark.parametrize('kernel2', ['exponential', 'tricubic', 'depth'])
-def test_duplicate_columns(columns1, columns2, kernel1, kernel2):
-    """Raise ValueError if duplicate columns in `dimensions`."""
+def test_duplicate_columns(coords1, coords2, kernel1, kernel2):
+    """Raise ValueError if duplicate coordinates in `dimensions`."""
     with pytest.raises(ValueError):
         pars = {'radius': 0.5, 'exponent': 3}
-        dim1 = Dimension('dummy1', columns1, kernel1, pars)
-        dim2 = Dimension('dummy2', columns2, kernel2, pars)
+        dim1 = Dimension('dummy1', coords1, kernel1, pars)
+        dim2 = Dimension('dummy2', coords2, kernel2, pars)
         Smoother([dim1, dim2])
 
 
@@ -122,9 +124,16 @@ def test_loop_type(loop):
         smoother(data, 'residual', loop=loop)
 
 
+@pytest.mark.parametrize('precompute', not_bool)
+def test_precomptue_type(precompute):
+    """Raise TypeError if `precompute` is not a bool."""
+    with pytest.raises(TypeError):
+        smoother(data, 'residual', precompute=precompute)
+
+
 @pytest.mark.parametrize('parallel', not_bool)
 def test_parallel_type(parallel):
-    """RaiseTypeError if `parallel` is not a bool."""
+    """Raise TypeError if `parallel` is not a bool."""
     with pytest.raises(TypeError):
         smoother(data, 'residual', parallel=parallel)
 
@@ -143,12 +152,20 @@ def test_columns_duplicates():
 
 
 # Test data keys
-@pytest.mark.parametrize('columns', ['dummy', ['location_id', 'dummy']])
-def test_dimensions_in_data(columns):
-    """Raise KeyError if `dimensions.columns` not in `data`."""
+def test_names_in_data():
+    """Raise KeyError if `dimension.name` not in `data`."""
     with pytest.raises(KeyError):
-        dummy = Dimension('dummy', columns, 'exponential', {'radius': 0.9})
-        smoother2 = Smoother([age, year, location, dummy])
+        dummy = Dimension('dummy', 'age_id', 'exponential', {'radius': 0.9})
+        smoother2 = Smoother([dummy, year, location])
+        smoother2(data, 'residual')
+
+
+@pytest.mark.parametrize('coords', ['dummy', ['age_id', 'dummy']])
+def test_coordinates_in_data(coords):
+    """Raise KeyError if `dimension.coordinates` not in `data`."""
+    with pytest.raises(KeyError):
+        dummy = Dimension('age_id', coords, 'exponential', {'radius': 0.9})
+        smoother2 = Smoother([dummy, year, location])
         smoother2(data, 'residual')
 
 
@@ -171,13 +188,30 @@ def test_predict_in_data():
         smoother(data, 'residual', predict='dummy')
 
 
+def test_coordinates_in_distance_dict():
+    """Raise KeyError if not all `coordinates` in `distance_dict`."""
+    with pytest.raises(KeyError):
+        dummy = Dimension('age_id', distance='dictionary',
+                          distance_dict={(1, 1): 0})
+        smoother2 = Smoother([dummy, year, location])
+        smoother2(data, 'residual')
+
+
 # Test data types
-@pytest.mark.parametrize('columns', ['name', ['location_id', 'name']])
-def test_data_dimensions_type(columns):
-    """Raise TypeError if `dimensions.columns` are not int or float."""
+def test_data_name_type():
+    """Raise TypeError if `dimension.name` not int or float."""
     with pytest.raises(TypeError):
-        dummy = Dimension('dummy', columns, 'exponential', {'radius': 0.9})
-        smoother2 = Smoother([age, year, location, dummy])
+        dummy = Dimension('name', 'age_id', 'exponential', {'radius': 0.9})
+        smoother2 = Smoother([dummy, year, location])
+        smoother2(data, 'residual')
+
+
+@pytest.mark.parametrize('coords', ['name', ['age_id', 'name']])
+def test_data_coordinates_type(coords):
+    """Raise TypeError if `dimension.coordinates` not int or float."""
+    with pytest.raises(TypeError):
+        dummy = Dimension('age_id', coords, 'exponential', {'radius': 0.9})
+        smoother2 = Smoother([dummy, year, location])
         smoother2(data, 'residual')
 
 
@@ -217,4 +251,20 @@ def test_data_infs(value):
     with pytest.raises(ValueError):
         data2 = data.copy()
         data2['residual'] = 5*[value]
+        smoother(data2, 'residual')
+
+
+def test_data_name2coord():
+    """Raise ValueError if `name` maps to multiple `coordinates`."""
+    with pytest.raises(ValueError):
+        data2 = data.copy()
+        data2.loc[2, 'location_id'] = 5
+        smoother(data2, 'residual')
+
+
+def test_data_coord2name():
+    """Raise ValueError if `coordinates` maps to multiple `name`."""
+    with pytest.raises(ValueError):
+        data2 = data.copy()
+        data2.loc[2, 'level_3'] = 5
         smoother(data2, 'residual')
