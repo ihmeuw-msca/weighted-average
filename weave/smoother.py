@@ -327,8 +327,6 @@ class Smoother:
             `fit`, or `predict` in `data` contain invalid types.
         ValueError
             If `data` contains NaNs or Infs.
-            If `dimension.name` and `dimension.coordinates` not
-            one-to-one in `data`.
 
         """
         # Get column names
@@ -368,16 +366,6 @@ class Smoother:
             raise ValueError('`data` contains NaNs.')
         if np.isinf(data[names + coords + cols]).any(None):
             raise ValueError('`data` contains Infs.')
-
-        # Check dictionary keys
-        for dim in self._dimensions:
-            # Check `name` and `coordinates` one-to-one
-            if [dim.name] != dim.coordinates:
-                points = data[[dim.name] + dim.coordinates].drop_duplicates()
-                if any(points.groupby(dim.name).size() != 1):
-                    raise ValueError('`name` maps to multiple `coordinates`.')
-                if any(points.groupby(dim.coordinates).size() != 1):
-                    raise ValueError('`coordinates` maps to multiple `name`.')
 
     @staticmethod
     def get_indices(data: DataFrame, indicator: str = None) -> np.ndarray:
@@ -494,8 +482,21 @@ def get_weight_dict(dim: Dimension, data: DataFrame) -> WeightDict:
     dict of {(float, float): float}
         Dictionary of smoothing weights.
 
+    Raises
+    ------
+    ValueError
+        If `dim.name` and `dim.coordinates` not one-to-one in `data`.
+
     """
+    # Check `name` and `coordinates` one-to-one
     dim_points = data[[dim.name] + dim.coordinates].drop_duplicates()
+    if [dim.name] != dim.coordinates:
+        if any(dim_points.groupby(dim.name).size() != 1):
+            raise ValueError('`name` maps to multiple `coordinates`.')
+        if any(dim_points.groupby(dim.coordinates).size() != 1):
+            raise ValueError('`coordinates` maps to multiple `name`.')
+
+    # Create weight dictionary
     dim_points = np.array(dim_points.values, dtype=np.float32)
     dim_names = dim_points[:, 0]
     dim_coords = dim_points[:, 1:]
