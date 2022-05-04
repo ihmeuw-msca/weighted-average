@@ -483,29 +483,19 @@ def get_weight_dict(dim: Dimension, data: DataFrame) -> WeightDict:
         Dictionary of smoothing weights.
 
     """
-    if hasattr(dim, 'distance_dict'):
-        if dim.kernel == 'identity':
-            dim_dict = dim.distance_dict
-        else:
-            dim_dists = np.array(list(dim_dict.values()))
-            kernel_pars = get_typed_pars(dim.kernel_pars)
-            dim_weights = get_dim_weights(dim_dists, dim.kernel, kernel_pars)
-            dim_dict = {key: dim_weights[ii]
-                        for ii, key in enumerate(dim_dict.keys())}
-    else:
-        dim_points = data[[dim.name] + dim.coordinates].drop_duplicates()
-        dim_points = np.array(dim_points.values, dtype=np.float32)
-        dim_names = dim_points[:, 0]
-        dim_coords = dim_points[:, 1:]
-        dim_dict = {}
-        for idx_x, x in enumerate(dim_names):
-            idx_Y = np.where(dim_names >= x)[0]
-            dim_dists = get_dim_distances(dim_coords[idx_x], dim_coords[idx_Y],
-                                          dim.distance, get_typed_dict())
-            kernel_pars = get_typed_pars(dim.kernel_pars)
-            dim_weights = get_dim_weights(dim_dists, dim.kernel, kernel_pars)
-            dim_dict.update({(x, dim_names[idx_y]): dim_weights[ii]
-                             for ii, idx_y in enumerate(idx_Y)})
+    dim_points = data[[dim.name] + dim.coordinates].drop_duplicates()
+    dim_points = np.array(dim_points.values, dtype=np.float32)
+    dim_names = dim_points[:, 0]
+    dim_coords = dim_points[:, 1:]
+    dim_dict = {}
+    for idx_x, x in enumerate(dim_names):
+        idx_Y = np.where(dim_names >= x)[0]
+        dim_dists = get_dim_distances(dim_coords[idx_x], dim_coords[idx_Y],
+                                      dim.distance, get_typed_dict())
+        kernel_pars = get_typed_pars(dim.kernel_pars)
+        dim_weights = get_dim_weights(dim_dists, dim.kernel, kernel_pars)
+        dim_dict.update({(x, dim_names[idx_y]): dim_weights[ii]
+                         for ii, idx_y in enumerate(idx_Y)})
     return dim_dict
 
 
