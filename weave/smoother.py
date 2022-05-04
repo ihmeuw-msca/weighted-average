@@ -219,7 +219,7 @@ class Smoother:
         idx_fit = self.get_indices(data, fit)
         idx_pred = self.get_indices(data, predict)
         cols = self.get_columns(data, columns, idx_fit)
-        points = self.get_points(data)
+        points = self.get_points(data, precompute)
 
         # Cast dimensions as jitclass objects
         if precompute:
@@ -411,13 +411,16 @@ class Smoother:
         return np.array([data[col].values[idx_fit]
                          for col in as_list(columns)], dtype=np.float32).T
 
-    def get_points(self, data: DataFrame) -> np.ndarray:
+    def get_points(self, data: DataFrame, precompute: bool) -> np.ndarray:
         """Get point coordinates.
 
         Parameters
         ----------
         data : pandas.DataFrame
             Input data structure.
+        precompute : bool
+            If True, return `dimension.name` data. If False, return
+            `dimension.coordinates` data.
 
         Returns
         -------
@@ -425,8 +428,11 @@ class Smoother:
             Point coordinates.
 
         """
-        coords = flatten([dim.coordinates for dim in self._dimensions])
-        return np.ascontiguousarray(data[coords].values, dtype=np.float32)
+        if precompute:
+            points = [dim.name for dim in self._dimensions]
+        else:
+            points = flatten([dim.coordinates for dim in self._dimensions])
+        return np.ascontiguousarray(data[points].values, dtype=np.float32)
 
     def get_typed_dimensions(self, data=None) -> List[TypedDimension]:
         """Get smoothing dimensions cast as jitclass objects.
