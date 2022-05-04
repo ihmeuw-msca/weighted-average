@@ -243,3 +243,19 @@ def test_data_infs(value):
         data2 = data.copy()
         data2['residual'] = 5*[value]
         smoother(data2, 'residual')
+
+
+def test_data_name2coord():
+    """Raise ValueError if `name` maps to multiple `coordinates`."""
+    with pytest.raises(ValueError):
+        data2 = data.copy()
+        data2.loc[2, 'location_id'] = 5
+        smoother(data2, 'residual')
+
+
+def test_data_coord2name():
+    """Raise ValueError if `coordinates` maps to multiple `name`."""
+    with pytest.raises(ValueError):
+        data2 = data.copy()
+        data2.loc[2, 'level_3'] = 5
+        smoother(data2, 'residual')
