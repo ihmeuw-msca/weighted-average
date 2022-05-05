@@ -25,7 +25,7 @@ age = Dimension('age_id', 'age_id', 'exponential', {'radius': 1}, 'euclidean')
 year = Dimension('year_id', 'year_id', 'tricubic',
                  {'radius': 40, 'exponent': 0.5}, 'euclidean')
 location = Dimension('location_id', ['level_1', 'level_2', 'level_3'], 'depth',
-                     {'radius': 0.9}, 'hierarchical')
+                     {'radius': 0.9}, 'tree')
 smoother = Smoother([age, year, location])
 
 # Example data

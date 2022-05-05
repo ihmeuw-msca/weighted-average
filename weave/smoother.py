@@ -10,7 +10,7 @@ from pandas import DataFrame  # type: ignore
 from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
 from weave.dimension import Dimension, TypedDimension, get_typed_dimension
-from weave.distance import dictionary, euclidean, hierarchical, get_typed_dict
+from weave.distance import dictionary, euclidean, tree, get_typed_dict
 from weave.kernels import exponential, depth, tricubic, get_typed_pars
 from weave.utils import as_list, flatten
 
@@ -720,7 +720,7 @@ def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
         return dictionary(x, y, distance_dict)
     if distance == 'euclidean':
         return euclidean(x, y)
-    return hierarchical(x, y)
+    return tree(x, y)
 
 
 @njit

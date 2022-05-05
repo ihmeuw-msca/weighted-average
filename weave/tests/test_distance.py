@@ -34,7 +34,7 @@ not_tuple = [1, 1.0, 'dummy', True, None, [], {}]
 @composite
 def my_floats(draw):
     """Return float rounded to 5 decimals."""
-    my_float = draw(floats(min_value=-1e-5, max_value=1e5, allow_nan=False,
+    my_float = draw(floats(min_value=-1e-4, max_value=1e4, allow_nan=False,
                            allow_infinity=False, allow_subnormal=False))
     return np.around(my_float, decimals=5)
 
