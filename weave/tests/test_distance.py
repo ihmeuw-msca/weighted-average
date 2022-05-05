@@ -20,7 +20,7 @@ from hypothesis.extra.numpy import arrays
 import numpy as np
 import pytest
 
-from weave.distance import _check_dict, euclidean, hierarchical
+from weave.distance import _check_dict, euclidean, tree
 
 # Hypothesis types
 my_integers = integers(min_value=-1e5, max_value=1e5)
@@ -68,10 +68,10 @@ def test_euclidean_type(xy):
 
 @settings(deadline=None)
 @given(my_arrays())
-def test_hierarchical_type(xy):
-    """Hierarchical output satisfies property 1."""
+def test_tree_type(xy):
+    """Tree output satisfies property 1."""
     x, y = xy
-    distance = hierarchical(x, np.atleast_2d(y))[0]
+    distance = tree(x, np.atleast_2d(y))[0]
     property_1(distance)
 
 
@@ -93,10 +93,10 @@ def test_euclidean_zero(xy):
 
 
 @given(my_arrays())
-def test_hierarchical_zero(xy):
-    """Hierarchical output satisfies property 2."""
+def test_tree_zero(xy):
+    """Tree output satisfies property 2."""
     x, y = xy
-    distance = hierarchical(x, np.atleast_2d(y))[0]
+    distance = tree(x, np.atleast_2d(y))[0]
     property_2(x, y, distance)
 
 
@@ -111,11 +111,11 @@ def test_euclidean_symmetric(xy):
 
 
 @given(my_arrays())
-def test_hierarchical_symmetric(xy):
-    """Hierarchical output satisfies property 3."""
+def test_tree_symmetric(xy):
+    """Tree output satisfies property 3."""
     x, y = xy
-    distance_xy = hierarchical(x, np.atleast_2d(y))[0]
-    distance_yx = hierarchical(y, np.atleast_2d(x))[0]
+    distance_xy = tree(x, np.atleast_2d(y))[0]
+    distance_yx = tree(y, np.atleast_2d(x))[0]
     assert np.isclose(distance_xy, distance_yx)
 
 
@@ -138,12 +138,12 @@ def test_euclidean_triangle(xyz):
 
 
 @given(my_arrays(n=3))
-def test_hierarchical_triangle(xyz):
-    """Hierarchical output satisfies property 4."""
+def test_tree_triangle(xyz):
+    """Tree output satisfies property 4."""
     x, y, z = xyz
-    distance_xy = hierarchical(x, np.atleast_2d(y))[0]
-    distance_xz = hierarchical(x, np.atleast_2d(z))[0]
-    distance_zy = hierarchical(z, np.atleast_2d(y))[0]
+    distance_xy = tree(x, np.atleast_2d(y))[0]
+    distance_xz = tree(x, np.atleast_2d(z))[0]
+    distance_zy = tree(z, np.atleast_2d(y))[0]
     property_4(distance_xy, distance_xz, distance_zy)
 
 
@@ -157,40 +157,40 @@ def test_euclidean_shape(xyz):
 
 
 @given(my_arrays(n=3))
-def test_hierarchical_shape(xyz):
-    """Hierarchical output is length `y`."""
+def test_tree_shape(xyz):
+    """Tree output is length `y`."""
     x, y, z = xyz
-    distance = hierarchical(x, np.array([y, z]))
+    distance = tree(x, np.array([y, z]))
     assert distance.shape == (2,)
 
 
 # Test specific output values
 def test_same_country():
-    """Test hierarchical distance with same country."""
+    """Test tree distance with same country."""
     x = np.array([1., 2., 3.])
     y = np.array([[1., 2., 3.]])
-    assert np.isclose(hierarchical(x, y)[0], 0.)
+    assert np.isclose(tree(x, y)[0], 0.)
 
 
 def test_same_region():
-    """Test hierarchical distance with same region."""
+    """Test tree distance with same region."""
     x = np.array([1., 2., 3.])
     y = np.array([[1., 2., 4.]])
-    assert np.isclose(hierarchical(x, y)[0], 1.)
+    assert np.isclose(tree(x, y)[0], 1.)
 
 
 def test_same_super_region():
-    """Test hierarchical distance with same super region."""
+    """Test tree distance with same super region."""
     x = np.array([1., 2., 3.])
     y = np.array([[1., 4., 5.]])
-    assert np.isclose(hierarchical(x, y)[0], 2.)
+    assert np.isclose(tree(x, y)[0], 2.)
 
 
 def test_different_super_region():
-    """Test hierarchical distance with different super regions."""
+    """Test tree distance with different super regions."""
     x = np.array([1., 2., 3.])
     y = np.array([[4., 5., 6.]])
-    assert np.isclose(hierarchical(x, y)[0], 3.)
+    assert np.isclose(tree(x, y)[0], 3.)
 
 
 # Test `_check_dict()`

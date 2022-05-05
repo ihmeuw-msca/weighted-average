@@ -38,7 +38,7 @@ class Dimension:
         `['super_region', 'region', 'country']`. Can be same as `name`
         attribute if dimension is 1D.
 
-    kernel : {'identity', 'exponential', 'tricubic', 'depth'}
+    kernel : {'depth', 'exponential', 'identity', 'tricubic'}
         Kernel function name.
 
         Name of kernel function to compute smoothing weights.
@@ -53,7 +53,7 @@ class Dimension:
         Dictionary of kernel function parameters corresponding to
         `kernel` attribute.
 
-    distance : {'euclidean', 'hierarchical', 'dictionary'}
+    distance : {'dictionary', 'euclidean', 'tree'}
         Distance function name.
 
         Name of distance function to compute distance between points.
@@ -90,12 +90,12 @@ class Dimension:
             Dimension name.
         coordinates : str or list of str, optional
             Dimension coordinates, if different from `name`.
-        kernel : {'identity', 'exponential', 'tricubic', 'depth'}, optional
+        kernel : {'depth', 'exponential', 'identity', 'tricubic'}, optional
             Kernel function name. Default is 'identity'.
         kernel_pars : dict of {str: number or bool}
             Kernel function parameters. Optional if `kernel` is
             'identity'.
-        distance : {'dictionary', 'euclidean', 'hierarchical'}, optional
+        distance : {'dictionary', 'euclidean', 'tree'}, optional
             Distance function name. If None, default distance function
             is used based on `kernel`.
         distance_dict : dict of {(number, number): number}, optional
@@ -118,10 +118,14 @@ class Dimension:
                - Parameter
                - Parameter type
                - Default distance
-             * - ``identity``
+             * - ``depth``
+               - ``radius``
+               - Float in :math:`(0, 1)`
+               - ``tree``
+             * -
                - ``normalize``
-               - Boolean, optional (default is ``False``)
-               -  ``euclidean``
+               - Boolean, optional (default is ``True``)
+               -
              * - ``exponential``
                - ``radius``
                - Positive number
@@ -130,6 +134,10 @@ class Dimension:
                - ``normalize``
                - Boolean, optional (default is ``False``)
                -
+             * - ``identity``
+               - ``normalize``
+               - Boolean, optional (default is ``False``)
+               -  ``euclidean``
              * - ``tricubic``
                - ``radius``
                - Positive number
@@ -141,14 +149,6 @@ class Dimension:
              * -
                - ``exponent``
                - Positive number
-               -
-             * - ``depth``
-               - ``radius``
-               - Float in :math:`(0, 1)`
-               - ``hierarchical``
-             * -
-               - ``normalize``
-               - Boolean, optional (default is ``True``)
                -
 
         * The optional kernel parameter `normalize` indicates whether
@@ -233,7 +233,7 @@ class Dimension:
                 }
             )
 
-        Dimension with depth kernel and default hierarchical distance.
+        Dimension with depth kernel and default tree distance.
 
         >>> from weave.dimension import Dimension
         >>> location = Dimension(
@@ -370,7 +370,7 @@ class Dimension:
 
         Parameters
         ----------
-        kernel : {'identity', 'exponential', 'tricubic', 'depth'}
+        kernel : {'depth', 'exponential', 'identity', 'tricubic'}
             Kernel function name.
 
         Raises
@@ -392,7 +392,7 @@ class Dimension:
             raise TypeError('`kernel` is not a str.')
 
         # Check value
-        if kernel not in ('identity', 'exponential', 'tricubic', 'depth'):
+        if kernel not in ('depth', 'exponential', 'identity', 'tricubic'):
             raise ValueError('`kernel` is not a valid kernel function.')
 
         self._kernel = kernel
@@ -463,7 +463,7 @@ class Dimension:
 
         Parameters
         ----------
-        distance : {'dictionary', 'euclidean', 'hierarchical', None}
+        distance : {'dictionary', 'euclidean', 'tree', None}
             Distance function name.
 
         Raises
@@ -484,7 +484,7 @@ class Dimension:
         # Set defaults
         if distance is None:
             if self._kernel == 'depth':
-                distance = 'hierarchical'
+                distance = 'tree'
             else:
                 distance = 'euclidean'
 
@@ -493,7 +493,7 @@ class Dimension:
             raise TypeError('`distance` is not a str.')
 
         # Check value
-        if distance not in ('dictionary', 'euclidean', 'hierarchical'):
+        if distance not in ('dictionary', 'euclidean', 'tree'):
             msg = '`distance` is not a valid distance function.'
             raise ValueError(msg)
         if distance == 'dictionary' and len(self._coordinates) > 1:
@@ -564,11 +564,11 @@ class TypedDimension:
             Dimension name.
         coordinates : numba.typed.List of unicode_type
             Dimension coordinates.
-        kernel : {'exponential', 'tricubic', 'depth'}
+        kernel : {'depth', 'exponential', 'identity', 'tricubic'}
             Kernel function name.
         kernel_pars : numba.typed.Dict of {unicode_type: float32}
             Kernel function parameters.
-        distance : {'dictionary', 'euclidean', 'hierarchical'}
+        distance : {'dictionary', 'euclidean', 'tree'}
             Distance function name.
         distance_dict : numba.typed.Dict of {(float32, float32): float32}
             Dictionary of distances between points if `distance` is

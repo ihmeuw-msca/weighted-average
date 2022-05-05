@@ -259,9 +259,9 @@ def test_tricubic_distance_default():
 
 
 def test_depth_distance_default():
-    """`distance` is set to 'hierarchical' if not supplied."""
+    """`distance` is set to 'tree' if not supplied."""
     dim = Dimension('dummy', kernel='depth', kernel_pars=kernel_pars)
-    assert dim.distance == 'hierarchical'
+    assert dim.distance == 'tree'
 
 
 def test_identity_distance_default():
@@ -334,7 +334,7 @@ def test_distance_immutable():
     """Raise AttributeError if attempt to reset `distance`."""
     with pytest.raises(AttributeError):
         dim = Dimension('dummy')
-        dim.distance = 'hierarchical'
+        dim.distance = 'tree'
 
 
 def test_distance_dict_immutable():

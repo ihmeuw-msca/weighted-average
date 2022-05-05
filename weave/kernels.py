@@ -59,6 +59,69 @@ from weave.utils import as_list, is_number
 pars = Union[int, float, bool]
 
 
+@vectorize(['float32(float32,float32)'])
+def depth(distance: float, radius: float) -> float:
+    """Get depth smoothing weight.
+
+    Parameters
+    ----------
+    distance : nonnegative float32
+        Distance between points.
+    radius : float32 in (0, 1)
+        Kernel radius.
+
+    Returns
+    -------
+    nonnegative float32
+        Depth smoothing weight.
+
+    Notes
+    -----
+    The depth kernel function is defined as
+
+    .. math:: k(d; r) = \\begin{cases} r & \\text{if } d = 0, \\\\
+              r(1 - r) & \\text{if } 0 < d \\leq 1, \\\\ (1 - r)^2 &
+              \\text{if } 1 < d \\leq 2, \\\\ 0 & \\text{otherwise},
+              \\end{cases}
+
+    which is the same as CODEm's location scale factors with
+    :math:`r = \\zeta` and :math:`d =`
+    :mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`. This
+    corresponds to points that have the same country, region, or super
+    region, respectively, but the kernel function has not yet been
+    generalized to consider further location divisions (e.g., state or
+    county).
+
+    Examples
+    --------
+    Get weight for a pair of points.
+
+    >>> import numpy as np
+    >>> from weave.kernels import depth
+    >>> radius = np.float32(0.9)
+    >>> distance = np.float32(1.)
+    >>> depth(distance, radius)
+    0.09000002
+
+    Get weights for a vector of point pairs.
+
+    >>> import numpy as np
+    >>> from weave.kernels import depth
+    >>> radius = np.float32(0.9)
+    >>> distance = np.array([0., 1., 2., 3.]).astype(np.float32)
+    >>> depth(distance, radius)
+    array([0.9, 0.09000002, 0.01, 0.], dtype=float32)
+
+    """
+    if distance == 0:
+        return radius
+    if distance <= 1:
+        return radius*(1 - radius)
+    if distance <= 2:
+        return (1 - radius)**2
+    return 0
+
+
 @njit
 def exponential(distance: float, radius: float) -> float:
     """Get exponential smoothing weight.
@@ -169,69 +232,6 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
 
     """
     return np.maximum(0, (1 - (distance/radius)**exponent)**3)
-
-
-@vectorize(['float32(float32,float32)'])
-def depth(distance: float, radius: float) -> float:
-    """Get depth smoothing weight.
-
-    Parameters
-    ----------
-    distance : nonnegative float32
-        Distance between points.
-    radius : float32 in (0, 1)
-        Kernel radius.
-
-    Returns
-    -------
-    nonnegative float32
-        Depth smoothing weight.
-
-    Notes
-    -----
-    The depth kernel function is defined as
-
-    .. math:: k(d; r) = \\begin{cases} r & \\text{if } d = 0, \\\\
-              r(1 - r) & \\text{if } 0 < d \\leq 1, \\\\ (1 - r)^2 &
-              \\text{if } 1 < d \\leq 2, \\\\ 0 & \\text{otherwise},
-              \\end{cases}
-
-    which is the same as CODEm's location scale factors with
-    :math:`r = \\zeta` and :math:`d =`
-    :mod:`weave.distance.hierarchical`:math:`(\\ell_i, \\ell_j)`. This
-    corresponds to points that have the same country, region, or super
-    region, respectively, but the kernel function has not yet been
-    generalized to consider further location divisions (e.g., state or
-    county).
-
-    Examples
-    --------
-    Get weight for a pair of points.
-
-    >>> import numpy as np
-    >>> from weave.kernels import depth
-    >>> radius = np.float32(0.9)
-    >>> distance = np.float32(1.)
-    >>> depth(distance, radius)
-    0.09000002
-
-    Get weights for a vector of point pairs.
-
-    >>> import numpy as np
-    >>> from weave.kernels import depth
-    >>> radius = np.float32(0.9)
-    >>> distance = np.array([0., 1., 2., 3.]).astype(np.float32)
-    >>> depth(distance, radius)
-    array([0.9, 0.09000002, 0.01, 0.], dtype=float32)
-
-    """
-    if distance == 0:
-        return radius
-    if distance <= 1:
-        return radius*(1 - radius)
-    if distance <= 2:
-        return (1 - radius)**2
-    return 0
 
 
 def get_typed_pars(kernel_pars: Optional[Dict[str, pars]] = None) \
