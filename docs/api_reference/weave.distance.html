@@ -245,7 +245,7 @@ compilation.</p>
 <dd class="field-even"><p>Euclidean distances between <cite>x</cite> and <cite>Y</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>1D numpy.ndarray of nonnegative float</p>
+<dd class="field-odd"><p>1D numpy.ndarray of nonnegative float32</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -271,7 +271,7 @@ Euclidean distance <a class="footnote-reference brackets" href="#id4" id="id3">2
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">1.</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.</span><span class="p">]])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">euclidean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
-<span class="go">array([1., 0., 1.])</span>
+<span class="go">array([1., 0., 1.], dtype=float32)</span>
 </pre></div>
 </div>
 <p>Get distances between vector points.</p>
@@ -280,7 +280,7 @@ Euclidean distance <a class="footnote-reference brackets" href="#id4" id="id3">2
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">]])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">euclidean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
-<span class="go">array([1.41421356, 0., 1.41421356])</span>
+<span class="go">array([1.4142135, 0., 1.4142135], dtype=float32)</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -303,7 +303,7 @@ between the leaf nodes and their nearest common parent node.</p>
 <dd class="field-even"><p>Hierarchical distances between <cite>x</cite> and <cite>Y</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>1D numpy.ndarray of nonnegative float</p>
+<dd class="field-odd"><p>1D numpy.ndarray of nonnegative float32</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
@@ -314,7 +314,7 @@ between the leaf nodes and their nearest common parent node.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">4.</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">4.</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">5.</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">3.</span><span class="p">,</span> <span class="mf">6.</span><span class="p">]])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">hierarchical</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
-<span class="go">array([0., 1., 2.])</span>
+<span class="go">array([0., 1., 2.], dtype=float32)</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -333,14 +333,14 @@ symmetric, point IDs are listed from smallest to largest, e.g.
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x</strong> (<em>1D numpy.ndarray of float</em>) – Current point.</p></li>
 <li><p><strong>Y</strong> (<em>2D numpy.ndarray of float</em>) – Matrix of nearby points.</p></li>
-<li><p><strong>distance_dict</strong> (<em>numba.typed.Dict of {</em><em>(</em><em>float64</em><em>, </em><em>float64</em><em>)</em><em>: float64}</em>) – Typed dictionary of distances between points.</p></li>
+<li><p><strong>distance_dict</strong> (<em>numba.typed.Dict of {</em><em>(</em><em>float32</em><em>, </em><em>float32</em><em>)</em><em>: float32}</em>) – Typed dictionary of distances between points.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Dictionary distances between <cite>x</cite> and <cite>Y</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>1D numpy.ndarray of nonnegative float</p>
+<dd class="field-odd"><p>1D numpy.ndarray of nonnegative float32</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -363,7 +363,7 @@ IDs.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">4.</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">4.</span><span class="p">],</span> <span class="p">[</span><span class="mf">5.</span><span class="p">],</span> <span class="p">[</span><span class="mf">6.</span><span class="p">]])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">dictionary</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">typed_dict</span><span class="p">)</span>
-<span class="go">array([0., 1., 2.])</span>
+<span class="go">array([0., 1., 2.], dtype=float32)</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -379,7 +379,7 @@ IDs.</p>
 <dd class="field-even"><p>Typed version of <cite>distance_dict</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>numba.typed.Dict of {(float64, float64): float64}</p>
+<dd class="field-odd"><p>numba.typed.Dict of {(float32, float32): float32}</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
@@ -387,7 +387,7 @@ IDs.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">get_typed_dict</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">distance_dict</span> <span class="o">=</span> <span class="p">{(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">0</span><span class="p">}</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">get_typed_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span>
-<span class="go">DictType[UniTuple(float64 x 2),float64]&lt;iv=None&gt;({(1.0, 1.0): 0.0})</span>
+<span class="go">DictType[UniTuple(float32 x 2),float32]&lt;iv=None&gt;({(1.0, 1.0): 0.0})</span>
 </pre></div>
 </div>
 </dd></dl>

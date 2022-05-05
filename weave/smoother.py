@@ -54,7 +54,6 @@ class Smoother:
             )
         >>> year = Dimension(
                 name='year_id',
-                coordinates='year_id',
                 kernel='tricubic',
                 kernel_pars={'radius': 40, 'exponent': 0.5}
             )
@@ -132,7 +131,7 @@ class Smoother:
 
         Parameters
         ----------
-        data : DataFrame
+        data : pandas.DataFrame
             Input data structure.
         columns : str or list of str
             Column names of values to smooth.
@@ -251,7 +250,7 @@ class Smoother:
 
         Parameters
         ----------
-        data : DataFrame
+        data : pandas.DataFrame
             Input data structure.
         columns : str or list of str
             Column names of values to smooth.
@@ -308,7 +307,7 @@ class Smoother:
 
         Parameters
         ----------
-        data : DataFrame
+        data : pandas.DataFrame
             Input data structure.
         columns : str or list of str
             Column names of values to smooth.
@@ -386,7 +385,7 @@ class Smoother:
 
         Parameters
         ----------
-        data : DataFrame
+        data : pandas.DataFrame
             Input data structure.
         indicator : str, optional
             Column name indicating either `fit` or `predict` data.

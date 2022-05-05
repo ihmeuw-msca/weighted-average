@@ -213,7 +213,7 @@
 <p>Smoothing dimension specifications.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="weave.dimension.Dimension">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weave.dimension.</span></span><span class="sig-name descname"><span class="pre">Dimension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_pars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/dimension.html#Dimension"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.dimension.Dimension" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">weave.dimension.</span></span><span class="sig-name descname"><span class="pre">Dimension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coordinates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'identity'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_pars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/dimension.html#Dimension"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.dimension.Dimension" title="Permalink to this definition">¶</a></dt>
 <dd><p>Smoothing dimension specifications.</p>
 <p>Dimension class to specify smoothing dimension column names, kernel
 function, distance function, and relevant parameters.</p>
@@ -221,6 +221,8 @@ function, distance function, and relevant parameters.</p>
 <dt class="sig sig-object py" id="weave.dimension.Dimension.name">
 <span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#weave.dimension.Dimension.name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dimension name.</p>
+<p>Column in data frame containing the ID of points in the given
+dimension. For example, ‘age_id’, ‘year_id’, or ‘location_id’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>str</p>
@@ -228,11 +230,13 @@ function, distance function, and relevant parameters.</p>
 </dl>
 </dd></dl>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="weave.dimension.Dimension.columns">
-<span class="sig-name descname"><span class="pre">columns</span></span><a class="headerlink" href="#weave.dimension.Dimension.columns" title="Permalink to this definition">¶</a></dt>
-<dd><p>Dimension column names.</p>
-<p>Column names in data frame containing the coordinates of points
-in the given dimension.</p>
+<dt class="sig sig-object py" id="weave.dimension.Dimension.coordinates">
+<span class="sig-name descname"><span class="pre">coordinates</span></span><a class="headerlink" href="#weave.dimension.Dimension.coordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension coordinates.</p>
+<p>Column(s) in data frame containing the coordinates of points in
+the given dimension. For example, <cite>[‘lat’, ‘lon’]</cite> or
+<cite>[‘super_region’, ‘region’, ‘country’]</cite>. Can be same as <cite>name</cite>
+attribute if dimension is 1D.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>list of str</p>
@@ -250,7 +254,7 @@ in the given dimension.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>{‘exponential’, ‘tricubic’, ‘depth’, ‘identity’}</p>
+<dd class="field-odd"><p>{‘identity’, ‘exponential’, ‘tricubic’, ‘depth’}</p>
 </dd>
 </dl>
 </dd></dl>
@@ -277,7 +281,7 @@ in the given dimension.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>{‘dictionary’, ‘euclidean’, ‘hierarchical’}</p>
+<dd class="field-odd"><p>{‘euclidean’, ‘hierarchical’, ‘dictionary’}</p>
 </dd>
 </dl>
 </dd></dl>
@@ -305,13 +309,13 @@ symmetric, point IDs are listed from smallest to largest.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>name</strong> (<em>str</em>) – Dimension name.</p></li>
-<li><p><strong>columns</strong> (<em>str</em><em> or </em><em>list of str</em>) – Dimension column names.</p></li>
-<li><p><strong>kernel</strong> (<em>{'exponential'</em><em>, </em><em>'tricubic'</em><em>, </em><em>'depth'</em><em>, </em><em>'identity'}</em>) – Kernel function name.</p></li>
+<li><p><strong>coordinates</strong> (<em>str</em><em> or </em><em>list of str</em><em>, </em><em>optional</em>) – Dimension coordinates, if different from <cite>name</cite>.</p></li>
+<li><p><strong>kernel</strong> (<em>{'identity'</em><em>, </em><em>'exponential'</em><em>, </em><em>'tricubic'</em><em>, </em><em>'depth'}</em><em>, </em><em>optional</em>) – Kernel function name. Default is ‘identity’.</p></li>
 <li><p><strong>kernel_pars</strong> (<em>dict of {str: number</em><em> or </em><em>bool}</em>) – Kernel function parameters. Optional if <cite>kernel</cite> is
 ‘identity’.</p></li>
 <li><p><strong>distance</strong> (<em>{'dictionary'</em><em>, </em><em>'euclidean'</em><em>, </em><em>'hierarchical'}</em><em>, </em><em>optional</em>) – Distance function name. If None, default distance function
-is used.</p></li>
-<li><p><strong>distance_dict</strong> (<em>dict of {</em><em>(</em><em>number</em><em>, </em><em>number</em><em>)</em><em>: number}</em><em>, </em><em>optional</em>) – Dictionary of distances between points if <cite>distance</cite> is
+is used based on <cite>kernel</cite>.</p></li>
+<li><p><strong>distance_dict</strong> (<em>dict of {</em><em>(</em><em>number</em><em>, </em><em>number</em><em>)</em><em>: number}</em><em>, </em><em>optional</em>) – Dictionary of distances between points, if <cite>distance</cite> is
 ‘dictionary’.</p></li>
 </ul>
 </dd>
@@ -340,45 +344,45 @@ within <a class="reference internal" href="weave.smoother.html#weave.smoother.Sm
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exponential</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">identity</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
+<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exponential</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
 <td><p>Positive number</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
-<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tricubic</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
-<td><p>Positive number</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
-<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
-<td></td>
 </tr>
 <tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
+<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tricubic</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
+<td><p>Positive number</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
+<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">exponent</span></code></p></td>
 <td><p>Positive number</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">depth</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">depth</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
 <td><p>Float in <span class="math notranslate nohighlight">\((0, 1)\)</span></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">hierarchical</span></code></p></td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
 <td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">True</span></code>)</p></td>
 <td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">identity</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
-<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
 </tr>
 </tbody>
 </table></div>
@@ -400,9 +404,10 @@ possible weight values for the given dimension.</p>
 </li>
 <li><p>The parameters for the identity kernel are optional because
 the weight values are equal to the distance values. For
-increased efficiency, you can pre-compute all dimension
+increased efficiency, you can precompute all dimension
 weights as a dictionary and then use the identity kernel with
-the dictionary distance.</p></li>
+the dictionary distance. This is done automatically within
+<code class="xref py py-func docutils literal notranslate"><span class="pre">weave.smoother.__call__()</span></code> if <cite>precompute</cite> is True.</p></li>
 <li><p>The parameter <cite>distance_dict</cite> contains the user-defined
 distances between points if the distance attribute is
 ‘dictionary’. Dictionary keys are tuples of point ID pairs,
@@ -423,14 +428,14 @@ within <a class="reference internal" href="weave.smoother.html#weave.smoother.Sm
 distance.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">age</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
-<span class="go">        name='age',</span>
-<span class="go">        columns='age_mid',</span>
+<span class="go">        name='age_id',</span>
+<span class="go">        coordinates='age_mean',</span>
 <span class="go">        kernel='exponential',</span>
 <span class="go">        kernel_pars={'radius': 0.5}</span>
 <span class="go">    )</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">location</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
-<span class="go">        name='location',</span>
-<span class="go">        columns=['lat', 'lon'],</span>
+<span class="go">        name='location_id',</span>
+<span class="go">        coordinates=['lat', 'lon'],</span>
 <span class="go">        kernel='exponential',</span>
 <span class="go">        kernel_pars={'radius': 0.5}</span>
 <span class="go">    )</span>
@@ -439,8 +444,7 @@ distance.</p>
 <p>Dimension with tricubic kernel and default Euclidean distance.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">year</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
-<span class="go">        name='year',</span>
-<span class="go">        columns='year_id',</span>
+<span class="go">        name='year_id',</span>
 <span class="go">        kernel='tricubic',</span>
 <span class="go">        kernel_pars={'radius': 2, 'exponent': 3}</span>
 <span class="go">    )</span>
@@ -449,8 +453,7 @@ distance.</p>
 <p>Dimension with tricubic kernel and dictionary distance.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">location</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
-<span class="go">        name='location',</span>
-<span class="go">        columns='location_id',</span>
+<span class="go">        name='location_id',</span>
 <span class="go">        kernel='tricubic',</span>
 <span class="go">        kernel_pars={'radius': 2, 'exponent': 3},</span>
 <span class="go">        distance='dictionary',</span>
@@ -466,8 +469,8 @@ distance.</p>
 <p>Dimension with depth kernel and default hierarchical distance.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">location</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
-<span class="go">        name='location',</span>
-<span class="go">        columns=['super_region', 'region', 'country'],</span>
+<span class="go">        name='location_id',</span>
+<span class="go">        coordinates=['super_region', 'region', 'country'],</span>
 <span class="go">        kernel='depth',</span>
 <span class="go">        kernel_pars={'radius': 0.9}</span>
 <span class="go">    )</span>
@@ -476,8 +479,8 @@ distance.</p>
 <p>Dimension with identity kernel and default Euclidean distance.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">location</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
-<span class="go">        name='location',</span>
-<span class="go">        columns=['lat', 'lon'],</span>
+<span class="go">        name='location_id',</span>
+<span class="go">        coordinates=['lat', 'lon'],</span>
 <span class="go">        kernel='identity'</span>
 <span class="go">    )</span>
 </pre></div>

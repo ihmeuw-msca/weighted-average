@@ -118,7 +118,7 @@ class Dimension:
                - Parameter
                - Parameter type
                - Default distance
-            * - ``identity``
+             * - ``identity``
                - ``normalize``
                - Boolean, optional (default is ``False``)
                -  ``euclidean``
