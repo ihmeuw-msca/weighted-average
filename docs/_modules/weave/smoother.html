@@ -221,7 +221,7 @@
 <span class="kn">from</span> <span class="nn">pandas.api.types</span> <span class="kn">import</span> <span class="n">is_bool_dtype</span><span class="p">,</span> <span class="n">is_numeric_dtype</span>  <span class="c1"># type: ignore</span>
 
 <span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span><span class="p">,</span> <span class="n">TypedDimension</span><span class="p">,</span> <span class="n">get_typed_dimension</span>
-<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">euclidean</span><span class="p">,</span> <span class="n">hierarchical</span><span class="p">,</span> <span class="n">get_typed_dict</span>
+<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">euclidean</span><span class="p">,</span> <span class="n">tree</span><span class="p">,</span> <span class="n">get_typed_dict</span>
 <span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">exponential</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">tricubic</span><span class="p">,</span> <span class="n">get_typed_pars</span>
 <span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">flatten</span>
 
@@ -931,7 +931,7 @@
         <span class="k">return</span> <span class="n">dictionary</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">distance_dict</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">distance</span> <span class="o">==</span> <span class="s1">'euclidean'</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">euclidean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">hierarchical</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tree</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
 
 <span class="nd">@njit</span>
