@@ -1,4 +1,4 @@
-# pylint: disable=E0611
+# pylint: disable=C0103, E0611
 """Tests for kernel functions.
 
 In general, kernel functions should satisfy the following properties:
@@ -16,7 +16,7 @@ from hypothesis.strategies import integers, floats
 import numpy as np
 import pytest
 
-from weave.kernels import exponential, tricubic, depth, _check_pars
+from weave.kernels import depth, exponential, tricubic, _check_pars
 
 # Hypothesis types
 my_int = integers(min_value=1, max_value=5)
@@ -38,6 +38,9 @@ not_int = [1.0, 'dummy', True, None, [], (), {}]
 not_float = [1, 'dummy', True, None, [], (), {}]
 not_numeric = ['dummy', True, None, [], (), {}]
 not_bool = [1, 1.0, 'dummy', None, [], (), {}]
+
+# Radius values to test depth kernel
+radius_vals = 0.1*np.arange(1, 10).astype(np.float32)
 
 
 # Property 1: Output is a real-valued, finite, nonnegative float
@@ -109,40 +112,61 @@ def test_tricubic_direction(distance_a, distance_b, radius, exponent):
 
 
 # Test specific output values
-def test_same_country():
-    """Test depth kernel with same country."""
-    distance = np.float32(0)
-    radius = np.float32(0.9)
+@pytest.mark.parametrize('radius', radius_vals)
+def test_depth_levels_1(radius):
+    """Depth kernel with 1 level."""
+    levels = np.int32(1)
+    distances = np.arange(levels + 1).astype(np.float32)
+    weights = [1, 0]
+    for ii, distance in enumerate(distances):
+        weight = depth(distance, radius, levels)
+        assert np.isclose(weight, weights[ii])
+
+
+@pytest.mark.parametrize('radius', radius_vals)
+def test_depth_levels_2(radius):
+    """Depth kernel with 2 levels."""
+    levels = np.int32(2)
+    distances = np.arange(levels + 1).astype(np.float32)
+    weights = [radius, 1 - radius, 0]
+    for ii, distance in enumerate(distances):
+        weight = depth(distance, radius, levels)
+        assert np.isclose(weight, weights[ii])
+
+
+@pytest.mark.parametrize('radius', radius_vals)
+def test_depth_levels_3(radius):
+    """Depth kernel with 3 levels."""
     levels = np.int32(3)
-    weight = depth(distance, radius, levels)
-    assert np.isclose(weight, 0.9)
+    distances = np.arange(levels + 1).astype(np.float32)
+    weights = [radius, radius*(1 - radius), (1 - radius)**2, 0]
+    for ii, distance in enumerate(distances):
+        weight = depth(distance, radius, levels)
+        assert np.isclose(weight, weights[ii])
 
 
-def test_same_region():
-    """Test depth kernel with same region."""
-    distance = np.float32(1)
-    radius = np.float32(0.9)
-    levels = np.int32(3)
-    weight = depth(distance, radius, levels)
-    assert np.isclose(weight, 0.09)
+@pytest.mark.parametrize('radius', radius_vals)
+def test_depth_levels_4(radius):
+    """Depth kernel with 4 levels."""
+    levels = np.int32(4)
+    distances = np.arange(levels + 1).astype(np.float32)
+    weights = [radius, radius*(1 - radius), radius*(1 - radius)**2,
+               (1 - radius)**3, 0]
+    for ii, distance in enumerate(distances):
+        weight = depth(distance, radius, levels)
+        assert np.isclose(weight, weights[ii])
 
 
-def test_same_super_region():
-    """Test depth kernel with same super region."""
-    distance = np.float32(2)
-    radius = np.float32(0.9)
-    levels = np.int32(3)
-    weight = depth(distance, radius, levels)
-    assert np.isclose(weight, 0.01)
-
-
-def test_different_super_region():
-    """Test depth kernel with different super regions."""
-    distance = np.float32(3)
-    radius = np.float32(0.9)
-    levels = np.int32(3)
-    weight = depth(distance, radius, levels)
-    assert np.isclose(weight, 0.0)
+@pytest.mark.parametrize('radius', radius_vals)
+def test_depth_levels_5(radius):
+    """Depth kernel with 5 levels."""
+    levels = np.int32(5)
+    distances = np.arange(levels + 1).astype(np.float32)
+    weights = [radius, radius*(1 - radius), radius*(1 - radius)**2,
+               radius*(1 - radius)**3, (1 - radius)**4, 0]
+    for ii, distance in enumerate(distances):
+        weight = depth(distance, radius, levels)
+        assert np.isclose(weight, weights[ii])
 
 
 # Test `_check_pars()`
