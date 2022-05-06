@@ -59,8 +59,8 @@ from weave.utils import as_list, is_number
 pars = Union[int, float, bool]
 
 
-@vectorize(['float32(float32,float32)'])
-def depth(distance: float, radius: float) -> float:
+@vectorize(['float32(float32,float32,int32)'])
+def depth(distance: float, radius: float, levels: int) -> float:
     """Get depth smoothing weight.
 
     Parameters
@@ -69,6 +69,9 @@ def depth(distance: float, radius: float) -> float:
         Distance between points.
     radius : float32 in (0, 1)
         Kernel radius.
+    levels : positive int32
+        Number of levels. If `dimension.distance` is 'tree', this is
+        equal to the length of `dimension.coordinates`.
 
     Returns
     -------
@@ -79,18 +82,18 @@ def depth(distance: float, radius: float) -> float:
     -----
     The depth kernel function is defined as
 
-    .. math:: k(d; r) = \\begin{cases} r & \\text{if } d = 0, \\\\
-              r(1 - r) & \\text{if } 0 < d \\leq 1, \\\\ (1 - r)^2 &
-              \\text{if } 1 < d \\leq 2, \\\\ 0 & \\text{otherwise},
+    .. math:: k(d; r, s) = \\begin{cases} r & \\text{if } d = 0, \\\\
+              r(1 - r)^{\\lceil d \\rceil} & \\text{if } 0 < d \\leq
+              s - 2, \\\\ (1 - r)^{\\lceil d \\rceil} & \\text{if }
+              s - 2 < d \\leq s - 1, \\\\ 0 & \\text{if } d > s - 1,
               \\end{cases}
 
     which is the same as CODEm's location scale factors with
-    :math:`r = \\zeta` and :math:`d =`
-    :mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`. This
-    corresponds to points that have the same country, region, or super
-    region, respectively, but the kernel function has not yet been
-    generalized to consider further location divisions (e.g., state or
-    county).
+    :math:`d =`:mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`,
+    :math:`r = \\zeta`, and :math:`s =` the number of levels in the
+    location hierarchy (e.g., locations with coordinates
+    'super_region', 'region', and 'country' would have :math:`s = 3`).
+    If :math:`s = 1`, the possible weight values are 1 and 0.
 
     Examples
     --------
@@ -100,7 +103,8 @@ def depth(distance: float, radius: float) -> float:
     >>> from weave.kernels import depth
     >>> radius = np.float32(0.9)
     >>> distance = np.float32(1.)
-    >>> depth(distance, radius)
+    >>> levels = np.int32(3)
+    >>> depth(distance, radius, levels)
     0.09000002
 
     Get weights for a vector of point pairs.
@@ -109,17 +113,14 @@ def depth(distance: float, radius: float) -> float:
     >>> from weave.kernels import depth
     >>> radius = np.float32(0.9)
     >>> distance = np.array([0., 1., 2., 3.]).astype(np.float32)
-    >>> depth(distance, radius)
+    >>> levels = np.int32(3)
+    >>> depth(distance, radius, levels)
     array([0.9, 0.09000002, 0.01, 0.], dtype=float32)
 
     """
-    if distance == 0:
-        return radius
-    if distance <= 1:
-        return radius*(1 - radius)
-    if distance <= 2:
-        return (1 - radius)**2
-    return 0
+    same_tree = distance <= levels - 1
+    not_root = levels > 1 and distance <= levels - 2
+    return same_tree*radius**not_root*(1 - radius)**np.ceil(distance)
 
 
 @njit
@@ -148,8 +149,8 @@ def exponential(distance: float, radius: float) -> float:
 
     .. math:: w_{a_{i, j}} = \\frac{1}{\\exp(\\omega \\cdot d_{i, j})}
 
-    with :math:`r = \\frac{1}{\\omega}` and :math:`d_{i, j} =`
-    :mod:`weave.distance.euclidean`:math:`(a_i, a_j)`.
+    with :math:`d_{i, j} =`:mod:`weave.distance.euclidean`
+    :math:`(a_i, a_j)` and :math:`r = \\frac{1}{\\omega}`.
 
     Examples
     --------
@@ -204,10 +205,10 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
     ..  math:: w_{t_{i, j}} = \\left(1 - \\left(\\frac{d_{i,
                j}}{\\max_k|t_i - t_k| + 1}\\right)^\\lambda\\right)^3
 
-    with :math:`s = \\lambda` and :math:`d_{i, j} =`
-    :mod:`weave.distance.euclidean`:math:`(t_i, t_j)`. However, the
-    denominator in the CODEm weight varies by input :math:`t_i`, while
-    the kernel radius :math:`r` does not depend on the input :math:`d`.
+    with :math:`d_{i, j} =`:mod:`weave.distance.euclidean`
+    :math:`(t_i, t_j)` and :math:`s = \\lambda`. However, the
+    denominator in the CODEm weight varies based on the coordinate
+    :math:`t_i`, while the kernel radius :math:`r` is fixed.
 
     Examples
     --------

@@ -8,16 +8,18 @@ In general, kernel functions should satisfy the following properties:
 
 TODO:
 * Add tests for `get_typed_pars()`
+* Add test for positive integer parameter
 
 """
 from hypothesis import given, settings
-from hypothesis.strategies import floats
+from hypothesis.strategies import integers, floats
 import numpy as np
 import pytest
 
 from weave.kernels import exponential, tricubic, depth, _check_pars
 
 # Hypothesis types
+my_int = integers(min_value=1, max_value=5)
 my_pos = floats(min_value=0.0, max_value=1e5, allow_nan=False,
                 allow_infinity=False, allow_subnormal=False, exclude_min=True)
 my_nonpos = floats(min_value=-1e5, max_value=0.0, allow_nan=False,
@@ -32,6 +34,7 @@ my_notfrac = floats(min_value=1.0, max_value=1e5, allow_nan=False,
 
 # Lists of wrong types to test exceptions
 not_dict = [1, 1.0, 'dummy', True, None, [], ()]
+not_int = [1.0, 'dummy', True, None, [], (), {}]
 not_float = [1, 'dummy', True, None, [], (), {}]
 not_numeric = ['dummy', True, None, [], (), {}]
 not_bool = [1, 1.0, 'dummy', None, [], (), {}]
@@ -44,6 +47,14 @@ def property_1(weight):
     assert np.isfinite(weight)
     assert weight >= 0.0
     assert isinstance(weight, (float, np.floating))
+
+
+@settings(deadline=None)
+@given(my_nonneg, my_frac, my_int)
+def test_depth_type(distance, radius, levels):
+    """Depth output satisfies property 1."""
+    weight = depth(np.float32(distance), np.float32(radius), np.int32(levels))
+    property_1(weight)
 
 
 @settings(deadline=None)
@@ -62,14 +73,6 @@ def test_tricubic_type(distance, radius, exponent):
     property_1(weight)
 
 
-@settings(deadline=None)
-@given(my_nonneg, my_frac)
-def test_depth_type(distance, radius):
-    """Depth output satisfies property 1."""
-    weight = depth(np.float32(distance), np.float32(radius))
-    property_1(weight)
-
-
 # Property 2: Output decreases as distance increases
 def property_2(distance_a, distance_b, weight_a, weight_b):
     """Output satisfies property 2."""
@@ -77,6 +80,16 @@ def property_2(distance_a, distance_b, weight_a, weight_b):
         assert weight_a <= weight_b
     if distance_a < distance_b:
         assert weight_a >= weight_b
+
+
+@given(my_nonneg, my_nonneg, my_frac, my_int)
+def test_depth_direction(distance_a, distance_b, radius, levels):
+    """Depth output satisfies property 2."""
+    radius = np.float32(radius)
+    levels = np.int32(levels)
+    weight_a = depth(np.float32(distance_a), radius, levels)
+    weight_b = depth(np.float32(distance_b), radius, levels)
+    property_2(distance_a, distance_b, weight_a, weight_b)
 
 
 @given(my_nonneg, my_nonneg, my_pos)
@@ -95,20 +108,13 @@ def test_tricubic_direction(distance_a, distance_b, radius, exponent):
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 
-@given(my_nonneg, my_nonneg, my_pos)
-def test_depth_direction(distance_a, distance_b, radius):
-    """Depth output satisfies property 2."""
-    weight_a = depth(np.float32(distance_a), np.float32(radius))
-    weight_b = depth(np.float32(distance_b), np.float32(radius))
-    property_2(distance_a, distance_b, weight_a, weight_b)
-
-
 # Test specific output values
 def test_same_country():
     """Test depth kernel with same country."""
     distance = np.float32(0)
     radius = np.float32(0.9)
-    weight = depth(distance, radius)
+    levels = np.int32(3)
+    weight = depth(distance, radius, levels)
     assert np.isclose(weight, 0.9)
 
 
@@ -116,7 +122,8 @@ def test_same_region():
     """Test depth kernel with same region."""
     distance = np.float32(1)
     radius = np.float32(0.9)
-    weight = depth(distance, radius)
+    levels = np.int32(3)
+    weight = depth(distance, radius, levels)
     assert np.isclose(weight, 0.09)
 
 
@@ -124,7 +131,8 @@ def test_same_super_region():
     """Test depth kernel with same super region."""
     distance = np.float32(2)
     radius = np.float32(0.9)
-    weight = depth(distance, radius)
+    levels = np.int32(3)
+    weight = depth(distance, radius, levels)
     assert np.isclose(weight, 0.01)
 
 
@@ -132,7 +140,8 @@ def test_different_super_region():
     """Test depth kernel with different super regions."""
     distance = np.float32(3)
     radius = np.float32(0.9)
-    weight = depth(distance, radius)
+    levels = np.int32(3)
+    weight = depth(distance, radius, levels)
     assert np.isclose(weight, 0.0)
 
 
