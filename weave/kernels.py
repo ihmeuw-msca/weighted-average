@@ -1,4 +1,4 @@
-# pylint: disable=C0103, E0611
+# pylint: disable=C0103, E0611, R0912
 """Calculate the smoothing weight for nearby point given current point.
 
 Kernel functions to calculate the smoothing weight for a nearby point
@@ -271,7 +271,8 @@ def _check_pars(kernel_pars: Dict[str, pars], names: Union[str, List[str]],
     names : str or list of str
         Parameter names.
     types : str or list of str
-        Parameter types. Valid types are 'pos_num', 'pos_frac', 'bool'.
+        Parameter types. Valid types are 'pos_num', 'pos_int', 'pos_frac',
+        and 'bool'.
 
     Raises
     ------
@@ -293,30 +294,29 @@ def _check_pars(kernel_pars: Dict[str, pars], names: Union[str, List[str]],
         types = [types]*len(names)
 
     for idx_par, par_name in enumerate(names):
+        msg = f"`{par_name}` is not "
+
         # Check key
         if par_name not in kernel_pars:
-            raise KeyError(f"`{par_name}` is not in `pars`.")
+            raise KeyError(msg + 'in `pars`.')
         par_val = kernel_pars[par_name]
 
-        if types[idx_par] == 'pos_num':
-            # Check type
-            if not is_number(par_val):
-                raise TypeError(f"`{par_name}` is not an int or float.")
-
-            # Check value
-            if par_val <= 0.0:
-                raise ValueError(f"`{par_name}` is not positive.")
-
-        elif types[idx_par] == 'pos_frac':
-            # Check type
-            if not isinstance(par_val, (float, np.floating)):
-                raise TypeError(f"`{par_name}` is not a float.")
-
-            # Check value
-            if par_val <= 0.0 or par_val >= 1.0:
-                raise ValueError(f"`{par_name}` is not in (0, 1).")
-
-        else:  # 'bool'
-            # Check type
+        # Check type and value
+        if types[idx_par] == 'bool':
             if not isinstance(par_val, bool):
-                raise TypeError(f"`{par_name}` is not a bool.")
+                raise TypeError(msg + 'a bool.')
+        else:
+            if types[idx_par] == 'pos_frac':
+                if not isinstance(par_val, (float, np.floating)):
+                    raise TypeError(msg + 'a float.')
+                if par_val <= 0.0 or par_val >= 1.0:
+                    raise ValueError(msg + 'in (0, 1).')
+            else:
+                if types[idx_par] == 'pos_num':
+                    if not is_number(par_val):
+                        raise TypeError(msg + 'an int or float.')
+                else:  # 'pos_int'
+                    if not isinstance(par_val, (int, np.integer)):
+                        raise TypeError(msg + 'an int.')
+                if par_val <= 0.0:
+                    raise ValueError(msg + 'positive.')
