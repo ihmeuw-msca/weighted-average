@@ -54,7 +54,7 @@ from numba.typed import Dict as TypedDict  # type: ignore
 from numba.types import float32, unicode_type  # type: ignore
 import numpy as np
 
-from weave.utils import as_list, is_number
+from weave.utils import as_list, is_int, is_float, is_number
 
 pars = Union[int, float, bool]
 
@@ -307,7 +307,7 @@ def _check_pars(kernel_pars: Dict[str, pars], names: Union[str, List[str]],
                 raise TypeError(msg + 'a bool.')
         else:
             if types[idx_par] == 'pos_frac':
-                if not isinstance(par_val, (float, np.floating)):
+                if not is_float(par_val):
                     raise TypeError(msg + 'a float.')
                 if par_val <= 0.0 or par_val >= 1.0:
                     raise ValueError(msg + 'in (0, 1).')
@@ -316,7 +316,7 @@ def _check_pars(kernel_pars: Dict[str, pars], names: Union[str, List[str]],
                     if not is_number(par_val):
                         raise TypeError(msg + 'an int or float.')
                 else:  # 'pos_int'
-                    if not isinstance(par_val, (int, np.integer)):
+                    if not is_int(par_val):
                         raise TypeError(msg + 'an int.')
                 if par_val <= 0.0:
                     raise ValueError(msg + 'positive.')

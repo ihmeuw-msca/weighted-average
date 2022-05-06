@@ -19,18 +19,20 @@ import pytest
 from weave.kernels import depth, exponential, tricubic, _check_pars
 
 # Hypothesis types
-my_int = integers(min_value=1, max_value=5)
-my_pos = floats(min_value=0.0, max_value=1e5, allow_nan=False,
-                allow_infinity=False, allow_subnormal=False, exclude_min=True)
-my_nonpos = floats(min_value=-1e5, max_value=0.0, allow_nan=False,
-                   allow_infinity=False, allow_subnormal=False)
-my_nonneg = floats(min_value=0.0, max_value=1e5, allow_nan=False,
-                   allow_infinity=False, allow_subnormal=False)
-my_frac = floats(min_value=0.0, max_value=1.0, allow_nan=False,
-                 allow_infinity=False, allow_subnormal=False, exclude_min=True,
-                 exclude_max=True)
-my_notfrac = floats(min_value=1.0, max_value=1e5, allow_nan=False,
+pos_int = integers(min_value=1, max_value=5)
+npos_int = integers(min_value=-5, max_value=0)
+pos_float = floats(min_value=0.0, max_value=1e5, allow_nan=False,
+                   allow_infinity=False, allow_subnormal=False,
+                   exclude_min=True)
+npos_float = floats(min_value=-1e5, max_value=0.0, allow_nan=False,
                     allow_infinity=False, allow_subnormal=False)
+nneg_float = floats(min_value=0.0, max_value=1e5, allow_nan=False,
+                    allow_infinity=False, allow_subnormal=False)
+pos_frac = floats(min_value=0.0, max_value=1.0, allow_nan=False,
+                  allow_infinity=False, allow_subnormal=False,
+                  exclude_min=True, exclude_max=True)
+not_frac = floats(min_value=1.0, max_value=1e5, allow_nan=False,
+                  allow_infinity=False, allow_subnormal=False)
 
 # Lists of wrong types to test exceptions
 not_dict = [1, 1.0, 'dummy', True, None, [], ()]
@@ -53,7 +55,7 @@ def property_1(weight):
 
 
 @settings(deadline=None)
-@given(my_nonneg, my_frac, my_int)
+@given(nneg_float, pos_frac, pos_int)
 def test_depth_type(distance, radius, levels):
     """Depth output satisfies property 1."""
     weight = depth(np.float32(distance), np.float32(radius), np.int32(levels))
@@ -61,7 +63,7 @@ def test_depth_type(distance, radius, levels):
 
 
 @settings(deadline=None)
-@given(my_nonneg, my_pos)
+@given(nneg_float, pos_float)
 def test_exponential_type(distance, radius):
     """Exponential output satisfies property 1."""
     weight = exponential(distance, radius)
@@ -69,7 +71,7 @@ def test_exponential_type(distance, radius):
 
 
 @settings(deadline=None)
-@given(my_nonneg, my_pos, my_pos)
+@given(nneg_float, pos_float, pos_float)
 def test_tricubic_type(distance, radius, exponent):
     """Tricubic output satisfies property 1."""
     weight = tricubic(distance, radius, exponent)
@@ -85,7 +87,7 @@ def property_2(distance_a, distance_b, weight_a, weight_b):
         assert weight_a >= weight_b
 
 
-@given(my_nonneg, my_nonneg, my_frac, my_int)
+@given(nneg_float, nneg_float, pos_frac, pos_int)
 def test_depth_direction(distance_a, distance_b, radius, levels):
     """Depth output satisfies property 2."""
     radius = np.float32(radius)
@@ -95,7 +97,7 @@ def test_depth_direction(distance_a, distance_b, radius, levels):
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 
-@given(my_nonneg, my_nonneg, my_pos)
+@given(nneg_float, nneg_float, pos_float)
 def test_exponential_direction(distance_a, distance_b, radius):
     """Exponential output satisfies property 2."""
     weight_a = exponential(distance_a, radius)
@@ -103,7 +105,7 @@ def test_exponential_direction(distance_a, distance_b, radius):
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 
-@given(my_nonneg, my_nonneg, my_pos, my_pos)
+@given(nneg_float, nneg_float, pos_float, pos_float)
 def test_tricubic_direction(distance_a, distance_b, radius, exponent):
     """Tricubic output satisfies property 2."""
     weight_a = tricubic(distance_a, radius, exponent)
@@ -177,28 +179,12 @@ def test_pars_type(pars):
         _check_pars(pars, 'radius', 'pos_num')
 
 
-@given(my_pos)
+@given(pos_float)
 def test_pars_missing(par_val):
     """Raise KeyError if `pars` is missing a kernel parameter."""
     with pytest.raises(KeyError):
         pars = {'dummy': par_val}
         _check_pars(pars, 'radius', 'pos_num')
-
-
-@pytest.mark.parametrize('par_val', not_numeric)
-def test_pars_num(par_val):
-    """Raise TypeError if kernel parameter is not an int or float."""
-    with pytest.raises(TypeError):
-        pars = {'dummy': par_val}
-        _check_pars(pars, 'dummy', 'pos_num')
-
-
-@pytest.mark.parametrize('par_val', not_float)
-def test_pars_float(par_val):
-    """Raise TypeError if kernel parameter is not a float."""
-    with pytest.raises(TypeError):
-        pars = {'dummy': par_val}
-        _check_pars(pars, 'dummy', 'pos_frac')
 
 
 @pytest.mark.parametrize('par_val', not_bool)
@@ -209,24 +195,64 @@ def test_pars_bool(par_val):
         _check_pars(pars, 'dummy', 'bool')
 
 
-@given(my_nonpos)
-def test_pars_pos_num(par_val):
+@pytest.mark.parametrize('par_val', not_numeric)
+def test_pars_num(par_val):
+    """Raise TypeError if kernel parameter is not an int or float."""
+    with pytest.raises(TypeError):
+        pars = {'dummy': par_val}
+        _check_pars(pars, 'dummy', 'pos_num')
+
+
+@pytest.mark.parametrize('par_val', not_int)
+def test_pars_int(par_val):
+    """Raise TypeError if kernel parameter is not an int."""
+    with pytest.raises(TypeError):
+        pars = {'dummy': par_val}
+        _check_pars(pars, 'dummy', 'pos_int')
+
+
+@pytest.mark.parametrize('par_val', not_float)
+def test_pars_float(par_val):
+    """Raise TypeError if kernel parameter is not a float."""
+    with pytest.raises(TypeError):
+        pars = {'dummy': par_val}
+        _check_pars(pars, 'dummy', 'pos_frac')
+
+
+@given(npos_int)
+def test_pars_pos_num_1(par_val):
     """Raise ValueError if kernel parameter is not positive."""
     with pytest.raises(ValueError):
         pars = {'dummy': par_val}
         _check_pars(pars, 'dummy', 'pos_num')
 
 
-@given(my_nonpos)
-def test_pars_pos_frac(par_val):
+@given(npos_float)
+def test_pars_pos_num_2(par_val):
     """Raise ValueError if kernel parameter is not positive."""
+    with pytest.raises(ValueError):
+        pars = {'dummy': par_val}
+        _check_pars(pars, 'dummy', 'pos_num')
+
+
+@given(npos_int)
+def test_pars_pos_int(par_val):
+    """Raise ValueError if kernel parameter is not positive."""
+    with pytest.raises(ValueError):
+        pars = {'dummy': par_val}
+        _check_pars(pars, 'dummy', 'pos_int')
+
+
+@given(npos_float)
+def test_pars_frac_1(par_val):
+    """Raise ValueError if kernel parameter is <= 0."""
     with pytest.raises(ValueError):
         pars = {'dummy': par_val}
         _check_pars(pars, 'dummy', 'pos_frac')
 
 
-@given(my_notfrac)
-def test_pars_frac(par_val):
+@given(not_frac)
+def test_pars_frac_2(par_val):
     """Raise ValueError if kernel parameter is >= 1."""
     with pytest.raises(ValueError):
         pars = {'dummy': par_val}
