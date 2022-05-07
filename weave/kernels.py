@@ -59,8 +59,8 @@ from weave.utils import as_list, is_int, is_float, is_number
 pars = Union[int, float, bool]
 
 
-@vectorize(['float32(float32,float32,int32)'])
-def depth(distance: float, radius: float, levels: int) -> float:
+@vectorize(['float32(float32,float32,float32)'])
+def depth(distance: float, radius: float, levels: float) -> float:
     """Get depth smoothing weight.
 
     Parameters
@@ -69,7 +69,7 @@ def depth(distance: float, radius: float, levels: int) -> float:
         Distance between points.
     radius : float32 in (0, 1)
         Kernel radius.
-    levels : positive int32
+    levels : positive float
         Number of levels. If `dimension.distance` is 'tree', this is
         equal to the length of `dimension.coordinates`.
 
@@ -103,7 +103,7 @@ def depth(distance: float, radius: float, levels: int) -> float:
     >>> from weave.kernels import depth
     >>> radius = np.float32(0.9)
     >>> distance = np.float32(1.)
-    >>> levels = np.int32(3)
+    >>> levels = np.float32(3)
     >>> depth(distance, radius, levels)
     0.09000002
 
@@ -113,7 +113,7 @@ def depth(distance: float, radius: float, levels: int) -> float:
     >>> from weave.kernels import depth
     >>> radius = np.float32(0.9)
     >>> distance = np.array([0., 1., 2., 3.]).astype(np.float32)
-    >>> levels = np.int32(3)
+    >>> levels = np.float32(3)
     >>> depth(distance, radius, levels)
     array([0.9, 0.09000002, 0.01, 0.], dtype=float32)
 

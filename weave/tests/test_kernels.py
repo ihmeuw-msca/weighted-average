@@ -55,10 +55,11 @@ def property_1(weight):
 
 
 @settings(deadline=None)
-@given(nneg_float, pos_frac, pos_int)
+@given(nneg_float, pos_frac, pos_float)
 def test_depth_type(distance, radius, levels):
     """Depth output satisfies property 1."""
-    weight = depth(np.float32(distance), np.float32(radius), np.int32(levels))
+    weight = depth(np.float32(distance), np.float32(radius),
+                   np.float32(levels))
     property_1(weight)
 
 
@@ -87,11 +88,11 @@ def property_2(distance_a, distance_b, weight_a, weight_b):
         assert weight_a >= weight_b
 
 
-@given(nneg_float, nneg_float, pos_frac, pos_int)
+@given(nneg_float, nneg_float, pos_frac, pos_float)
 def test_depth_direction(distance_a, distance_b, radius, levels):
     """Depth output satisfies property 2."""
     radius = np.float32(radius)
-    levels = np.int32(levels)
+    levels = np.float32(levels)
     weight_a = depth(np.float32(distance_a), radius, levels)
     weight_b = depth(np.float32(distance_b), radius, levels)
     property_2(distance_a, distance_b, weight_a, weight_b)
@@ -117,7 +118,7 @@ def test_tricubic_direction(distance_a, distance_b, radius, exponent):
 @pytest.mark.parametrize('radius', radius_vals)
 def test_depth_levels_1(radius):
     """Depth kernel with 1 level."""
-    levels = np.int32(1)
+    levels = np.float32(1)
     distances = np.arange(levels + 1).astype(np.float32)
     weights = [1, 0]
     for ii, distance in enumerate(distances):
@@ -128,7 +129,7 @@ def test_depth_levels_1(radius):
 @pytest.mark.parametrize('radius', radius_vals)
 def test_depth_levels_2(radius):
     """Depth kernel with 2 levels."""
-    levels = np.int32(2)
+    levels = np.float32(2)
     distances = np.arange(levels + 1).astype(np.float32)
     weights = [radius, 1 - radius, 0]
     for ii, distance in enumerate(distances):
@@ -139,7 +140,7 @@ def test_depth_levels_2(radius):
 @pytest.mark.parametrize('radius', radius_vals)
 def test_depth_levels_3(radius):
     """Depth kernel with 3 levels."""
-    levels = np.int32(3)
+    levels = np.float32(3)
     distances = np.arange(levels + 1).astype(np.float32)
     weights = [radius, radius*(1 - radius), (1 - radius)**2, 0]
     for ii, distance in enumerate(distances):
@@ -150,7 +151,7 @@ def test_depth_levels_3(radius):
 @pytest.mark.parametrize('radius', radius_vals)
 def test_depth_levels_4(radius):
     """Depth kernel with 4 levels."""
-    levels = np.int32(4)
+    levels = np.float32(4)
     distances = np.arange(levels + 1).astype(np.float32)
     weights = [radius, radius*(1 - radius), radius*(1 - radius)**2,
                (1 - radius)**3, 0]
@@ -162,7 +163,7 @@ def test_depth_levels_4(radius):
 @pytest.mark.parametrize('radius', radius_vals)
 def test_depth_levels_5(radius):
     """Depth kernel with 5 levels."""
-    levels = np.int32(5)
+    levels = np.float32(5)
     distances = np.arange(levels + 1).astype(np.float32)
     weights = [radius, radius*(1 - radius), radius*(1 - radius)**2,
                radius*(1 - radius)**3, (1 - radius)**4, 0]
