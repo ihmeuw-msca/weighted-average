@@ -148,7 +148,7 @@ class Dimension:
                - ``euclidean``
              * -
                - ``exponent``
-               - Positive int
+               - Positive float
                -
              * -
                - ``normalize``
@@ -447,7 +447,7 @@ class Dimension:
                 kernel_pars = {'normalize': kernel_pars['normalize']}
             elif self._kernel == 'tricubic':
                 _check_pars(kernel_pars, ['radius', 'exponent', 'normalize'],
-                            ['pos_num', 'pos_int', 'bool'])
+                            ['pos_num', 'pos_num', 'bool'])
                 kernel_pars = {key: kernel_pars[key]
                                for key in ['radius', 'exponent', 'normalize']}
         self._kernel_pars = kernel_pars

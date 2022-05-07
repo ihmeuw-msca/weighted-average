@@ -107,9 +107,9 @@ def test_tricubic_radius_type(radius):
         Dimension('dummy', kernel='tricubic', kernel_pars=bad_pars)
 
 
-@pytest.mark.parametrize('exponent', not_int)
+@pytest.mark.parametrize('exponent', not_numeric)
 def test_tricubic_exponent_type(exponent):
-    """Raise TypeError if `exponent` is not an int."""
+    """Raise TypeError if `exponent` is not an int or float."""
     with pytest.raises(TypeError):
         bad_pars = {'radius': 0.5, 'exponent': exponent}
         Dimension('dummy', kernel='tricubic', kernel_pars=bad_pars)
@@ -281,7 +281,7 @@ def test_tricubic_exponent_exist():
         Dimension('dummy', kernel='tricubic', kernel_pars={'radius': 0.5})
 
 
-@pytest.mark.parametrize('exponent', [-1, 0])
+@pytest.mark.parametrize('exponent', [-1, -1.0, 0, 0.0])
 def test_tricubic_exponent_value(exponent):
     """Raise ValueError if `exponenent` is not valid."""
     with pytest.raises(ValueError):
