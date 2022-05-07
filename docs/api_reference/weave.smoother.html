@@ -258,7 +258,7 @@ and location.</p>
 <span class="go">        name='location_id',</span>
 <span class="go">        coordinates=['super_region', 'region', 'country'],</span>
 <span class="go">        kernel='depth',</span>
-<span class="go">        kernel_pars={'radius': 0.9}</span>
+<span class="go">        kernel_pars={'radius': 0.9, 'levels': 3}</span>
 <span class="go">    )</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">dimensions</span> <span class="o">=</span> <span class="p">[</span><span class="n">age</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">location</span><span class="p">]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">smoother</span> <span class="o">=</span> <span class="n">Smoother</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)</span>

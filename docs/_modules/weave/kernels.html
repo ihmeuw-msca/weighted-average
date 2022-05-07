@@ -209,7 +209,7 @@
         </div>
         <article role="main">
           <h1>Source code for weave.kernels</h1><div class="highlight"><pre>
-<span></span><span class="c1"># pylint: disable=C0103, E0611</span>
+<span></span><span class="c1"># pylint: disable=C0103, E0611, R0912</span>
 <span class="sd">"""Calculate the smoothing weight for nearby point given current point.</span>
 
 <span class="sd">Kernel functions to calculate the smoothing weight for a nearby point</span>
@@ -265,13 +265,13 @@
 <span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">float32</span><span class="p">,</span> <span class="n">unicode_type</span>  <span class="c1"># type: ignore</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">is_number</span>
+<span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">is_int</span><span class="p">,</span> <span class="n">is_float</span><span class="p">,</span> <span class="n">is_number</span>
 
 <span class="n">pars</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span>
 
 
-<span class="nd">@vectorize</span><span class="p">([</span><span class="s1">'float32(float32,float32,int32)'</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">levels</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="nd">@vectorize</span><span class="p">([</span><span class="s1">'float32(float32,float32,float32)'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">levels</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
     <span class="sd">"""Get depth smoothing weight.</span>
 
 <span class="sd">    Parameters</span>
@@ -280,7 +280,7 @@
 <span class="sd">        Distance between points.</span>
 <span class="sd">    radius : float32 in (0, 1)</span>
 <span class="sd">        Kernel radius.</span>
-<span class="sd">    levels : positive int32</span>
+<span class="sd">    levels : positive float</span>
 <span class="sd">        Number of levels. If `dimension.distance` is 'tree', this is</span>
 <span class="sd">        equal to the length of `dimension.coordinates`.</span>
 
@@ -314,7 +314,7 @@
 <span class="sd">    &gt;&gt;&gt; from weave.kernels import depth</span>
 <span class="sd">    &gt;&gt;&gt; radius = np.float32(0.9)</span>
 <span class="sd">    &gt;&gt;&gt; distance = np.float32(1.)</span>
-<span class="sd">    &gt;&gt;&gt; levels = np.int32(3)</span>
+<span class="sd">    &gt;&gt;&gt; levels = np.float32(3)</span>
 <span class="sd">    &gt;&gt;&gt; depth(distance, radius, levels)</span>
 <span class="sd">    0.09000002</span>
 
@@ -324,7 +324,7 @@
 <span class="sd">    &gt;&gt;&gt; from weave.kernels import depth</span>
 <span class="sd">    &gt;&gt;&gt; radius = np.float32(0.9)</span>
 <span class="sd">    &gt;&gt;&gt; distance = np.array([0., 1., 2., 3.]).astype(np.float32)</span>
-<span class="sd">    &gt;&gt;&gt; levels = np.int32(3)</span>
+<span class="sd">    &gt;&gt;&gt; levels = np.float32(3)</span>
 <span class="sd">    &gt;&gt;&gt; depth(distance, radius, levels)</span>
 <span class="sd">    array([0.9, 0.09000002, 0.01, 0.], dtype=float32)</span>
 
@@ -418,8 +418,8 @@
 
 <span class="sd">    with :math:`d_{i, j} =`:mod:`weave.distance.euclidean`</span>
 <span class="sd">    :math:`(t_i, t_j)` and :math:`s = \\lambda`. However, the</span>
-<span class="sd">    denominator in the CODEm weight varies by coordinate :math:`t_i`,</span>
-<span class="sd">    while the kernel radius :math:`r` is fixed.</span>
+<span class="sd">    denominator in the CODEm weight varies based on the coordinate</span>
+<span class="sd">    :math:`t_i`, while the kernel radius :math:`r` is fixed.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -482,7 +482,8 @@
 <span class="sd">    names : str or list of str</span>
 <span class="sd">        Parameter names.</span>
 <span class="sd">    types : str or list of str</span>
-<span class="sd">        Parameter types. Valid types are 'pos_num', 'pos_frac', 'bool'.</span>
+<span class="sd">        Parameter types. Valid types are 'pos_num', 'pos_int', 'pos_frac',</span>
+<span class="sd">        and 'bool'.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -504,33 +505,32 @@
         <span class="n">types</span> <span class="o">=</span> <span class="p">[</span><span class="n">types</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">idx_par</span><span class="p">,</span> <span class="n">par_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not "</span>
+
         <span class="c1"># Check key</span>
         <span class="k">if</span> <span class="n">par_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not in `pars`."</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'in `pars`.'</span><span class="p">)</span>
         <span class="n">par_val</span> <span class="o">=</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">par_name</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'pos_num'</span><span class="p">:</span>
-            <span class="c1"># Check type</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_number</span><span class="p">(</span><span class="n">par_val</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not an int or float."</span><span class="p">)</span>
-
-            <span class="c1"># Check value</span>
-            <span class="k">if</span> <span class="n">par_val</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not positive."</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'pos_frac'</span><span class="p">:</span>
-            <span class="c1"># Check type</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">par_val</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">)):</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not a float."</span><span class="p">)</span>
-
-            <span class="c1"># Check value</span>
-            <span class="k">if</span> <span class="n">par_val</span> <span class="o">&lt;=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">par_val</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not in (0, 1)."</span><span class="p">)</span>
-
-        <span class="k">else</span><span class="p">:</span>  <span class="c1"># 'bool'</span>
-            <span class="c1"># Check type</span>
+        <span class="c1"># Check type and value</span>
+        <span class="k">if</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'bool'</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">par_val</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not a bool."</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'a bool.'</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'pos_frac'</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_float</span><span class="p">(</span><span class="n">par_val</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'a float.'</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">par_val</span> <span class="o">&lt;=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">par_val</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'in (0, 1).'</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'pos_num'</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_number</span><span class="p">(</span><span class="n">par_val</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'an int or float.'</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># 'pos_int'</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_int</span><span class="p">(</span><span class="n">par_val</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'an int.'</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">par_val</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'positive.'</span><span class="p">)</span>
 </pre></div>
         </article>
       </div>

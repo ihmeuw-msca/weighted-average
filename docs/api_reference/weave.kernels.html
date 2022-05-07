@@ -265,7 +265,7 @@ structure.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>distance</strong> (<em>nonnegative float32</em>) – Distance between points.</p></li>
 <li><p><strong>radius</strong> (<em>float32 in</em><em> (</em><em>0</em><em>, </em><em>1</em><em>)</em>) – Kernel radius.</p></li>
-<li><p><strong>levels</strong> (<em>positive int32</em>) – Number of levels. If <cite>dimension.distance</cite> is ‘tree’, this is
+<li><p><strong>levels</strong> (<em>positive float</em>) – Number of levels. If <cite>dimension.distance</cite> is ‘tree’, this is
 equal to the length of <cite>dimension.coordinates</cite>.</p></li>
 </ul>
 </dd>
@@ -296,7 +296,7 @@ If <span class="math notranslate nohighlight">\(s = 1\)</span>, the possible wei
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">0.9</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">levels</span><span class="p">)</span>
 <span class="go">0.09000002</span>
 </pre></div>
@@ -306,7 +306,7 @@ If <span class="math notranslate nohighlight">\(s = 1\)</span>, the possible wei
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">0.9</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">3.</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">levels</span><span class="p">)</span>
 <span class="go">array([0.9, 0.09000002, 0.01, 0.], dtype=float32)</span>
 </pre></div>
@@ -388,8 +388,8 @@ If <span class="math notranslate nohighlight">\(s = 1\)</span>, the possible wei
 j}}{\max_k|t_i - t_k| + 1}\right)^\lambda\right)^3\]</div></div>
 <p>with <span class="math notranslate nohighlight">\(d_{i, j} =\)</span><a class="reference internal" href="weave.distance.html#weave.distance.euclidean" title="weave.distance.euclidean"><code class="xref py py-mod docutils literal notranslate"><span class="pre">weave.distance.euclidean</span></code></a>
 <span class="math notranslate nohighlight">\((t_i, t_j)\)</span> and <span class="math notranslate nohighlight">\(s = \lambda\)</span>. However, the
-denominator in the CODEm weight varies by coordinate <span class="math notranslate nohighlight">\(t_i\)</span>,
-while the kernel radius <span class="math notranslate nohighlight">\(r\)</span> is fixed.</p>
+denominator in the CODEm weight varies based on the coordinate
+<span class="math notranslate nohighlight">\(t_i\)</span>, while the kernel radius <span class="math notranslate nohighlight">\(r\)</span> is fixed.</p>
 <p class="rubric">Examples</p>
 <p>Get weight for a pair of points.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">tricubic</span>

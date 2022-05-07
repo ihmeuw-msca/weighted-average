@@ -262,6 +262,62 @@
 </div>
 </dd></dl>
 <dl class="py function">
+<dt class="sig sig-object py" id="weave.utils.is_float">
+<span class="sig-prename descclassname"><span class="pre">weave.utils.</span></span><span class="sig-name descname"><span class="pre">is_float</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/utils.html#is_float"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.utils.is_float" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine if <cite>value</cite> is a float.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>Any</em>) – Value to check.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>If <cite>value</cite> is a float.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> for floats, but <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">is_float</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_float</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_float</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="weave.utils.is_int">
+<span class="sig-prename descclassname"><span class="pre">weave.utils.</span></span><span class="sig-name descname"><span class="pre">is_int</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/utils.html#is_int"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.utils.is_int" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine if <cite>value</cite> is an int.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>Any</em>) – Value to check.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>If <cite>value</cite> is not an int.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> for ints but <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">is_int</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_int</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_int</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_int</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+<dl class="py function">
 <dt class="sig sig-object py" id="weave.utils.is_number">
 <span class="sig-prename descclassname"><span class="pre">weave.utils.</span></span><span class="sig-name descname"><span class="pre">is_number</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/utils.html#is_number"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.utils.is_number" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determine if <cite>value</cite> is an int or float.</p>
@@ -283,7 +339,11 @@
 <span class="go">True</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
 <span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="s1">'one'</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_number</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
 <span class="go">False</span>
 </pre></div>
 </div>

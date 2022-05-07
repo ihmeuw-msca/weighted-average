@@ -350,26 +350,16 @@ within <a class="reference internal" href="weave.smoother.html#weave.smoother.Sm
 <td><p><code class="docutils literal notranslate"><span class="pre">tree</span></code></p></td>
 </tr>
 <tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">levels</span></code></p></td>
+<td><p>Positive int</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
 <td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">True</span></code>)</p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exponential</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
-<td><p>Positive number</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
-<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">identity</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
-<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tricubic</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exponential</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
 <td><p>Positive number</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
@@ -379,9 +369,24 @@ within <a class="reference internal" href="weave.smoother.html#weave.smoother.Sm
 <td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
 <td></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">identity</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
+<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tricubic</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
+<td><p>Positive number</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
+</tr>
 <tr class="row-odd"><td></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">exponent</span></code></p></td>
-<td><p>Positive number</p></td>
+<td><p>Positive float</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
+<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
 <td></td>
 </tr>
 </tbody>
@@ -472,7 +477,7 @@ distance.</p>
 <span class="go">        name='location_id',</span>
 <span class="go">        coordinates=['super_region', 'region', 'country'],</span>
 <span class="go">        kernel='depth',</span>
-<span class="go">        kernel_pars={'radius': 0.9}</span>
+<span class="go">        kernel_pars={'radius': 0.9, 'levels': 3}</span>
 <span class="go">    )</span>
 </pre></div>
 </div>

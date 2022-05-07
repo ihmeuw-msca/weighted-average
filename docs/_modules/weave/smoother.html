@@ -222,7 +222,7 @@
 
 <span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span><span class="p">,</span> <span class="n">TypedDimension</span><span class="p">,</span> <span class="n">get_typed_dimension</span>
 <span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">euclidean</span><span class="p">,</span> <span class="n">tree</span><span class="p">,</span> <span class="n">get_typed_dict</span>
-<span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">exponential</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">tricubic</span><span class="p">,</span> <span class="n">get_typed_pars</span>
+<span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span><span class="p">,</span> <span class="n">exponential</span><span class="p">,</span> <span class="n">tricubic</span><span class="p">,</span> <span class="n">get_typed_pars</span>
 <span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">flatten</span>
 
 <span class="n">WeightDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span>
@@ -272,7 +272,7 @@
 <span class="sd">                name='location_id',</span>
 <span class="sd">                coordinates=['super_region', 'region', 'country'],</span>
 <span class="sd">                kernel='depth',</span>
-<span class="sd">                kernel_pars={'radius': 0.9}</span>
+<span class="sd">                kernel_pars={'radius': 0.9, 'levels': 3}</span>
 <span class="sd">            )</span>
 <span class="sd">        &gt;&gt;&gt; dimensions = [age, year, location]</span>
 <span class="sd">        &gt;&gt;&gt; smoother = Smoother(dimensions)</span>
@@ -959,7 +959,7 @@
     <span class="k">if</span> <span class="n">kernel</span> <span class="o">==</span> <span class="s1">'tricubic'</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">tricubic</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">],</span>
                         <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'exponent'</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">],</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'levels'</span><span class="p">])</span>
 </pre></div>
         </article>
       </div>

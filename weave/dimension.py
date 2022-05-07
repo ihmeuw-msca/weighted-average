@@ -244,7 +244,7 @@ class Dimension:
                 name='location_id',
                 coordinates=['super_region', 'region', 'country'],
                 kernel='depth',
-                kernel_pars={'radius': 0.9}
+                kernel_pars={'radius': 0.9, 'levels': 3}
             )
 
         Dimension with identity kernel and default Euclidean distance.
