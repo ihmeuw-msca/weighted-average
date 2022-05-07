@@ -11,7 +11,7 @@ from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
 from weave.dimension import Dimension, TypedDimension, get_typed_dimension
 from weave.distance import dictionary, euclidean, tree, get_typed_dict
-from weave.kernels import exponential, depth, tricubic, get_typed_pars
+from weave.kernels import depth, exponential, tricubic, get_typed_pars
 from weave.utils import as_list, flatten
 
 WeightDict = Dict[Tuple[float, float], float]
@@ -61,7 +61,7 @@ class Smoother:
                 name='location_id',
                 coordinates=['super_region', 'region', 'country'],
                 kernel='depth',
-                kernel_pars={'radius': 0.9}
+                kernel_pars={'radius': 0.9, 'levels': 3}
             )
         >>> dimensions = [age, year, location]
         >>> smoother = Smoother(dimensions)
@@ -748,4 +748,4 @@ def get_dim_weights(distance: np.ndarray, kernel: str,
     if kernel == 'tricubic':
         return tricubic(distance, kernel_pars['radius'],
                         kernel_pars['exponent']).astype(np.float32)
-    return depth(distance, kernel_pars['radius'])
+    return depth(distance, kernel_pars['radius'], kernel_pars['levels'])
