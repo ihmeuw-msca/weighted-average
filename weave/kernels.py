@@ -176,7 +176,7 @@ def exponential(distance: float, radius: float) -> float:
 
 
 @njit
-def tricubic(distance: float, radius: float, exponent: float) -> float:
+def tricubic(distance: float, radius: float, exponent: int) -> float:
     """Get tricubic smoothing weight.
 
     Parameters
@@ -185,7 +185,7 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
         Distance between points.
     radius : positive float
         Kernel radius.
-    exponent : positive float
+    exponent : positive int
         Exponent value.
 
     Returns
@@ -216,7 +216,7 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
 
     >>> from weave.kernels import tricubic
     >>> radius = 2.
-    >>> exponent = 3.
+    >>> exponent = 3
     >>> distance = 1.
     >>> tricubic(distance, radius, exponent)
     0.669921875
@@ -226,7 +226,7 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
     >>> import numpy as np
     >>> from weave.kernels import tricubic
     >>> radius = 2.
-    >>> exponent = 3.
+    >>> exponent = 3
     >>> distance = np.array([0., 1., 2.])
     >>> tricubic(distance, radius, exponent)
     array([1., 0.66992188, 0.])

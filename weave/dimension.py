@@ -123,6 +123,10 @@ class Dimension:
                - Float in :math:`(0, 1)`
                - ``tree``
              * -
+               - ``levels``
+               - Positive int
+               -
+             * -
                - ``normalize``
                - Boolean, optional (default is ``True``)
                -
@@ -143,12 +147,12 @@ class Dimension:
                - Positive number
                - ``euclidean``
              * -
-               - ``normalize``
-               - Boolean, optional (default is ``False``)
+               - ``exponent``
+               - Positive int
                -
              * -
-               - ``exponent``
-               - Positive number
+               - ``normalize``
+               - Boolean, optional (default is ``False``)
                -
 
         * The optional kernel parameter `normalize` indicates whether
@@ -426,10 +430,10 @@ class Dimension:
         if self._kernel == 'depth':
             if 'normalize' not in kernel_pars:
                 kernel_pars['normalize'] = True
-            _check_pars(kernel_pars, ['radius', 'normalize'],
-                        ['pos_frac', 'bool'])
+            _check_pars(kernel_pars, ['radius', 'levels', 'normalize'],
+                        ['pos_frac', 'pos_int', 'bool'])
             kernel_pars = {key: kernel_pars[key]
-                           for key in ['radius', 'normalize']}
+                           for key in ['radius', 'levels', 'normalize']}
         else:
             if 'normalize' not in kernel_pars:
                 kernel_pars['normalize'] = False
@@ -438,9 +442,12 @@ class Dimension:
                             ['pos_num', 'bool'])
                 kernel_pars = {key: kernel_pars[key]
                                for key in ['radius', 'normalize']}
+            elif self._kernel == 'identity':
+                _check_pars(kernel_pars, 'normalize', 'bool')
+                kernel_pars = {'normalize': kernel_pars['normalize']}
             elif self._kernel == 'tricubic':
                 _check_pars(kernel_pars, ['radius', 'exponent', 'normalize'],
-                            ['pos_num', 'pos_num', 'bool'])
+                            ['pos_num', 'pos_int', 'bool'])
                 kernel_pars = {key: kernel_pars[key]
                                for key in ['radius', 'exponent', 'normalize']}
         self._kernel_pars = kernel_pars
