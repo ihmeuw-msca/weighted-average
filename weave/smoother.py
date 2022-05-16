@@ -694,7 +694,7 @@ def get_weights(dim_list: List[TypedDimension], fit_points: np.ndarray,
 
 
 @njit
-def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
+def get_dim_distances(x: np.ndarray, Y: np.ndarray, distance: str,
                       distance_dict: Dict[Tuple[float, float], float]) \
         -> np.ndarray:
     """Get distances between `x` and `y`.
@@ -703,7 +703,7 @@ def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    y : 2D numpy.ndarray of float
+    Y : 2D numpy.ndarray of float
         Nearby points.
     distance : str
         Distance function name.
@@ -713,14 +713,14 @@ def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
     Returns
     -------
     1D numpy.ndarray of nonnegative float32
-        Distances between `x` and `y`.
+        Distances between `x` and `Y`.
 
     """
     if distance == 'dictionary':
-        return dictionary(x, y, distance_dict)
+        return dictionary(x, Y, distance_dict)
     if distance == 'euclidean':
-        return euclidean(x, y)
-    return tree(x, y)
+        return euclidean(x, Y)
+    return tree(x, Y)
 
 
 @njit
