@@ -748,4 +748,5 @@ def get_dim_weights(distance: np.ndarray, kernel: str,
     if kernel == 'tricubic':
         return tricubic(distance, kernel_pars['radius'],
                         kernel_pars['exponent']).astype(np.float32)
-    return depth(distance, kernel_pars['radius'], kernel_pars['levels'])
+    return depth(distance, kernel_pars['radius'], kernel_pars['levels'],
+                 kernel_pars['version'])
