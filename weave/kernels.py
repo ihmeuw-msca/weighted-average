@@ -59,8 +59,9 @@ from weave.utils import as_list, is_int, is_float, is_number
 pars = Union[int, float, bool]
 
 
-@vectorize(['float32(float32,float32,float32)'])
-def depth(distance: float, radius: float, levels: float) -> float:
+@vectorize(['float32(float32,float32,float32,float32)'])
+def depth(distance: float, radius: float, levels: float, version: float) \
+        -> float:
     """Get depth smoothing weight.
 
     Parameters
@@ -69,9 +70,13 @@ def depth(distance: float, radius: float, levels: float) -> float:
         Distance between points.
     radius : float32 in (0, 1)
         Kernel radius.
-    levels : positive float
+    levels : positive float32
         Number of levels. If `dimension.distance` is 'tree', this is
         equal to the length of `dimension.coordinates`.
+    version : float32 in {1, 2}
+        Depth kernel version, with 1 corresponding to CODEm's location
+        scale factors and 2 corresponding to ST-GPR's location scale
+        factors.
 
     Returns
     -------
@@ -80,7 +85,7 @@ def depth(distance: float, radius: float, levels: float) -> float:
 
     Notes
     -----
-    The depth kernel function is defined as
+    When `version` = 1, the depth kernel function is defined as
 
     .. math:: k(d; r, s) = \\begin{cases} r & \\text{if } d = 0, \\\\
               r(1 - r)^{\\lceil d \\rceil} & \\text{if } 0 < d \\leq
@@ -95,32 +100,71 @@ def depth(distance: float, radius: float, levels: float) -> float:
     'super_region', 'region', and 'country' would have :math:`s = 3`).
     If :math:`s = 1`, the possible weight values are 1 and 0.
 
+    When `version` = 2, the depth kernel function is defined as
+
+    .. math:: k(d; r, s) = \\begin{cases} 1 & \\text{if } d = 0, \\\\
+              r^{\\lceil d \\rceil} & \\text{if } 0 < d \\leq s - 1,
+              \\\\ 0 & \\text{if } d > s - 1, \\end{cases}
+
+    which is the same as ST-GPR's location scale factors with
+    :math:`d =`:mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`,
+    :math:`r = \\zeta`, and :math:`s =` the number of levels in the
+    location hierarchy (e.g., locations with coordinates
+    'super_region', 'region', and 'country' would have :math:`s = 3`).
+    If :math:`s = 1`, the possible weight values are 1 and 0.
+
     Examples
     --------
-    Get weight for a pair of points.
+    Get weight for a pair of points (version 1).
 
     >>> import numpy as np
     >>> from weave.kernels import depth
     >>> radius = np.float32(0.9)
     >>> distance = np.float32(1.)
     >>> levels = np.float32(3)
-    >>> depth(distance, radius, levels)
+    >>> version = np.float32(1)
+    >>> depth(distance, radius, levels, version)
     0.09000002
 
-    Get weights for a vector of point pairs.
+    Get weight for a pair of points (version 2).
+
+    >>> import numpy as np
+    >>> from weave.kernels import depth
+    >>> radius = np.float32(0.9)
+    >>> distance = np.float32(1.)
+    >>> levels = np.float32(3)
+    >>> version = np.float32(2)
+    >>> depth(distance, radius, levels, version)
+    0.9
+
+    Get weights for a vector of point pairs (version 1).
 
     >>> import numpy as np
     >>> from weave.kernels import depth
     >>> radius = np.float32(0.9)
     >>> distance = np.array([0., 1., 2., 3.]).astype(np.float32)
     >>> levels = np.float32(3)
-    >>> depth(distance, radius, levels)
+    >>> version = np.float32(1)
+    >>> depth(distance, radius, levels, version)
     array([0.9, 0.09000002, 0.01, 0.], dtype=float32)
+
+    Get weights for a vector of point pairs (version 2).
+
+    >>> import numpy as np
+    >>> from weave.kernels import depth
+    >>> radius = np.float32(0.9)
+    >>> distance = np.array([0., 1., 2., 3.]).astype(np.float32)
+    >>> levels = np.float32(3)
+    >>> version = np.float32(2)
+    >>> depth(distance, radius, levels, version)
+    array([1., 0.9, 0.80999994, 0.], dtype=float32)
 
     """
     same_tree = distance <= levels - 1
-    not_root = levels > 1 and distance <= levels - 2
-    return same_tree*radius**not_root*(1 - radius)**np.ceil(distance)
+    if version == 1:
+        not_root = levels > 1 and distance <= levels - 2
+        return same_tree*radius**not_root*(1 - radius)**np.ceil(distance)
+    return same_tree*radius**np.ceil(distance)
 
 
 @njit
@@ -318,5 +362,7 @@ def _check_pars(kernel_pars: Dict[str, pars], names: Union[str, List[str]],
                 else:  # 'pos_int'
                     if not is_int(par_val):
                         raise TypeError(msg + 'an int.')
+                    if par_name == 'version' and par_val not in [1, 2]:
+                        raise ValueError(msg + 'in {1, 2}.')
                 if par_val <= 0.0:
                     raise ValueError(msg + 'positive.')
