@@ -67,6 +67,14 @@ def test_depth_levels_type(levels):
         Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
 
 
+@pytest.mark.parametrize('version', not_int)
+def test_depth_version_type(version):
+    """Raise TypeError if `version` is not an int."""
+    with pytest.raises(TypeError):
+        bad_pars = {'radius': 0.5, 'levels': 3, 'version': version}
+        Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
+
+
 @pytest.mark.parametrize('normalize', not_bool)
 def test_depth_normalize_type(normalize):
     """Raise TypeError if `normalize` is not a bool."""
@@ -224,6 +232,21 @@ def test_depth_levels_value(levels):
     """Raise ValueError if `levels` is not valid."""
     with pytest.raises(ValueError):
         bad_pars = {'radius': 0.5, 'levels': levels}
+        Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
+
+
+def test_depth_version_default():
+    """`version` set to 1 if not supplied."""
+    pars = {'radius': 0.5, 'levels': 3}
+    dim = Dimension('dummy', kernel='depth', kernel_pars=pars)
+    assert dim.kernel_pars['version'] == 1
+
+
+@pytest.mark.parametrize('version', [-1, 0, 3])
+def test_depth_version_value(version):
+    """Raise ValueError if `version` is not valid."""
+    with pytest.raises(ValueError):
+        bad_pars = {'radius': 0.5, 'levels': 3, 'version': version}
         Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
 
 
