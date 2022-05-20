@@ -127,6 +127,10 @@ class Dimension:
                - Positive int
                -
              * -
+               - ``version``
+               - Integer in :math:`\\{1, 2\\}`, optional (default is 1)
+               -
+             * -
                - ``normalize``
                - Boolean, optional (default is ``True``)
                -
@@ -171,12 +175,13 @@ class Dimension:
           This option may be inefficient if there is a large number of
           possible weight values for the given dimension.
 
-        * The parameters for the identity kernel are optional because
-          the weight values are equal to the distance values. For
-          increased efficiency, you can precompute all dimension
-          weights as a dictionary and then use the identity kernel with
-          the dictionary distance. This is done automatically within
-          :func:`weave.smoother.__call__` if `precompute` is True.
+        * The parameters `kernel_pars` are optional for the identity
+          kernel because the weight values are equal to the distance
+          values. For increased efficiency, you can precompute all
+          dimension weights as a dictionary and then use the identity
+          kernel with the dictionary distance. This is done
+          automatically within :func:`weave.smoother.__call__` if
+          `precompute` is True.
 
         * The parameter `distance_dict` contains the user-defined
           distances between points if the distance attribute is
@@ -428,10 +433,13 @@ class Dimension:
 
         # Check parameter values
         if self._kernel == 'depth':
+            if 'version' not in kernel_pars:
+                kernel_pars['version'] = 1
             if 'normalize' not in kernel_pars:
                 kernel_pars['normalize'] = True
-            kpars = ['radius', 'levels', 'normalize']
-            _check_pars(kernel_pars, kpars, ['pos_frac', 'pos_int', 'bool'])
+            kpars = ['radius', 'levels', 'version', 'normalize']
+            _check_pars(kernel_pars, kpars,
+                        ['pos_frac', 'pos_int', 'pos_int', 'bool'])
             kernel_pars = {key: kernel_pars[key] for key in kpars}
         else:
             if 'normalize' not in kernel_pars:
