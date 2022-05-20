@@ -338,6 +338,10 @@
 <span class="sd">               - Positive int</span>
 <span class="sd">               -</span>
 <span class="sd">             * -</span>
+<span class="sd">               - ``version``</span>
+<span class="sd">               - Integer in :math:`\\{1, 2\\}`, optional (default is 1)</span>
+<span class="sd">               -</span>
+<span class="sd">             * -</span>
 <span class="sd">               - ``normalize``</span>
 <span class="sd">               - Boolean, optional (default is ``True``)</span>
 <span class="sd">               -</span>
@@ -382,12 +386,13 @@
 <span class="sd">          This option may be inefficient if there is a large number of</span>
 <span class="sd">          possible weight values for the given dimension.</span>
 
-<span class="sd">        * The parameters for the identity kernel are optional because</span>
-<span class="sd">          the weight values are equal to the distance values. For</span>
-<span class="sd">          increased efficiency, you can precompute all dimension</span>
-<span class="sd">          weights as a dictionary and then use the identity kernel with</span>
-<span class="sd">          the dictionary distance. This is done automatically within</span>
-<span class="sd">          :func:`weave.smoother.__call__` if `precompute` is True.</span>
+<span class="sd">        * The parameters `kernel_pars` are optional for the identity</span>
+<span class="sd">          kernel because the weight values are equal to the distance</span>
+<span class="sd">          values. For increased efficiency, you can precompute all</span>
+<span class="sd">          dimension weights as a dictionary and then use the identity</span>
+<span class="sd">          kernel with the dictionary distance. This is done</span>
+<span class="sd">          automatically within :func:`weave.smoother.__call__` if</span>
+<span class="sd">          `precompute` is True.</span>
 
 <span class="sd">        * The parameter `distance_dict` contains the user-defined</span>
 <span class="sd">          distances between points if the distance attribute is</span>
@@ -639,28 +644,28 @@
 
         <span class="c1"># Check parameter values</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'depth'</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">'version'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
+                <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'version'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="s1">'normalize'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
                 <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'levels'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">],</span>
-                        <span class="p">[</span><span class="s1">'pos_frac'</span><span class="p">,</span> <span class="s1">'pos_int'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
-            <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-                           <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'levels'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]}</span>
+            <span class="n">kpars</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'levels'</span><span class="p">,</span> <span class="s1">'version'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]</span>
+            <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="n">kpars</span><span class="p">,</span>
+                        <span class="p">[</span><span class="s1">'pos_frac'</span><span class="p">,</span> <span class="s1">'pos_int'</span><span class="p">,</span> <span class="s1">'pos_int'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
+            <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kpars</span><span class="p">}</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="s1">'normalize'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
                 <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'exponential'</span><span class="p">:</span>
-                <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">],</span>
-                            <span class="p">[</span><span class="s1">'pos_num'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
-                <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-                               <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]}</span>
+                <span class="n">kpars</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]</span>
+                <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="n">kpars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'pos_num'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
+                <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kpars</span><span class="p">}</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'identity'</span><span class="p">:</span>
                 <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">)</span>
                 <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'normalize'</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]}</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'tricubic'</span><span class="p">:</span>
-                <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">],</span>
-                            <span class="p">[</span><span class="s1">'pos_num'</span><span class="p">,</span> <span class="s1">'pos_num'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
-                <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-                               <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]}</span>
+                <span class="n">kpars</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]</span>
+                <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="n">kpars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'pos_num'</span><span class="p">,</span> <span class="s1">'pos_num'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
+                <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kpars</span><span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_pars</span> <span class="o">=</span> <span class="n">kernel_pars</span>
 
     <span class="nd">@property</span>
