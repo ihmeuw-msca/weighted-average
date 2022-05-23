@@ -124,13 +124,6 @@ def test_loop_type(loop):
         smoother(data, 'residual', loop=loop)
 
 
-@pytest.mark.parametrize('precompute', not_bool)
-def test_precompute_type(precompute):
-    """Raise TypeError if `precompute` is not a bool."""
-    with pytest.raises(TypeError):
-        smoother(data, 'residual', blah=precompute)
-
-
 @pytest.mark.parametrize('parallel', not_bool)
 def test_parallel_type(parallel):
     """Raise TypeError if `parallel` is not a bool."""
@@ -237,6 +230,22 @@ def test_data_predict_type(predict):
 
 
 # Test data values
+def test_data_name2coord():
+    """Raise ValueError if `name` maps to multiple `coordinates`."""
+    with pytest.raises(ValueError):
+        data2 = data.copy()
+        data2.loc[2, 'location_id'] = 5
+        smoother(data2, 'residual')
+
+
+def test_data_coord2name():
+    """Raise ValueError if `coordinates` maps to multiple `name`."""
+    with pytest.raises(ValueError):
+        data2 = data.copy()
+        data2.loc[2, 'level_3'] = 5
+        smoother(data2, 'residual')
+
+
 def test_data_nans():
     """Raise ValueError if NaNs in `data`."""
     with pytest.raises(ValueError):
@@ -251,20 +260,4 @@ def test_data_infs(value):
     with pytest.raises(ValueError):
         data2 = data.copy()
         data2['residual'] = 5*[value]
-        smoother(data2, 'residual')
-
-
-def test_data_name2coord():
-    """Raise ValueError if `name` maps to multiple `coordinates`."""
-    with pytest.raises(ValueError):
-        data2 = data.copy()
-        data2.loc[2, 'location_id'] = 5
-        smoother(data2, 'residual')
-
-
-def test_data_coord2name():
-    """Raise ValueError if `coordinates` maps to multiple `name`."""
-    with pytest.raises(ValueError):
-        data2 = data.copy()
-        data2.loc[2, 'level_3'] = 5
         smoother(data2, 'residual')
