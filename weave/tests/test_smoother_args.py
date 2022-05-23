@@ -125,10 +125,10 @@ def test_loop_type(loop):
 
 
 @pytest.mark.parametrize('precompute', not_bool)
-def test_precomptue_type(precompute):
+def test_precompute_type(precompute):
     """Raise TypeError if `precompute` is not a bool."""
     with pytest.raises(TypeError):
-        smoother(data, 'residual', precompute=precompute)
+        smoother(data, 'residual', blah=precompute)
 
 
 @pytest.mark.parametrize('parallel', not_bool)

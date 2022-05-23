@@ -119,7 +119,7 @@ class Smoother:
 
     def __call__(self, data: DataFrame, columns: Union[str, List[str]],
                  fit: str = None, predict: str = None, loop: bool = False,
-                 precompute: bool = True, parallel: bool = True) -> DataFrame:
+                 parallel: bool = True) -> DataFrame:
         """Smooth data across dimensions with weighted averages.
 
         For each point in `predict`, calculate a smoothed value of each
@@ -148,11 +148,6 @@ class Smoother:
             `predict` and smooth values using matrix--vector
             multiplication. Requires more memory, but is faster.
             Default is False.
-        precompute : bool, optional
-            If True, precompute all dimension weights and store in a
-            dictionary. Requires more memory, but is faster. Otherwise,
-            compute all dimension distances and weights on-the-fly.
-            Requires less memory, but is slower. Default is True.
         parallel : bool, optional
             If True, parallelize the loop over the predict points.
             Default is True.
@@ -211,21 +206,15 @@ class Smoother:
 
         """
         # Check input
-        self.check_args(data, columns, fit, predict, loop, precompute,
-                        parallel)
+        self.check_args(data, columns, fit, predict, loop, parallel)
         self.check_data(data, columns, fit, predict)
 
         # Extract data
         idx_fit = self.get_indices(data, fit)
         idx_pred = self.get_indices(data, predict)
         cols = self.get_columns(data, columns, idx_fit)
-        points = self.get_points(data, precompute)
-
-        # Cast dimensions as jitclass objects
-        if precompute:
-            dim_list = self.get_typed_dimensions(data)
-        else:
-            dim_list = self.get_typed_dimensions()
+        points = self.get_points(data)
+        dim_list = self.get_typed_dimensions(data)
 
         # Calculate smoothed values
         if parallel:
@@ -245,7 +234,7 @@ class Smoother:
     @staticmethod
     def check_args(data: DataFrame, columns: Union[str, List[str]],
                    fit: Optional[str], predict: Optional[str], loop: bool,
-                   precompute: bool, parallel: bool) -> None:
+                   parallel: bool) -> None:
         """Check `smoother` argument types and values.
 
         Parameters
@@ -263,10 +252,6 @@ class Smoother:
             If True, smooth values for each point in `predict`
             separately in a loop. Otherwise, populate a matrix of weights
             for all points in `predict` and smooth values together.
-        precompute : bool
-            If True, precompute all dimension weights and store in a
-            dictionary. Otherwise, compute all dimension distances and
-            weights on-the-fly.
         parallel : bool
             If True, parallelize the loop over the predict points.
 
@@ -290,8 +275,6 @@ class Smoother:
             raise TypeError('`predict` is not a str.')
         if not isinstance(loop, bool):
             raise TypeError('`loop` is not a bool.')
-        if not isinstance(precompute, bool):
-            raise TypeError('`precompute` is not a bool.')
         if not isinstance(parallel, bool):
             raise TypeError('`parallel` is not a bool.')
 
@@ -423,16 +406,13 @@ class Smoother:
         return np.array([data[col].values[idx_fit]
                          for col in as_list(columns)], dtype=np.float32).T
 
-    def get_points(self, data: DataFrame, precompute: bool) -> np.ndarray:
+    def get_points(self, data: DataFrame) -> np.ndarray:
         """Get point coordinates.
 
         Parameters
         ----------
         data : pandas.DataFrame
             Input data structure.
-        precompute : bool
-            If True, return `dimension.name` data. If False, return
-            `dimension.coordinates` data.
 
         Returns
         -------
@@ -440,21 +420,19 @@ class Smoother:
             Point coordinates.
 
         """
-        if precompute:
-            points = [dim.name for dim in self._dimensions]
-        else:
-            points = flatten([dim.coordinates for dim in self._dimensions])
+        points = [dim.name for dim in self._dimensions]
         return np.ascontiguousarray(data[points].values, dtype=np.float32)
 
-    def get_typed_dimensions(self, data=None) -> List[TypedDimension]:
+    def get_typed_dimensions(self, data: DataFrame) -> List[TypedDimension]:
         """Get smoothing dimensions cast as jitclass objects.
 
-        If `data` is not None, precompute dimension weights and store
-        in `distance_dict`.
+        All TypedDimension objects have identity kernel, dictionary
+        distance, and precomputed dimension weights stored in
+        `distance_dict`.
 
         Parameters
         ----------
-        data : pandas.DataFrame, optional
+        data : pandas.DataFrame
             Input data structure.
 
         Returns
@@ -465,17 +443,14 @@ class Smoother:
         """
         dim_list = TypedList()
         for dim in self._dimensions:
-            if data is None:
-                dim_list.append(get_typed_dimension(dim))
-            else:
-                dim_precompute = Dimension(
-                    name=dim.name,
-                    kernel='identity',
-                    kernel_pars=dim.kernel_pars,
-                    distance='dictionary',
-                    distance_dict=get_weight_dict(dim, data)
-                )
-                dim_list.append(get_typed_dimension(dim_precompute))
+            dim_precompute = Dimension(
+                name=dim.name,
+                kernel='identity',
+                kernel_pars=dim.kernel_pars,
+                distance='dictionary',
+                distance_dict=get_weight_dict(dim, data)
+            )
+            dim_list.append(get_typed_dimension(dim_precompute))
         return dim_list
 
 
