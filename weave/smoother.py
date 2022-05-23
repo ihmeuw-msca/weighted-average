@@ -1,7 +1,7 @@
-# pylint: disable=C0103, E0611, E1133, R0912, R0913, R0914
+# pylint: disable=E0611, E1133, R0912, R0913, R0914
 """Smooth data across multiple dimensions using weighted averages."""
 from itertools import product
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Union
 
 from numba import njit, prange  # type: ignore
 from numba.typed import List as TypedList  # type: ignore
@@ -10,11 +10,7 @@ from pandas import DataFrame  # type: ignore
 from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
 from weave.dimension import Dimension, TypedDimension, get_typed_dimension
-from weave.distance import dictionary, euclidean, hierarchical, get_typed_dict
-from weave.kernels import exponential, depth, tricubic, get_typed_pars
 from weave.utils import as_list, flatten
-
-WeightDict = Dict[Tuple[float, float], float]
 
 
 class Smoother:
@@ -426,10 +422,6 @@ class Smoother:
     def get_typed_dimensions(self, data: DataFrame) -> List[TypedDimension]:
         """Get smoothing dimensions cast as jitclass objects.
 
-        All TypedDimension objects have identity kernel, dictionary
-        distance, and precomputed dimension weights stored in
-        `distance_dict`.
-
         Parameters
         ----------
         data : pandas.DataFrame
@@ -441,71 +433,8 @@ class Smoother:
             Smoothing dimensions cast as jitclass objects.
 
         """
-        dim_list = TypedList()
-        for dim in self._dimensions:
-            dim_precompute = Dimension(
-                name=dim.name,
-                kernel='identity',
-                kernel_pars=dim.kernel_pars,
-                distance='dictionary',
-                distance_dict=get_weight_dict(dim, data)
-            )
-            dim_list.append(get_typed_dimension(dim_precompute))
-        return dim_list
-
-
-def get_weight_dict(dim: Dimension, data: DataFrame) -> WeightDict:
-    """Get dictionary of precomputed dimension smoothing weights.
-
-    Parameters
-    ----------
-    dim : Dimension
-        Smoothing dimension specifications.
-    data : pandas.DataFrame
-        Input data strucutre.
-
-    Returns
-    -------
-    dict of {(float, float): float}
-        Dictionary of smoothing weights.
-
-    Raises
-    ------
-    ValueError
-        If `dim.name` and `dim.coordinates` not one-to-one in `data`.
-
-    """
-    # Check `name` and `coordinates` one-to-one
-    dim_points = data[[dim.name] + dim.coordinates].drop_duplicates()
-    if [dim.name] != dim.coordinates:
-        if any(dim_points.groupby(dim.name).size() != 1):
-            raise ValueError('`name` maps to multiple `coordinates`.')
-        if any(dim_points.groupby(dim.coordinates).size() != 1):
-            raise ValueError('`coordinates` maps to multiple `name`.')
-
-    # Get points, kernel, and distance_dict
-    dim_points = np.array(dim_points.values, dtype=np.float32)
-    dim_names = dim_points[:, 0]
-    dim_coords = dim_points[:, 1:]
-    kernel_pars = get_typed_pars(dim.kernel_pars)
-    if dim.distance == 'dictionary':
-        distance_dict = get_typed_dict(dim.distance_dict)
-    else:
-        distance_dict = get_typed_dict()
-
-    # Create weight dictionary
-    weight_dict = {}
-    for idx_x, x in enumerate(dim_names):
-        idx_Y = np.where(dim_names >= x)[0]
-        dim_dists = get_dim_distances(dim_coords[idx_x], dim_coords[idx_Y],
-                                      dim.distance, distance_dict)
-        if dim.kernel == 'identity':
-            dim_weights = dim_dists
-        else:
-            dim_weights = get_dim_weights(dim_dists, dim.kernel, kernel_pars)
-        weight_dict.update({(x, dim_names[idx_y]): dim_weights[ii]
-                            for ii, idx_y in enumerate(idx_Y)})
-    return weight_dict
+        return TypedList([get_typed_dimension(dim, data)
+                          for dim in self._dimensions])
 
 
 @njit
@@ -627,9 +556,9 @@ def get_weights(dim_list: List[TypedDimension], fit_points: np.ndarray,
     ----------
     dim_list : list of TypedDimension
         Smoothing dimensions.
-    fit_points : 2D numpy.ndarray of float
+    fit_points : 2D numpy.ndarray of float32
         Fit point coordinates.
-    pred_point : 1D numpy.ndarray of float
+    pred_point : 1D numpy.ndarray of float32
         Predict point coordinates.
 
     Returns
@@ -642,22 +571,13 @@ def get_weights(dim_list: List[TypedDimension], fit_points: np.ndarray,
     weights = np.ones(len(fit_points), dtype=np.float32)
 
     # Calculate weights one dimension at a time
-    idx_start = 0
-    for dim in dim_list:
-        idx_stop = idx_start + len(dim.coordinates)
-        idx_dim = np.arange(idx_start, idx_stop)
-        dim_dists = get_dim_distances(pred_point[idx_dim],
-                                      fit_points[:, idx_dim], dim.distance,
-                                      dim.distance_dict)
-        if dim.kernel == 'identity':
-            dim_weights = dim_dists
-        else:
-            dim_weights = get_dim_weights(dim_dists, dim.kernel,
-                                          dim.kernel_pars)
-        idx_start = idx_stop
+    for idx_dim, dim in enumerate(dim_list):
+        dim_weights = [dim.weight_dict[(pred_point[idx_dim], fit_point)]
+                       for fit_point in fit_points[:, idx_dim]]
+        dim_weights = np.array(dim_weights, dtype=np.float32)
 
         # Optional normalize by subgroup
-        if dim.kernel_pars['normalize'] == 1:
+        if dim.normalize:
             for weight in list(set(dim_weights)):
                 idx_weight = np.where(dim_weights == weight)[0]
                 if weights[idx_weight].sum() != 0:
@@ -666,61 +586,3 @@ def get_weights(dim_list: List[TypedDimension], fit_points: np.ndarray,
             weights *= dim_weights
 
     return weights/weights.sum()
-
-
-@njit
-def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
-                      distance_dict: Dict[Tuple[float, float], float]) \
-        -> np.ndarray:
-    """Get distances between `x` and `y`.
-
-    Parameters
-    ----------
-    x : 1D numpy.ndarray of float
-        Current point.
-    y : 2D numpy.ndarray of float
-        Nearby points.
-    distance : str
-        Distance function name.
-    distance_dict : numba.typed.Dict of {(float32, float32): float32}
-        Dictionary of distances between points.
-
-    Returns
-    -------
-    1D numpy.ndarray of nonnegative float32
-        Distances between `x` and `y`.
-
-    """
-    if distance == 'dictionary':
-        return dictionary(x, y, distance_dict)
-    if distance == 'euclidean':
-        return euclidean(x, y)
-    return hierarchical(x, y)
-
-
-@njit
-def get_dim_weights(distance: np.ndarray, kernel: str,
-                    kernel_pars: Dict[str, float]) -> np.ndarray:
-    """Get smoothing weights.
-
-    Parameters
-    ----------
-    distance : 1D numpy.ndarray of nonnegative float32
-        Distances between points.
-    kernel : str
-        Kernel function name.
-    kernel_pars : numba.typed.Dict of {unicode_type: float32}
-        Kernel function parameters.
-
-    Returns
-    -------
-    1D numpy.ndarray of nonnegative float32
-        Smoothing weights.
-
-    """
-    if kernel == 'exponential':
-        return exponential(distance, kernel_pars['radius']).astype(np.float32)
-    if kernel == 'tricubic':
-        return tricubic(distance, kernel_pars['radius'],
-                        kernel_pars['exponent']).astype(np.float32)
-    return depth(distance, kernel_pars['radius'])
