@@ -307,6 +307,8 @@ class Smoother:
             If `dimension.name`, `dimensions.coordinates`, `columns`,
             `fit`, or `predict` in `data` contain invalid types.
         ValueError
+            If `dimension.name` and `dimension.coordinates` not
+            one-to-one in `data`.
             If `data` contains NaNs or Infs.
 
         """
@@ -351,6 +353,15 @@ class Smoother:
         if predict is not None:
             if not is_bool_dtype(data[predict]):
                 raise TypeError('`predict` data is not bool.')
+
+        # Check `name` and `coordinates` one-to-one
+        for dim in self._dimensions:
+            dim_points = data[[dim.name] + dim.coordinates].drop_duplicates()
+            if [dim.name] != dim.coordinates:
+                if any(dim_points.groupby(dim.name).size() != 1):
+                    raise ValueError('`name` maps to multiple `coordinates`.')
+                if any(dim_points.groupby(dim.coordinates).size() != 1):
+                    raise ValueError('`coordinates` maps to multiple `name`.')
 
         # Check values
         if data.isna().any(None):
