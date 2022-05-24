@@ -101,13 +101,13 @@ def tree(x: np.ndarray, y: np.ndarray) -> float:
     >>> import numpy as np
     >>> from weave.distance import tree
     >>> tree(np.array([1., 2., 4.]), np.array([1., 2., 4.]))
-    0.
+    0.0
     >>> tree(np.array([1., 2., 4.]), np.array([1., 2., 5.]))
-    1.
+    1.0
     >>> tree(np.array([1., 2., 4.]), np.array([1., 3., 6.]))
-    2.
+    2.0
     >>> tree(np.array([1., 2., 4.]), np.array([7., 8., 9.]))
-    3.
+    3.0
 
     """
     if (x == y).all():
