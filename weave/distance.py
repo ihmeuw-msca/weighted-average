@@ -57,10 +57,14 @@ def euclidean(x: np.ndarray, y: np.ndarray) -> float:
 
     Examples
     --------
-    Get Euclidean distance between points.
+    Get Euclidean distances between points.
 
     >>> import numpy as np
     >>> from weave.distance import euclidean
+    >>> euclidean(np.array([0., 0.]), np.array([0., 0.]))
+    >>> 0.0
+    >>> euclidean(np.array([0., 0.]), np.array([0., 1.]))
+    >>> 1.0
     >>> euclidean(np.array([0., 0.]), np.array([1., 1.]))
     1.4142135
 
