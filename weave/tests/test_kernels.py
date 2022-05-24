@@ -1,4 +1,3 @@
-# pylint: disable=E0611
 """Tests for kernel functions.
 
 In general, kernel functions should satisfy the following properties:
