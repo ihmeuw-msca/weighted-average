@@ -78,53 +78,6 @@ def euclidean(x: np.ndarray, y: np.ndarray) -> float:
     return np.linalg.norm(x - y).astype(np.float32)
 
 
-def tree(x: np.ndarray, y: np.ndarray) -> float:
-    """Get tree distance between `x` and `y`.
-
-    Points are specified as a vector of IDs corresponding to nodes in a
-    tree, starting from the root node and ending at a leaf node.
-    The distance between two points is defined as the number of edges
-    between the leaf nodes and their nearest common parent node.
-
-    Parameters
-    ----------
-    x : 1D numpy.ndarray of float
-        Current point.
-    Y : 1D numpy.ndarray of float
-        Nearby point.
-
-    Returns
-    -------
-    nonnegative float32
-        Tree distance between `x` and `y`.
-
-    Examples
-    --------
-    Get tree distances between leaf nodes from the following tree.
-
-    .. image:: images/hierarchy.png
-
-    >>> import numpy as np
-    >>> from weave.distance import tree
-    >>> tree(np.array([1., 2., 4.]), np.array([1., 2., 4.]))
-    0.
-    >>> tree(np.array([1., 2., 4.]), np.array([1., 2., 5.]))
-    1.
-    >>> tree(np.array([1., 2., 4.]), np.array([1., 3., 6.]))
-    2.
-    >>> tree(np.array([1., 2., 4.]), np.array([7., 8., 9.]))
-    3.
-
-    """
-    if (x == y).all():
-        return np.float32(0)
-    for ii in range(1, len(x)):
-        if (x[:-ii] == y[:-ii]).all():
-            return np.float32(ii)
-    return np.float32(len(x))
-
-
-@njit
 def dictionary(x: np.ndarray, Y: np.ndarray,
                distance_dict: Dict[Tuple[float, float], float]) -> np.ndarray:
     """Get dictionary distances between `x` and `Y`.
@@ -188,6 +141,52 @@ def dictionary(x: np.ndarray, Y: np.ndarray,
 
     # Get distance from all nearby points
     return np.array([get_distance(x, y) for y in Y], dtype=np.float32)
+
+
+def tree(x: np.ndarray, y: np.ndarray) -> float:
+    """Get tree distance between `x` and `y`.
+
+    Points are specified as a vector of IDs corresponding to nodes in a
+    tree, starting from the root node and ending at a leaf node.
+    The distance between two points is defined as the number of edges
+    between the leaf nodes and their nearest common parent node.
+
+    Parameters
+    ----------
+    x : 1D numpy.ndarray of float
+        Current point.
+    Y : 1D numpy.ndarray of float
+        Nearby point.
+
+    Returns
+    -------
+    nonnegative float32
+        Tree distance between `x` and `y`.
+
+    Examples
+    --------
+    Get tree distances between leaf nodes from the following tree.
+
+    .. image:: images/hierarchy.png
+
+    >>> import numpy as np
+    >>> from weave.distance import tree
+    >>> tree(np.array([1., 2., 4.]), np.array([1., 2., 4.]))
+    0.
+    >>> tree(np.array([1., 2., 4.]), np.array([1., 2., 5.]))
+    1.
+    >>> tree(np.array([1., 2., 4.]), np.array([1., 3., 6.]))
+    2.
+    >>> tree(np.array([1., 2., 4.]), np.array([7., 8., 9.]))
+    3.
+
+    """
+    if (x == y).all():
+        return np.float32(0)
+    for ii in range(1, len(x)):
+        if (x[:-ii] == y[:-ii]).all():
+            return np.float32(ii)
+    return np.float32(len(x))
 
 
 def get_typed_dict(distance_dict: Optional[DistanceDict] = None) \
