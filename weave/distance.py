@@ -79,7 +79,7 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     >>> x = np.array([0.])
     >>> Y = np.array([[-1.], [0.], [1.]])
     >>> euclidean(x, Y)
-    array([1., 0., 1.], dtype=float32)
+    array([1., 0., 1.])
 
     Get distances between vector points.
 
@@ -88,15 +88,10 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     >>> x = np.array([0., 0.])
     >>> Y = np.array([[-1., -1.], [0., 0.], [1., 1.]])
     >>> euclidean(x, Y)
-    array([1.4142135, 0., 1.4142135], dtype=float32)
+    array([1.41421356, 0., 1.41421356])
 
     """
-    # Scalars
-    if len(x) == 1:
-        return np.abs(x - Y).flatten().astype(np.float32)
-
-    # Vectors
-    return np.array([np.linalg.norm(x - y) for y in Y], dtype=np.float32)
+    return np.linalg.norm(x - Y, axis=1)
 
 
 @njit
