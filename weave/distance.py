@@ -17,17 +17,7 @@ References
        <https://en.wikipedia.org/wiki/Metric_(mathematics)>`_
 
 """
-from typing import Dict, Optional, Tuple, Union
-
-from numba import njit  # type: ignore
-from numba.typed import Dict as TypedDict  # type: ignore
-from numba.types import float32, UniTuple  # type: ignore
 import numpy as np
-
-from weave.utils import is_number
-
-number = Union[int, float]
-DistanceDict = Dict[Tuple[number, number], number]
 
 
 def euclidean(x: np.ndarray, y: np.ndarray) -> float:
