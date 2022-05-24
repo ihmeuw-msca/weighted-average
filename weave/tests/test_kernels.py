@@ -6,35 +6,23 @@ In general, kernel functions should satisfy the following properties:
 2. k(x, y) <= k(x', y') if d(x, y) > d(x', y')
    k(x, y) >= k(x', y') if d(x, y) < d(x', y')
 
-TODO:
-* Add tests for `get_typed_pars()`
-
 """
 from hypothesis import given, settings
 from hypothesis.strategies import floats
 import numpy as np
-import pytest
 
-from weave.kernels import exponential, tricubic, depth, _check_pars
+from weave.kernels import exponential, depth, tricubic
 
 # Hypothesis types
-my_pos = floats(min_value=0.0, max_value=1e5, allow_nan=False,
-                allow_infinity=False, allow_subnormal=False, exclude_min=True)
-my_nonpos = floats(min_value=-1e5, max_value=0.0, allow_nan=False,
-                   allow_infinity=False, allow_subnormal=False)
-my_nonneg = floats(min_value=0.0, max_value=1e5, allow_nan=False,
-                   allow_infinity=False, allow_subnormal=False)
-my_frac = floats(min_value=0.0, max_value=1.0, allow_nan=False,
-                 allow_infinity=False, allow_subnormal=False, exclude_min=True,
-                 exclude_max=True)
-my_notfrac = floats(min_value=1.0, max_value=1e5, allow_nan=False,
+my_dist = floats(min_value=0.0, max_value=1e3, allow_nan=False,
+                 allow_infinity=False, allow_subnormal=False)
+my_radius1 = floats(min_value=1e2, max_value=1e3, allow_nan=False,
                     allow_infinity=False, allow_subnormal=False)
-
-# Lists of wrong types to test exceptions
-not_dict = [1, 1.0, 'dummy', True, None, [], ()]
-not_float = [1, 'dummy', True, None, [], (), {}]
-not_numeric = ['dummy', True, None, [], (), {}]
-not_bool = [1, 1.0, 'dummy', None, [], (), {}]
+my_radius2 = floats(min_value=0.0, max_value=1.0, allow_nan=False,
+                    allow_infinity=False, allow_subnormal=False,
+                    exclude_min=True, exclude_max=True)
+my_exponent = floats(min_value=1e-1, max_value=1e1, allow_nan=False,
+                     allow_infinity=False, allow_subnormal=False)
 
 
 # Property 1: Output is a real-valued, finite, nonnegative float
@@ -43,11 +31,11 @@ def property_1(weight):
     assert np.isreal(weight)
     assert np.isfinite(weight)
     assert weight >= 0.0
-    assert isinstance(weight, (float, np.floating))
+    assert isinstance(weight, np.float32)
 
 
 @settings(deadline=None)
-@given(my_nonneg, my_pos)
+@given(my_dist, my_radius1)
 def test_exponential_type(distance, radius):
     """Exponential output satisfies property 1."""
     weight = exponential(distance, radius)
@@ -55,18 +43,18 @@ def test_exponential_type(distance, radius):
 
 
 @settings(deadline=None)
-@given(my_nonneg, my_pos, my_pos)
-def test_tricubic_type(distance, radius, exponent):
-    """Tricubic output satisfies property 1."""
-    weight = tricubic(distance, radius, exponent)
+@given(my_dist, my_radius2)
+def test_depth_type(distance, radius):
+    """Depth output satisfies property 1."""
+    weight = depth(distance, radius)
     property_1(weight)
 
 
 @settings(deadline=None)
-@given(my_nonneg, my_frac)
-def test_depth_type(distance, radius):
-    """Depth output satisfies property 1."""
-    weight = depth(np.float32(distance), np.float32(radius))
+@given(my_dist, my_radius1, my_exponent)
+def test_tricubic_type(distance, radius, exponent):
+    """Tricubic output satisfies property 1."""
+    weight = tricubic(distance, radius, exponent)
     property_1(weight)
 
 
@@ -79,7 +67,7 @@ def property_2(distance_a, distance_b, weight_a, weight_b):
         assert weight_a >= weight_b
 
 
-@given(my_nonneg, my_nonneg, my_pos)
+@given(my_dist, my_dist, my_radius1)
 def test_exponential_direction(distance_a, distance_b, radius):
     """Exponential output satisfies property 2."""
     weight_a = exponential(distance_a, radius)
@@ -87,7 +75,15 @@ def test_exponential_direction(distance_a, distance_b, radius):
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 
-@given(my_nonneg, my_nonneg, my_pos, my_pos)
+@given(my_dist, my_dist, my_radius2)
+def test_depth_direction(distance_a, distance_b, radius):
+    """Depth output satisfies property 2."""
+    weight_a = depth(distance_a, radius)
+    weight_b = depth(distance_b, radius)
+    property_2(distance_a, distance_b, weight_a, weight_b)
+
+
+@given(my_dist, my_dist, my_radius1, my_exponent)
 def test_tricubic_direction(distance_a, distance_b, radius, exponent):
     """Tricubic output satisfies property 2."""
     weight_a = tricubic(distance_a, radius, exponent)
@@ -95,106 +91,26 @@ def test_tricubic_direction(distance_a, distance_b, radius, exponent):
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 
-@given(my_nonneg, my_nonneg, my_pos)
-def test_depth_direction(distance_a, distance_b, radius):
-    """Depth output satisfies property 2."""
-    weight_a = depth(np.float32(distance_a), np.float32(radius))
-    weight_b = depth(np.float32(distance_b), np.float32(radius))
-    property_2(distance_a, distance_b, weight_a, weight_b)
-
-
 # Test specific output values
 def test_same_country():
     """Test depth kernel with same country."""
-    distance = np.float32(0)
-    radius = np.float32(0.9)
-    weight = depth(distance, radius)
+    weight = depth(0., 0.9)
     assert np.isclose(weight, 0.9)
 
 
 def test_same_region():
     """Test depth kernel with same region."""
-    distance = np.float32(1)
-    radius = np.float32(0.9)
-    weight = depth(distance, radius)
+    weight = depth(1., 0.9)
     assert np.isclose(weight, 0.09)
 
 
 def test_same_super_region():
     """Test depth kernel with same super region."""
-    distance = np.float32(2)
-    radius = np.float32(0.9)
-    weight = depth(distance, radius)
+    weight = depth(2., 0.9)
     assert np.isclose(weight, 0.01)
 
 
 def test_different_super_region():
     """Test depth kernel with different super regions."""
-    distance = np.float32(3)
-    radius = np.float32(0.9)
-    weight = depth(distance, radius)
+    weight = depth(3., 0.9)
     assert np.isclose(weight, 0.0)
-
-
-# Test `_check_pars()`
-@pytest.mark.parametrize('pars', not_dict)
-def test_pars_type(pars):
-    """Raise TypeError if `kernel_pars` is not a dict."""
-    with pytest.raises(TypeError):
-        _check_pars(pars, 'radius', 'pos_num')
-
-
-@given(my_pos)
-def test_pars_missing(par_val):
-    """Raise KeyError if `pars` is missing a kernel parameter."""
-    with pytest.raises(KeyError):
-        pars = {'dummy': par_val}
-        _check_pars(pars, 'radius', 'pos_num')
-
-
-@pytest.mark.parametrize('par_val', not_numeric)
-def test_pars_num(par_val):
-    """Raise TypeError if kernel parameter is not an int or float."""
-    with pytest.raises(TypeError):
-        pars = {'dummy': par_val}
-        _check_pars(pars, 'dummy', 'pos_num')
-
-
-@pytest.mark.parametrize('par_val', not_float)
-def test_pars_float(par_val):
-    """Raise TypeError if kernel parameter is not a float."""
-    with pytest.raises(TypeError):
-        pars = {'dummy': par_val}
-        _check_pars(pars, 'dummy', 'pos_frac')
-
-
-@pytest.mark.parametrize('par_val', not_bool)
-def test_pars_bool(par_val):
-    """Raise TypeError if kernel parameter is not a bool."""
-    with pytest.raises(TypeError):
-        pars = {'dummy': par_val}
-        _check_pars(pars, 'dummy', 'bool')
-
-
-@given(my_nonpos)
-def test_pars_pos_num(par_val):
-    """Raise ValueError if kernel parameter is not positive."""
-    with pytest.raises(ValueError):
-        pars = {'dummy': par_val}
-        _check_pars(pars, 'dummy', 'pos_num')
-
-
-@given(my_nonpos)
-def test_pars_pos_frac(par_val):
-    """Raise ValueError if kernel parameter is not positive."""
-    with pytest.raises(ValueError):
-        pars = {'dummy': par_val}
-        _check_pars(pars, 'dummy', 'pos_frac')
-
-
-@given(my_notfrac)
-def test_pars_frac(par_val):
-    """Raise ValueError if kernel parameter is >= 1."""
-    with pytest.raises(ValueError):
-        pars = {'dummy': par_val}
-        _check_pars(pars, 'dummy', 'pos_frac')
