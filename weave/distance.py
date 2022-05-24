@@ -2,10 +2,7 @@
 """Calculate the distance between points.
 
 Distance functions to calculate the distances between the current point
-and a vector of nearby points. While points can be either scalars or
-vectors, scalars must be cast as 1D vectors to comply with `Numba
-<https://numba.readthedocs.io/en/stable/index.html>`_ just-in-time
-compilation.
+and a nearby points.
 
 Notes
 -----
@@ -36,21 +33,20 @@ number = Union[int, float]
 DistanceDict = Dict[Tuple[number, number], number]
 
 
-@njit
-def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
-    """Get Euclidean distances between `x` and `Y`.
+def euclidean(x: np.ndarray, y: np.ndarray) -> float:
+    """Get Euclidean distance between `x` and `y`.
 
     Parameters
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    Y : 2D numpy.ndarray of float
-        Matrix of nearby points.
+    y : 1D numpy.ndarray of float
+        Nearby point.
 
     Returns
     -------
-    1D numpy.ndarray of nonnegative float32
-        Euclidean distances between `x` and `Y`.
+    nonnegative float32
+        Euclidean distance between `x` and `y`.
 
     Notes
     -----
@@ -77,24 +73,23 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     >>> import numpy as np
     >>> from weave.distance import euclidean
     >>> x = np.array([0.])
-    >>> Y = np.array([[-1.], [0.], [1.]])
-    >>> euclidean(x, Y)
-    array([1., 0., 1.])
+    >>> y = np.array([1.])
+    >>> euclidean(x, y)
+    1.
 
     Get distances between vector points.
 
     >>> import numpy as np
     >>> from weave.distance import euclidean
     >>> x = np.array([0., 0.])
-    >>> Y = np.array([[-1., -1.], [0., 0.], [1., 1.]])
-    >>> euclidean(x, Y)
-    array([1.41421356, 0., 1.41421356])
+    >>> y = np.array([1., 1.])
+    >>> euclidean(x, y)
+    1.4142135
 
     """
-    return np.linalg.norm(x - Y, axis=1)
+    return np.linalg.norm(x - y).astype(np.float32)
 
 
-@njit
 def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Get hierarchical distances between `x` and `Y`.
 
