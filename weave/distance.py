@@ -1,4 +1,4 @@
-# pylint: disable=C0103, E0611, W1401
+# pylint: disable=C0103
 """Calculate the distance between points.
 
 Notes
