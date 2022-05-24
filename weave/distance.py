@@ -1,9 +1,6 @@
 # pylint: disable=C0103, E0611, W1401
 """Calculate the distance between points.
 
-Distance functions to calculate the distances between the current point
-and a nearby points.
-
 Notes
 -----
 In general, distance functions should satisfy the following properties
@@ -36,6 +33,8 @@ DistanceDict = Dict[Tuple[number, number], number]
 def euclidean(x: np.ndarray, y: np.ndarray) -> float:
     """Get Euclidean distance between `x` and `y`.
 
+    Points `x` and `y` should have the same length.
+
     Parameters
     ----------
     x : 1D numpy.ndarray of float
@@ -50,16 +49,16 @@ def euclidean(x: np.ndarray, y: np.ndarray) -> float:
 
     Notes
     -----
-    For a pair of 1D points, this function computes the absolute value
-    of their difference:
-
-    .. math:: d(x, y) = |x - y|
-
-    For a pair of ND points, this function computes the *n*-dimensional
-    Euclidean distance [2]_:
+    For a pair of points with *n* coordinates, this function computes
+    the *n*-dimensional Euclidean distance [2]_:
 
     .. math:: d(x, y) = \\sqrt{(x_1 - y_1)^2 + (x_2 - y_2)^2 + \\dots +
               (x_n - y_n)^2}
+
+    If :math:`n = 1`, this is equivalent to the absolute value of the
+    difference between points:
+
+    .. math:: d(x, y) = |x - y|
 
     References
     ----------
@@ -68,30 +67,19 @@ def euclidean(x: np.ndarray, y: np.ndarray) -> float:
 
     Examples
     --------
-    Get distances between scalar points.
+    Get Euclidean distance between points.
 
     >>> import numpy as np
     >>> from weave.distance import euclidean
-    >>> x = np.array([0.])
-    >>> y = np.array([1.])
-    >>> euclidean(x, y)
-    1.
-
-    Get distances between vector points.
-
-    >>> import numpy as np
-    >>> from weave.distance import euclidean
-    >>> x = np.array([0., 0.])
-    >>> y = np.array([1., 1.])
-    >>> euclidean(x, y)
+    >>> euclidean(np.array([0., 0.]), np.array([1., 1.]))
     1.4142135
 
     """
     return np.linalg.norm(x - y).astype(np.float32)
 
 
-def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
-    """Get hierarchical distances between `x` and `Y`.
+def tree(x: np.ndarray, y: np.ndarray) -> float:
+    """Get tree distance between `x` and `y`.
 
     Points are specified as a vector of IDs corresponding to nodes in a
     tree, starting from the root node and ending at a leaf node.
@@ -102,39 +90,38 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    Y : 2D numpy.ndarray of float
-        Matrix of nearby points.
+    Y : 1D numpy.ndarray of float
+        Nearby point.
 
     Returns
     -------
-    1D numpy.ndarray of nonnegative float32
-        Hierarchical distances between `x` and `Y`.
+    nonnegative float32
+        Tree distance between `x` and `y`.
 
     Examples
     --------
-    Get distances between leaf nodes from the following tree.
+    Get tree distances between leaf nodes from the following tree.
 
     .. image:: images/hierarchy.png
 
     >>> import numpy as np
-    >>> from weave.distance import hierarchical
-    >>> x = np.array([1., 2., 4.])
-    >>> Y = np.array([[1., 2., 4.], [1., 2., 5.], [1., 3., 6.]])
-    >>> hierarchical(x, Y)
-    array([0., 1., 2.], dtype=float32)
+    >>> from weave.distance import tree
+    >>> tree(np.array([1., 2., 4.]), np.array([1., 2., 4.]))
+    0.
+    >>> tree(np.array([1., 2., 4.]), np.array([1., 2., 5.]))
+    1.
+    >>> tree(np.array([1., 2., 4.]), np.array([1., 3., 6.]))
+    2.
+    >>> tree(np.array([1., 2., 4.]), np.array([7., 8., 9.]))
+    3.
 
     """
-    # Get distance from one nearby point
-    def get_distance(x, y):
-        if (x == y).all():
-            return 0
-        for ii in range(1, len(x)):
-            if (x[:-ii] == y[:-ii]).all():
-                return ii
-        return len(x)
-
-    # Get distance between all nearby points
-    return np.array([get_distance(x, y) for y in Y], dtype=np.float32)
+    if (x == y).all():
+        return np.float32(0)
+    for ii in range(1, len(x)):
+        if (x[:-ii] == y[:-ii]).all():
+            return np.float32(ii)
+    return np.float32(len(x))
 
 
 @njit
