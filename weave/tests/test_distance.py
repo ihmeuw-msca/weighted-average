@@ -15,15 +15,8 @@ import numpy as np
 
 from weave.distance import euclidean, tree
 
+
 # Hypothesis types
-my_integers = integers(min_value=-1e5, max_value=1e5)
-
-# Lists of wrong types to test exceptions
-not_numeric = ['dummy', True, None, [], (), {}]
-not_dict = [1, 1.0, 'dummy', True, None, [], ()]
-not_tuple = [1, 1.0, 'dummy', True, None, [], {}]
-
-
 @composite
 def my_floats(draw):
     """Return float32 rounded to 5 decimals."""
@@ -119,7 +112,10 @@ def property_4(distance_xy, distance_xz, distance_zy):
     """Output satisfies property 4."""
     distance_xy = np.around(distance_xy, decimals=5)
     distance_xzy = np.around(distance_xz + distance_zy, decimals=5)
-    assert distance_xy <= distance_xzy
+    try:
+        assert distance_xy <= distance_xzy
+    except AssertionError:
+        assert np.isclose(distance_xy, distance_xzy)
 
 
 @given(my_arrays(n=3))
