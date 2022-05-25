@@ -209,7 +209,7 @@
         </div>
         <article role="main">
           <h1>Source code for weave.kernels</h1><div class="highlight"><pre>
-<span></span><span class="c1"># pylint: disable=C0103, E0611</span>
+<span></span><span class="c1"># pylint: disable=C0103, E0611, R0912</span>
 <span class="sd">"""Calculate the smoothing weight for nearby point given current point.</span>
 
 <span class="sd">Kernel functions to calculate the smoothing weight for a nearby point</span>
@@ -265,9 +265,117 @@
 <span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">float32</span><span class="p">,</span> <span class="n">unicode_type</span>  <span class="c1"># type: ignore</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">is_number</span>
+<span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">is_int</span><span class="p">,</span> <span class="n">is_float</span><span class="p">,</span> <span class="n">is_number</span>
 
 <span class="n">pars</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span>
+
+
+<span class="nd">@vectorize</span><span class="p">([</span><span class="s1">'float32(float32,float32,float32,float32)'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">levels</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">"""Get depth smoothing weight.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    distance : nonnegative float32</span>
+<span class="sd">        Distance between points.</span>
+<span class="sd">    radius : float32 in (0, 1)</span>
+<span class="sd">        Kernel radius.</span>
+<span class="sd">    levels : positive float32</span>
+<span class="sd">        Number of levels. If `dimension.distance` is 'tree', this is</span>
+<span class="sd">        equal to the length of `dimension.coordinates`.</span>
+<span class="sd">    version : float32 in {1, 2}</span>
+<span class="sd">        Depth kernel version, with 1 corresponding to CODEm's location</span>
+<span class="sd">        scale factors and 2 corresponding to ST-GPR's location scale</span>
+<span class="sd">        factors.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    nonnegative float32</span>
+<span class="sd">        Depth smoothing weight.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    When `version` = 1, the depth kernel function is defined as</span>
+
+<span class="sd">    .. math:: k(d; r, s) = \\begin{cases} r &amp; \\text{if } d = 0, \\\\</span>
+<span class="sd">              r(1 - r)^{\\lceil d \\rceil} &amp; \\text{if } 0 &lt; d \\leq</span>
+<span class="sd">              s - 2, \\\\ (1 - r)^{\\lceil d \\rceil} &amp; \\text{if }</span>
+<span class="sd">              s - 2 &lt; d \\leq s - 1, \\\\ 0 &amp; \\text{if } d &gt; s - 1,</span>
+<span class="sd">              \\end{cases}</span>
+
+<span class="sd">    which is the same as CODEm's location scale factors with</span>
+<span class="sd">    :math:`d =`:mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`,</span>
+<span class="sd">    :math:`r = \\zeta`, and :math:`s =` the number of levels in the</span>
+<span class="sd">    location hierarchy (e.g., locations with coordinates</span>
+<span class="sd">    'super_region', 'region', and 'country' would have :math:`s = 3`).</span>
+<span class="sd">    If :math:`s = 1`, the possible weight values are 1 and 0.</span>
+
+<span class="sd">    When `version` = 2, the depth kernel function is defined as</span>
+
+<span class="sd">    .. math:: k(d; r, s) = \\begin{cases} 1 &amp; \\text{if } d = 0, \\\\</span>
+<span class="sd">              r^{\\lceil d \\rceil} &amp; \\text{if } 0 &lt; d \\leq s - 1,</span>
+<span class="sd">              \\\\ 0 &amp; \\text{if } d &gt; s - 1, \\end{cases}</span>
+
+<span class="sd">    which is the same as ST-GPR's location scale factors with</span>
+<span class="sd">    :math:`d =`:mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`,</span>
+<span class="sd">    :math:`r = \\zeta`, and :math:`s =` the number of levels in the</span>
+<span class="sd">    location hierarchy (e.g., locations with coordinates</span>
+<span class="sd">    'super_region', 'region', and 'country' would have :math:`s = 3`).</span>
+<span class="sd">    If :math:`s = 1`, the possible weight values are 1 and 0.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Get weight for a pair of points (version 1).</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from weave.kernels import depth</span>
+<span class="sd">    &gt;&gt;&gt; radius = np.float32(0.9)</span>
+<span class="sd">    &gt;&gt;&gt; distance = np.float32(1.)</span>
+<span class="sd">    &gt;&gt;&gt; levels = np.float32(3)</span>
+<span class="sd">    &gt;&gt;&gt; version = np.float32(1)</span>
+<span class="sd">    &gt;&gt;&gt; depth(distance, radius, levels, version)</span>
+<span class="sd">    0.09000002</span>
+
+<span class="sd">    Get weight for a pair of points (version 2).</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from weave.kernels import depth</span>
+<span class="sd">    &gt;&gt;&gt; radius = np.float32(0.9)</span>
+<span class="sd">    &gt;&gt;&gt; distance = np.float32(1.)</span>
+<span class="sd">    &gt;&gt;&gt; levels = np.float32(3)</span>
+<span class="sd">    &gt;&gt;&gt; version = np.float32(2)</span>
+<span class="sd">    &gt;&gt;&gt; depth(distance, radius, levels, version)</span>
+<span class="sd">    0.9</span>
+
+<span class="sd">    Get weights for a vector of point pairs (version 1).</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from weave.kernels import depth</span>
+<span class="sd">    &gt;&gt;&gt; radius = np.float32(0.9)</span>
+<span class="sd">    &gt;&gt;&gt; distance = np.array([0., 1., 2., 3.]).astype(np.float32)</span>
+<span class="sd">    &gt;&gt;&gt; levels = np.float32(3)</span>
+<span class="sd">    &gt;&gt;&gt; version = np.float32(1)</span>
+<span class="sd">    &gt;&gt;&gt; depth(distance, radius, levels, version)</span>
+<span class="sd">    array([0.9, 0.09000002, 0.01, 0.], dtype=float32)</span>
+
+<span class="sd">    Get weights for a vector of point pairs (version 2).</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from weave.kernels import depth</span>
+<span class="sd">    &gt;&gt;&gt; radius = np.float32(0.9)</span>
+<span class="sd">    &gt;&gt;&gt; distance = np.array([0., 1., 2., 3.]).astype(np.float32)</span>
+<span class="sd">    &gt;&gt;&gt; levels = np.float32(3)</span>
+<span class="sd">    &gt;&gt;&gt; version = np.float32(2)</span>
+<span class="sd">    &gt;&gt;&gt; depth(distance, radius, levels, version)</span>
+<span class="sd">    array([1., 0.9, 0.80999994, 0.], dtype=float32)</span>
+
+<span class="sd">    """</span>
+    <span class="n">same_tree</span> <span class="o">=</span> <span class="n">distance</span> <span class="o">&lt;=</span> <span class="n">levels</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">version</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">not_root</span> <span class="o">=</span> <span class="n">levels</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">distance</span> <span class="o">&lt;=</span> <span class="n">levels</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">same_tree</span><span class="o">*</span><span class="n">radius</span><span class="o">**</span><span class="n">not_root</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">radius</span><span class="p">)</span><span class="o">**</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">same_tree</span><span class="o">*</span><span class="n">radius</span><span class="o">**</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="exponential"><a class="viewcode-back" href="../../api_reference/weave.kernels.html#weave.kernels.exponential">[docs]</a><span class="nd">@njit</span>
@@ -296,8 +404,8 @@
 
 <span class="sd">    .. math:: w_{a_{i, j}} = \\frac{1}{\\exp(\\omega \\cdot d_{i, j})}</span>
 
-<span class="sd">    with :math:`r = \\frac{1}{\\omega}` and :math:`d_{i, j} =`</span>
-<span class="sd">    :mod:`weave.distance.euclidean`:math:`(a_i, a_j)`.</span>
+<span class="sd">    with :math:`d_{i, j} =`:mod:`weave.distance.euclidean`</span>
+<span class="sd">    :math:`(a_i, a_j)` and :math:`r = \\frac{1}{\\omega}`.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -352,10 +460,10 @@
 <span class="sd">    ..  math:: w_{t_{i, j}} = \\left(1 - \\left(\\frac{d_{i,</span>
 <span class="sd">               j}}{\\max_k|t_i - t_k| + 1}\\right)^\\lambda\\right)^3</span>
 
-<span class="sd">    with :math:`s = \\lambda` and :math:`d_{i, j} =`</span>
-<span class="sd">    :mod:`weave.distance.euclidean`:math:`(t_i, t_j)`. However, the</span>
-<span class="sd">    denominator in the CODEm weight varies by input :math:`t_i`, while</span>
-<span class="sd">    the kernel radius :math:`r` does not depend on the input :math:`d`.</span>
+<span class="sd">    with :math:`d_{i, j} =`:mod:`weave.distance.euclidean`</span>
+<span class="sd">    :math:`(t_i, t_j)` and :math:`s = \\lambda`. However, the</span>
+<span class="sd">    denominator in the CODEm weight varies based on the coordinate</span>
+<span class="sd">    :math:`t_i`, while the kernel radius :math:`r` is fixed.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -380,69 +488,6 @@
 
 <span class="sd">    """</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">distance</span><span class="o">/</span><span class="n">radius</span><span class="p">)</span><span class="o">**</span><span class="n">exponent</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span></div>
-
-
-<span class="nd">@vectorize</span><span class="p">([</span><span class="s1">'float32(float32,float32)'</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-    <span class="sd">"""Get depth smoothing weight.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    distance : nonnegative float32</span>
-<span class="sd">        Distance between points.</span>
-<span class="sd">    radius : float32 in (0, 1)</span>
-<span class="sd">        Kernel radius.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    nonnegative float32</span>
-<span class="sd">        Depth smoothing weight.</span>
-
-<span class="sd">    Notes</span>
-<span class="sd">    -----</span>
-<span class="sd">    The depth kernel function is defined as</span>
-
-<span class="sd">    .. math:: k(d; r) = \\begin{cases} r &amp; \\text{if } d = 0, \\\\</span>
-<span class="sd">              r(1 - r) &amp; \\text{if } 0 &lt; d \\leq 1, \\\\ (1 - r)^2 &amp;</span>
-<span class="sd">              \\text{if } 1 &lt; d \\leq 2, \\\\ 0 &amp; \\text{otherwise},</span>
-<span class="sd">              \\end{cases}</span>
-
-<span class="sd">    which is the same as CODEm's location scale factors with</span>
-<span class="sd">    :math:`r = \\zeta` and :math:`d =`</span>
-<span class="sd">    :mod:`weave.distance.hierarchical`:math:`(\\ell_i, \\ell_j)`. This</span>
-<span class="sd">    corresponds to points that have the same country, region, or super</span>
-<span class="sd">    region, respectively, but the kernel function has not yet been</span>
-<span class="sd">    generalized to consider further location divisions (e.g., state or</span>
-<span class="sd">    county).</span>
-
-<span class="sd">    Examples</span>
-<span class="sd">    --------</span>
-<span class="sd">    Get weight for a pair of points.</span>
-
-<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
-<span class="sd">    &gt;&gt;&gt; from weave.kernels import depth</span>
-<span class="sd">    &gt;&gt;&gt; radius = np.float32(0.9)</span>
-<span class="sd">    &gt;&gt;&gt; distance = np.float32(1.)</span>
-<span class="sd">    &gt;&gt;&gt; depth(distance, radius)</span>
-<span class="sd">    0.09000002</span>
-
-<span class="sd">    Get weights for a vector of point pairs.</span>
-
-<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
-<span class="sd">    &gt;&gt;&gt; from weave.kernels import depth</span>
-<span class="sd">    &gt;&gt;&gt; radius = np.float32(0.9)</span>
-<span class="sd">    &gt;&gt;&gt; distance = np.array([0., 1., 2., 3.]).astype(np.float32)</span>
-<span class="sd">    &gt;&gt;&gt; depth(distance, radius)</span>
-<span class="sd">    array([0.9, 0.09000002, 0.01, 0.], dtype=float32)</span>
-
-<span class="sd">    """</span>
-    <span class="k">if</span> <span class="n">distance</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">radius</span>
-    <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">radius</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">radius</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">radius</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
-    <span class="k">return</span> <span class="mi">0</span>
 
 
 <span class="k">def</span> <span class="nf">get_typed_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> \
@@ -481,7 +526,8 @@
 <span class="sd">    names : str or list of str</span>
 <span class="sd">        Parameter names.</span>
 <span class="sd">    types : str or list of str</span>
-<span class="sd">        Parameter types. Valid types are 'pos_num', 'pos_frac', 'bool'.</span>
+<span class="sd">        Parameter types. Valid types are 'pos_num', 'pos_int', 'pos_frac',</span>
+<span class="sd">        and 'bool'.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -503,33 +549,34 @@
         <span class="n">types</span> <span class="o">=</span> <span class="p">[</span><span class="n">types</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">idx_par</span><span class="p">,</span> <span class="n">par_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not "</span>
+
         <span class="c1"># Check key</span>
         <span class="k">if</span> <span class="n">par_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not in `pars`."</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'in `pars`.'</span><span class="p">)</span>
         <span class="n">par_val</span> <span class="o">=</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">par_name</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'pos_num'</span><span class="p">:</span>
-            <span class="c1"># Check type</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_number</span><span class="p">(</span><span class="n">par_val</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not an int or float."</span><span class="p">)</span>
-
-            <span class="c1"># Check value</span>
-            <span class="k">if</span> <span class="n">par_val</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not positive."</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'pos_frac'</span><span class="p">:</span>
-            <span class="c1"># Check type</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">par_val</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">)):</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not a float."</span><span class="p">)</span>
-
-            <span class="c1"># Check value</span>
-            <span class="k">if</span> <span class="n">par_val</span> <span class="o">&lt;=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">par_val</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not in (0, 1)."</span><span class="p">)</span>
-
-        <span class="k">else</span><span class="p">:</span>  <span class="c1"># 'bool'</span>
-            <span class="c1"># Check type</span>
+        <span class="c1"># Check type and value</span>
+        <span class="k">if</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'bool'</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">par_val</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not a bool."</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'a bool.'</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'pos_frac'</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_float</span><span class="p">(</span><span class="n">par_val</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'a float.'</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">par_val</span> <span class="o">&lt;=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">par_val</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'in (0, 1).'</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'pos_num'</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_number</span><span class="p">(</span><span class="n">par_val</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'an int or float.'</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># 'pos_int'</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_int</span><span class="p">(</span><span class="n">par_val</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'an int.'</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">par_name</span> <span class="o">==</span> <span class="s1">'version'</span> <span class="ow">and</span> <span class="n">par_val</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'in {1, 2}.'</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">par_val</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'positive.'</span><span class="p">)</span>
 </pre></div>
         </article>
       </div>

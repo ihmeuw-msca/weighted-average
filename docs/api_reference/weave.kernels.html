@@ -257,6 +257,100 @@ structure.</p>
 </dd>
 </dl>
 <dl class="py function">
+<dt class="sig sig-object py" id="weave.kernels.depth">
+<span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">depth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">levels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#weave.kernels.depth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get depth smoothing weight.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>distance</strong> (<em>nonnegative float32</em>) – Distance between points.</p></li>
+<li><p><strong>radius</strong> (<em>float32 in</em><em> (</em><em>0</em><em>, </em><em>1</em><em>)</em>) – Kernel radius.</p></li>
+<li><p><strong>levels</strong> (<em>positive float32</em>) – Number of levels. If <cite>dimension.distance</cite> is ‘tree’, this is
+equal to the length of <cite>dimension.coordinates</cite>.</p></li>
+<li><p><strong>version</strong> (<em>float32 in {1</em><em>, </em><em>2}</em>) – Depth kernel version, with 1 corresponding to CODEm’s location
+scale factors and 2 corresponding to ST-GPR’s location scale
+factors.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Depth smoothing weight.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>nonnegative float32</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>When <cite>version</cite> = 1, the depth kernel function is defined as</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[\begin{split}k(d; r, s) = \begin{cases} r &amp; \text{if } d = 0, \\
+r(1 - r)^{\lceil d \rceil} &amp; \text{if } 0 &lt; d \leq
+s - 2, \\ (1 - r)^{\lceil d \rceil} &amp; \text{if }
+s - 2 &lt; d \leq s - 1, \\ 0 &amp; \text{if } d &gt; s - 1,
+\end{cases}\end{split}\]</div></div>
+<p>which is the same as CODEm’s location scale factors with
+<span class="math notranslate nohighlight">\(d =\)</span><a class="reference internal" href="weave.distance.html#weave.distance.tree" title="weave.distance.tree"><code class="xref py py-mod docutils literal notranslate"><span class="pre">weave.distance.tree</span></code></a><span class="math notranslate nohighlight">\((\ell_i, \ell_j)\)</span>,
+<span class="math notranslate nohighlight">\(r = \zeta\)</span>, and <span class="math notranslate nohighlight">\(s =\)</span> the number of levels in the
+location hierarchy (e.g., locations with coordinates
+‘super_region’, ‘region’, and ‘country’ would have <span class="math notranslate nohighlight">\(s = 3\)</span>).
+If <span class="math notranslate nohighlight">\(s = 1\)</span>, the possible weight values are 1 and 0.</p>
+<p>When <cite>version</cite> = 2, the depth kernel function is defined as</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[\begin{split}k(d; r, s) = \begin{cases} 1 &amp; \text{if } d = 0, \\
+r^{\lceil d \rceil} &amp; \text{if } 0 &lt; d \leq s - 1,
+\\ 0 &amp; \text{if } d &gt; s - 1, \end{cases}\end{split}\]</div></div>
+<p>which is the same as ST-GPR’s location scale factors with
+<span class="math notranslate nohighlight">\(d =\)</span><a class="reference internal" href="weave.distance.html#weave.distance.tree" title="weave.distance.tree"><code class="xref py py-mod docutils literal notranslate"><span class="pre">weave.distance.tree</span></code></a><span class="math notranslate nohighlight">\((\ell_i, \ell_j)\)</span>,
+<span class="math notranslate nohighlight">\(r = \zeta\)</span>, and <span class="math notranslate nohighlight">\(s =\)</span> the number of levels in the
+location hierarchy (e.g., locations with coordinates
+‘super_region’, ‘region’, and ‘country’ would have <span class="math notranslate nohighlight">\(s = 3\)</span>).
+If <span class="math notranslate nohighlight">\(s = 1\)</span>, the possible weight values are 1 and 0.</p>
+<p class="rubric">Examples</p>
+<p>Get weight for a pair of points (version 1).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">0.9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">version</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">levels</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
+<span class="go">0.09000002</span>
+</pre></div>
+</div>
+<p>Get weight for a pair of points (version 2).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">0.9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">version</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">levels</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
+<span class="go">0.9</span>
+</pre></div>
+</div>
+<p>Get weights for a vector of point pairs (version 1).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">0.9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">3.</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">version</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">levels</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
+<span class="go">array([0.9, 0.09000002, 0.01, 0.], dtype=float32)</span>
+</pre></div>
+</div>
+<p>Get weights for a vector of point pairs (version 2).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">0.9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">3.</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">version</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">levels</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
+<span class="go">array([1., 0.9, 0.80999994, 0.], dtype=float32)</span>
+</pre></div>
+</div>
+</dd></dl>
+<dl class="py function">
 <dt class="sig sig-object py" id="weave.kernels.exponential">
 <span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">exponential</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/kernels.html#exponential"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.kernels.exponential" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get exponential smoothing weight.</p>
@@ -281,8 +375,8 @@ structure.</p>
 <p>which is equivalent to the CODEm age weight</p>
 <div class="math-wrapper"><div class="math notranslate nohighlight">
 \[w_{a_{i, j}} = \frac{1}{\exp(\omega \cdot d_{i, j})}\]</div></div>
-<p>with <span class="math notranslate nohighlight">\(r = \frac{1}{\omega}\)</span> and <span class="math notranslate nohighlight">\(d_{i, j} =\)</span>
-<a class="reference internal" href="weave.distance.html#weave.distance.euclidean" title="weave.distance.euclidean"><code class="xref py py-mod docutils literal notranslate"><span class="pre">weave.distance.euclidean</span></code></a><span class="math notranslate nohighlight">\((a_i, a_j)\)</span>.</p>
+<p>with <span class="math notranslate nohighlight">\(d_{i, j} =\)</span><a class="reference internal" href="weave.distance.html#weave.distance.euclidean" title="weave.distance.euclidean"><code class="xref py py-mod docutils literal notranslate"><span class="pre">weave.distance.euclidean</span></code></a>
+<span class="math notranslate nohighlight">\((a_i, a_j)\)</span> and <span class="math notranslate nohighlight">\(r = \frac{1}{\omega}\)</span>.</p>
 <p class="rubric">Examples</p>
 <p>Get weight for a pair of points.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">exponential</span>
@@ -330,10 +424,10 @@ structure.</p>
 <div class="math-wrapper"><div class="math notranslate nohighlight">
 \[w_{t_{i, j}} = \left(1 - \left(\frac{d_{i,
 j}}{\max_k|t_i - t_k| + 1}\right)^\lambda\right)^3\]</div></div>
-<p>with <span class="math notranslate nohighlight">\(s = \lambda\)</span> and <span class="math notranslate nohighlight">\(d_{i, j} =\)</span>
-<a class="reference internal" href="weave.distance.html#weave.distance.euclidean" title="weave.distance.euclidean"><code class="xref py py-mod docutils literal notranslate"><span class="pre">weave.distance.euclidean</span></code></a><span class="math notranslate nohighlight">\((t_i, t_j)\)</span>. However, the
-denominator in the CODEm weight varies by input <span class="math notranslate nohighlight">\(t_i\)</span>, while
-the kernel radius <span class="math notranslate nohighlight">\(r\)</span> does not depend on the input <span class="math notranslate nohighlight">\(d\)</span>.</p>
+<p>with <span class="math notranslate nohighlight">\(d_{i, j} =\)</span><a class="reference internal" href="weave.distance.html#weave.distance.euclidean" title="weave.distance.euclidean"><code class="xref py py-mod docutils literal notranslate"><span class="pre">weave.distance.euclidean</span></code></a>
+<span class="math notranslate nohighlight">\((t_i, t_j)\)</span> and <span class="math notranslate nohighlight">\(s = \lambda\)</span>. However, the
+denominator in the CODEm weight varies based on the coordinate
+<span class="math notranslate nohighlight">\(t_i\)</span>, while the kernel radius <span class="math notranslate nohighlight">\(r\)</span> is fixed.</p>
 <p class="rubric">Examples</p>
 <p>Get weight for a pair of points.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">tricubic</span>
@@ -352,58 +446,6 @@ the kernel radius <span class="math notranslate nohighlight">\(r\)</span> does n
 <span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">tricubic</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">exponent</span><span class="p">)</span>
 <span class="go">array([1., 0.66992188, 0.])</span>
-</pre></div>
-</div>
-</dd></dl>
-<dl class="py function">
-<dt class="sig sig-object py" id="weave.kernels.depth">
-<span class="sig-prename descclassname"><span class="pre">weave.kernels.</span></span><span class="sig-name descname"><span class="pre">depth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#weave.kernels.depth" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get depth smoothing weight.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>distance</strong> (<em>nonnegative float32</em>) – Distance between points.</p></li>
-<li><p><strong>radius</strong> (<em>float32 in</em><em> (</em><em>0</em><em>, </em><em>1</em><em>)</em>) – Kernel radius.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Depth smoothing weight.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>nonnegative float32</p>
-</dd>
-</dl>
-<p class="rubric">Notes</p>
-<p>The depth kernel function is defined as</p>
-<div class="math-wrapper"><div class="math notranslate nohighlight">
-\[\begin{split}k(d; r) = \begin{cases} r &amp; \text{if } d = 0, \\
-r(1 - r) &amp; \text{if } 0 &lt; d \leq 1, \\ (1 - r)^2 &amp;
-\text{if } 1 &lt; d \leq 2, \\ 0 &amp; \text{otherwise},
-\end{cases}\end{split}\]</div></div>
-<p>which is the same as CODEm’s location scale factors with
-<span class="math notranslate nohighlight">\(r = \zeta\)</span> and <span class="math notranslate nohighlight">\(d =\)</span>
-<a class="reference internal" href="weave.distance.html#weave.distance.hierarchical" title="weave.distance.hierarchical"><code class="xref py py-mod docutils literal notranslate"><span class="pre">weave.distance.hierarchical</span></code></a><span class="math notranslate nohighlight">\((\ell_i, \ell_j)\)</span>. This
-corresponds to points that have the same country, region, or super
-region, respectively, but the kernel function has not yet been
-generalized to consider further location divisions (e.g., state or
-county).</p>
-<p class="rubric">Examples</p>
-<p>Get weight for a pair of points.</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">0.9</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
-<span class="go">0.09000002</span>
-</pre></div>
-</div>
-<p>Get weights for a vector of point pairs.</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">0.9</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">3.</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
-<span class="go">array([0.9, 0.09000002, 0.01, 0.], dtype=float32)</span>
 </pre></div>
 </div>
 </dd></dl>

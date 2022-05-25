@@ -37,6 +37,72 @@ DistanceDict = Dict[Tuple[number, number], number]
 
 
 @njit
+def dictionary(x: np.ndarray, Y: np.ndarray,
+               distance_dict: Dict[Tuple[float, float], float]) -> np.ndarray:
+    """Get dictionary distances between `x` and `Y`.
+
+    Returns user-defined distances between points `x` and `Y`,
+    specified in the dictionary `distance_dict`. Dictionary keys are
+    tuples of point ID pairs `(x, y)`, and dictionary values are the
+    corresponding distances. Because distances are assumed to be
+    symmetric, point IDs are listed from smallest to largest, e.g.
+    `x` :math:`\\leq` `y`.
+
+    Parameters
+    ----------
+    x : 1D numpy.ndarray of float
+        Current point.
+    Y : 2D numpy.ndarray of float
+        Matrix of nearby points.
+    distance_dict : numba.typed.Dict of {(float32, float32): float32}
+        Typed dictionary of distances between points.
+
+    Returns
+    -------
+    1D numpy.ndarray of nonnegative float32
+        Dictionary distances between `x` and `Y`.
+
+    Notes
+    -----
+    Because this is a Numba just-in-time function, the parameter
+    `distance_dict` must be of type `numba.typed.Dict
+    <https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict>`_.
+    Dictionaries can be cast as a typed dictionary using the function
+    :func:`get_typed_dict`, but values are not checked for validity.
+
+    Examples
+    --------
+    Get user-defined distances between points based on scalar point
+    IDs.
+
+    >>> import numpy as np
+    >>> from weave.distance import dictionary, get_typed_dict
+    >>> distance_dict = {
+            (4, 4): 0,
+            (4, 5): 1,
+            (4, 6): 2,
+            (5, 6): 2
+        }
+    >>> typed_dict = get_typed_dict(distance_dict)
+    >>> x = np.array([4.])
+    >>> y = np.array([[4.], [5.], [6.]])
+    >>> dictionary(x, y, typed_dict)
+    array([0., 1., 2.], dtype=float32)
+
+    """
+    # Get distance from one nearby point
+    def get_distance(x, y):
+        x0 = np.float32(x[0])
+        y0 = np.float32(y[0])
+        if x0 <= y0:
+            return distance_dict[(x0, y0)]
+        return distance_dict[(y0, x0)]
+
+    # Get distance from all nearby points
+    return np.array([get_distance(x, y) for y in Y], dtype=np.float32)
+
+
+@njit
 def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Get Euclidean distances between `x` and `Y`.
 
@@ -100,8 +166,8 @@ def euclidean(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
 
 
 @njit
-def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
-    """Get hierarchical distances between `x` and `Y`.
+def tree(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
+    """Get tree distances between `x` and `Y`.
 
     Points are specified as a vector of IDs corresponding to nodes in a
     tree, starting from the root node and ending at a leaf node.
@@ -118,7 +184,7 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     Returns
     -------
     1D numpy.ndarray of nonnegative float32
-        Hierarchical distances between `x` and `Y`.
+        Tree distances between `x` and `Y`.
 
     Examples
     --------
@@ -127,10 +193,10 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
     .. image:: images/hierarchy.png
 
     >>> import numpy as np
-    >>> from weave.distance import hierarchical
+    >>> from weave.distance import tree
     >>> x = np.array([1., 2., 4.])
     >>> Y = np.array([[1., 2., 4.], [1., 2., 5.], [1., 3., 6.]])
-    >>> hierarchical(x, Y)
+    >>> tree(x, Y)
     array([0., 1., 2.], dtype=float32)
 
     """
@@ -144,72 +210,6 @@ def hierarchical(x: np.ndarray, Y: np.ndarray) -> np.ndarray:
         return len(x)
 
     # Get distance between all nearby points
-    return np.array([get_distance(x, y) for y in Y], dtype=np.float32)
-
-
-@njit
-def dictionary(x: np.ndarray, Y: np.ndarray,
-               distance_dict: Dict[Tuple[float, float], float]) -> np.ndarray:
-    """Get dictionary distances between `x` and `Y`.
-
-    Returns user-defined distances between points `x` and `Y`,
-    specified in the dictionary `distance_dict`. Dictionary keys are
-    tuples of point ID pairs `(x, y)`, and dictionary values are the
-    corresponding distances. Because distances are assumed to be
-    symmetric, point IDs are listed from smallest to largest, e.g.
-    `x` :math:`\\leq` `y`.
-
-    Parameters
-    ----------
-    x : 1D numpy.ndarray of float
-        Current point.
-    Y : 2D numpy.ndarray of float
-        Matrix of nearby points.
-    distance_dict : numba.typed.Dict of {(float32, float32): float32}
-        Typed dictionary of distances between points.
-
-    Returns
-    -------
-    1D numpy.ndarray of nonnegative float32
-        Dictionary distances between `x` and `Y`.
-
-    Notes
-    -----
-    Because this is a Numba just-in-time function, the parameter
-    `distance_dict` must be of type `numba.typed.Dict
-    <https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict>`_.
-    Dictionaries can be cast as a typed dictionary using the function
-    :func:`get_typed_dict`, but values are not checked for validity.
-
-    Examples
-    --------
-    Get user-defined distances between points based on scalar point
-    IDs.
-
-    >>> import numpy as np
-    >>> from weave.distance import dictionary, get_typed_dict
-    >>> distance_dict = {
-            (4, 4): 0,
-            (4, 5): 1,
-            (4, 6): 2,
-            (5, 6): 2
-        }
-    >>> typed_dict = get_typed_dict(distance_dict)
-    >>> x = np.array([4.])
-    >>> y = np.array([[4.], [5.], [6.]])
-    >>> dictionary(x, y, typed_dict)
-    array([0., 1., 2.], dtype=float32)
-
-    """
-    # Get distance from one nearby point
-    def get_distance(x, y):
-        x0 = np.float32(x[0])
-        y0 = np.float32(y[0])
-        if x0 <= y0:
-            return distance_dict[(x0, y0)]
-        return distance_dict[(y0, x0)]
-
-    # Get distance from all nearby points
     return np.array([get_distance(x, y) for y in Y], dtype=np.float32)
 
 

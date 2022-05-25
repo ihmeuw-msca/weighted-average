@@ -254,7 +254,7 @@ attribute if dimension is 1D.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>{‘identity’, ‘exponential’, ‘tricubic’, ‘depth’}</p>
+<dd class="field-odd"><p>{‘depth’, ‘exponential’, ‘identity’, ‘tricubic’}</p>
 </dd>
 </dl>
 </dd></dl>
@@ -281,7 +281,7 @@ attribute if dimension is 1D.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>{‘euclidean’, ‘hierarchical’, ‘dictionary’}</p>
+<dd class="field-odd"><p>{‘dictionary’, ‘euclidean’, ‘tree’}</p>
 </dd>
 </dl>
 </dd></dl>
@@ -310,10 +310,10 @@ symmetric, point IDs are listed from smallest to largest.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>name</strong> (<em>str</em>) – Dimension name.</p></li>
 <li><p><strong>coordinates</strong> (<em>str</em><em> or </em><em>list of str</em><em>, </em><em>optional</em>) – Dimension coordinates, if different from <cite>name</cite>.</p></li>
-<li><p><strong>kernel</strong> (<em>{'identity'</em><em>, </em><em>'exponential'</em><em>, </em><em>'tricubic'</em><em>, </em><em>'depth'}</em><em>, </em><em>optional</em>) – Kernel function name. Default is ‘identity’.</p></li>
+<li><p><strong>kernel</strong> (<em>{'depth'</em><em>, </em><em>'exponential'</em><em>, </em><em>'identity'</em><em>, </em><em>'tricubic'}</em><em>, </em><em>optional</em>) – Kernel function name. Default is ‘identity’.</p></li>
 <li><p><strong>kernel_pars</strong> (<em>dict of {str: number</em><em> or </em><em>bool}</em>) – Kernel function parameters. Optional if <cite>kernel</cite> is
 ‘identity’.</p></li>
-<li><p><strong>distance</strong> (<em>{'dictionary'</em><em>, </em><em>'euclidean'</em><em>, </em><em>'hierarchical'}</em><em>, </em><em>optional</em>) – Distance function name. If None, default distance function
+<li><p><strong>distance</strong> (<em>{'dictionary'</em><em>, </em><em>'euclidean'</em><em>, </em><em>'tree'}</em><em>, </em><em>optional</em>) – Distance function name. If None, default distance function
 is used based on <cite>kernel</cite>.</p></li>
 <li><p><strong>distance_dict</strong> (<em>dict of {</em><em>(</em><em>number</em><em>, </em><em>number</em><em>)</em><em>: number}</em><em>, </em><em>optional</em>) – Dictionary of distances between points, if <cite>distance</cite> is
 ‘dictionary’.</p></li>
@@ -344,20 +344,40 @@ within <a class="reference internal" href="weave.smoother.html#weave.smoother.Sm
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">identity</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
-<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">depth</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
+<td><p>Float in <span class="math notranslate nohighlight">\((0, 1)\)</span></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tree</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exponential</span></code></p></td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">levels</span></code></p></td>
+<td><p>Positive int</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">version</span></code></p></td>
+<td><p>Integer in <span class="math notranslate nohighlight">\(\{1, 2\}\)</span>, optional (default is 1)</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
+<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">True</span></code>)</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exponential</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
 <td><p>Positive number</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
 <td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
 <td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">identity</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
+<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tricubic</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
@@ -365,23 +385,13 @@ within <a class="reference internal" href="weave.smoother.html#weave.smoother.Sm
 <td><p><code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
 </tr>
 <tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">exponent</span></code></p></td>
+<td><p>Positive float</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
 <td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">exponent</span></code></p></td>
-<td><p>Positive number</p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">depth</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">radius</span></code></p></td>
-<td><p>Float in <span class="math notranslate nohighlight">\((0, 1)\)</span></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">hierarchical</span></code></p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">normalize</span></code></p></td>
-<td><p>Boolean, optional (default is <code class="docutils literal notranslate"><span class="pre">True</span></code>)</p></td>
 <td></td>
 </tr>
 </tbody>
@@ -402,12 +412,13 @@ w_{a_{i, k}} w_{t_{i, k}}}\]</div></div>
 <p>This option may be inefficient if there is a large number of
 possible weight values for the given dimension.</p>
 </li>
-<li><p>The parameters for the identity kernel are optional because
-the weight values are equal to the distance values. For
-increased efficiency, you can precompute all dimension
-weights as a dictionary and then use the identity kernel with
-the dictionary distance. This is done automatically within
-<code class="xref py py-func docutils literal notranslate"><span class="pre">weave.smoother.__call__()</span></code> if <cite>precompute</cite> is True.</p></li>
+<li><p>The parameters <cite>kernel_pars</cite> are optional for the identity
+kernel because the weight values are equal to the distance
+values. For increased efficiency, you can precompute all
+dimension weights as a dictionary and then use the identity
+kernel with the dictionary distance. This is done
+automatically within <code class="xref py py-func docutils literal notranslate"><span class="pre">weave.smoother.__call__()</span></code> if
+<cite>precompute</cite> is True.</p></li>
 <li><p>The parameter <cite>distance_dict</cite> contains the user-defined
 distances between points if the distance attribute is
 ‘dictionary’. Dictionary keys are tuples of point ID pairs,
@@ -466,13 +477,13 @@ distance.</p>
 <span class="go">    )</span>
 </pre></div>
 </div>
-<p>Dimension with depth kernel and default hierarchical distance.</p>
+<p>Dimension with depth kernel and default tree distance.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">location</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
 <span class="go">        name='location_id',</span>
 <span class="go">        coordinates=['super_region', 'region', 'country'],</span>
 <span class="go">        kernel='depth',</span>
-<span class="go">        kernel_pars={'radius': 0.9}</span>
+<span class="go">        kernel_pars={'radius': 0.9, 'levels': 3}</span>
 <span class="go">    )</span>
 </pre></div>
 </div>

@@ -21,11 +21,13 @@ not_dimensions = value_list + [[value] for value in value_list]
 not_columns = not_str + [[value] for value in not_str]
 
 # Example smoother
+kernels = ['depth', 'exponential', 'identity', 'tricubic']
+kernel_pars = {'radius': 0.5, 'levels': 3, 'exponent': 3}
 age = Dimension('age_id', 'age_id', 'exponential', {'radius': 1}, 'euclidean')
 year = Dimension('year_id', 'year_id', 'tricubic',
                  {'radius': 40, 'exponent': 0.5}, 'euclidean')
 location = Dimension('location_id', ['level_1', 'level_2', 'level_3'], 'depth',
-                     {'radius': 0.9}, 'hierarchical')
+                     {'radius': 0.9, 'levels': 3}, 'tree')
 smoother = Smoother([age, year, location])
 
 # Example data
@@ -61,27 +63,25 @@ def test_dimensions_values():
         Smoother([])
 
 
-@pytest.mark.parametrize('kernel1', ['exponential', 'tricubic', 'depth'])
-@pytest.mark.parametrize('kernel2', ['exponential', 'tricubic', 'depth'])
+@pytest.mark.parametrize('kernel1', kernels)
+@pytest.mark.parametrize('kernel2', kernels)
 def test_duplicate_names(kernel1, kernel2):
     """Raise ValueError if duplicate names in `dimensions`."""
     with pytest.raises(ValueError):
-        pars = {'radius': 0.5, 'exponent': 3}
-        dim1 = Dimension('dummy', 'columns1', kernel1, pars)
-        dim2 = Dimension('dummy', 'columns2', kernel2, pars)
+        dim1 = Dimension('dummy', 'columns1', kernel1, kernel_pars)
+        dim2 = Dimension('dummy', 'columns2', kernel2, kernel_pars)
         Smoother([dim1, dim2])
 
 
 @pytest.mark.parametrize('coords1', ['dummy1', ['dummy1', 'dummy2']])
 @pytest.mark.parametrize('coords2', ['dummy1', ['dummy1', 'dummy2']])
-@pytest.mark.parametrize('kernel1', ['exponential', 'tricubic', 'depth'])
-@pytest.mark.parametrize('kernel2', ['exponential', 'tricubic', 'depth'])
+@pytest.mark.parametrize('kernel1', kernels)
+@pytest.mark.parametrize('kernel2', kernels)
 def test_duplicate_columns(coords1, coords2, kernel1, kernel2):
     """Raise ValueError if duplicate coordinates in `dimensions`."""
     with pytest.raises(ValueError):
-        pars = {'radius': 0.5, 'exponent': 3}
-        dim1 = Dimension('dummy1', coords1, kernel1, pars)
-        dim2 = Dimension('dummy2', coords2, kernel2, pars)
+        dim1 = Dimension('dummy1', coords1, kernel1, kernel_pars)
+        dim2 = Dimension('dummy2', coords2, kernel2, kernel_pars)
         Smoother([dim1, dim2])
 
 
@@ -155,7 +155,7 @@ def test_columns_duplicates():
 def test_names_in_data():
     """Raise KeyError if `dimension.name` not in `data`."""
     with pytest.raises(KeyError):
-        dummy = Dimension('dummy', 'age_id', 'exponential', {'radius': 0.9})
+        dummy = Dimension('dummy', 'age_id', 'exponential', kernel_pars)
         smoother2 = Smoother([dummy, year, location])
         smoother2(data, 'residual')
 
@@ -164,7 +164,7 @@ def test_names_in_data():
 def test_coordinates_in_data(coords):
     """Raise KeyError if `dimension.coordinates` not in `data`."""
     with pytest.raises(KeyError):
-        dummy = Dimension('age_id', coords, 'exponential', {'radius': 0.9})
+        dummy = Dimension('age_id', coords, 'exponential', kernel_pars)
         smoother2 = Smoother([dummy, year, location])
         smoother2(data, 'residual')
 
@@ -201,7 +201,7 @@ def test_coordinates_in_distance_dict():
 def test_data_name_type():
     """Raise TypeError if `dimension.name` not int or float."""
     with pytest.raises(TypeError):
-        dummy = Dimension('name', 'age_id', 'exponential', {'radius': 0.9})
+        dummy = Dimension('name', 'age_id', 'exponential', kernel_pars)
         smoother2 = Smoother([dummy, year, location])
         smoother2(data, 'residual')
 
@@ -210,7 +210,7 @@ def test_data_name_type():
 def test_data_coordinates_type(coords):
     """Raise TypeError if `dimension.coordinates` not int or float."""
     with pytest.raises(TypeError):
-        dummy = Dimension('age_id', coords, 'exponential', {'radius': 0.9})
+        dummy = Dimension('age_id', coords, 'exponential', kernel_pars)
         smoother2 = Smoother([dummy, year, location])
         smoother2(data, 'residual')
 

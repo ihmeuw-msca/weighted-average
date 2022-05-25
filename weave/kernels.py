@@ -1,4 +1,4 @@
-# pylint: disable=C0103, E0611
+# pylint: disable=C0103, E0611, R0912
 """Calculate the smoothing weight for nearby point given current point.
 
 Kernel functions to calculate the smoothing weight for a nearby point
@@ -54,9 +54,117 @@ from numba.typed import Dict as TypedDict  # type: ignore
 from numba.types import float32, unicode_type  # type: ignore
 import numpy as np
 
-from weave.utils import as_list, is_number
+from weave.utils import as_list, is_int, is_float, is_number
 
 pars = Union[int, float, bool]
+
+
+@vectorize(['float32(float32,float32,float32,float32)'])
+def depth(distance: float, radius: float, levels: float, version: float) \
+        -> float:
+    """Get depth smoothing weight.
+
+    Parameters
+    ----------
+    distance : nonnegative float32
+        Distance between points.
+    radius : float32 in (0, 1)
+        Kernel radius.
+    levels : positive float32
+        Number of levels. If `dimension.distance` is 'tree', this is
+        equal to the length of `dimension.coordinates`.
+    version : float32 in {1, 2}
+        Depth kernel version, with 1 corresponding to CODEm's location
+        scale factors and 2 corresponding to ST-GPR's location scale
+        factors.
+
+    Returns
+    -------
+    nonnegative float32
+        Depth smoothing weight.
+
+    Notes
+    -----
+    When `version` = 1, the depth kernel function is defined as
+
+    .. math:: k(d; r, s) = \\begin{cases} r & \\text{if } d = 0, \\\\
+              r(1 - r)^{\\lceil d \\rceil} & \\text{if } 0 < d \\leq
+              s - 2, \\\\ (1 - r)^{\\lceil d \\rceil} & \\text{if }
+              s - 2 < d \\leq s - 1, \\\\ 0 & \\text{if } d > s - 1,
+              \\end{cases}
+
+    which is the same as CODEm's location scale factors with
+    :math:`d =`:mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`,
+    :math:`r = \\zeta`, and :math:`s =` the number of levels in the
+    location hierarchy (e.g., locations with coordinates
+    'super_region', 'region', and 'country' would have :math:`s = 3`).
+    If :math:`s = 1`, the possible weight values are 1 and 0.
+
+    When `version` = 2, the depth kernel function is defined as
+
+    .. math:: k(d; r, s) = \\begin{cases} 1 & \\text{if } d = 0, \\\\
+              r^{\\lceil d \\rceil} & \\text{if } 0 < d \\leq s - 1,
+              \\\\ 0 & \\text{if } d > s - 1, \\end{cases}
+
+    which is the same as ST-GPR's location scale factors with
+    :math:`d =`:mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`,
+    :math:`r = \\zeta`, and :math:`s =` the number of levels in the
+    location hierarchy (e.g., locations with coordinates
+    'super_region', 'region', and 'country' would have :math:`s = 3`).
+    If :math:`s = 1`, the possible weight values are 1 and 0.
+
+    Examples
+    --------
+    Get weight for a pair of points (version 1).
+
+    >>> import numpy as np
+    >>> from weave.kernels import depth
+    >>> radius = np.float32(0.9)
+    >>> distance = np.float32(1.)
+    >>> levels = np.float32(3)
+    >>> version = np.float32(1)
+    >>> depth(distance, radius, levels, version)
+    0.09000002
+
+    Get weight for a pair of points (version 2).
+
+    >>> import numpy as np
+    >>> from weave.kernels import depth
+    >>> radius = np.float32(0.9)
+    >>> distance = np.float32(1.)
+    >>> levels = np.float32(3)
+    >>> version = np.float32(2)
+    >>> depth(distance, radius, levels, version)
+    0.9
+
+    Get weights for a vector of point pairs (version 1).
+
+    >>> import numpy as np
+    >>> from weave.kernels import depth
+    >>> radius = np.float32(0.9)
+    >>> distance = np.array([0., 1., 2., 3.]).astype(np.float32)
+    >>> levels = np.float32(3)
+    >>> version = np.float32(1)
+    >>> depth(distance, radius, levels, version)
+    array([0.9, 0.09000002, 0.01, 0.], dtype=float32)
+
+    Get weights for a vector of point pairs (version 2).
+
+    >>> import numpy as np
+    >>> from weave.kernels import depth
+    >>> radius = np.float32(0.9)
+    >>> distance = np.array([0., 1., 2., 3.]).astype(np.float32)
+    >>> levels = np.float32(3)
+    >>> version = np.float32(2)
+    >>> depth(distance, radius, levels, version)
+    array([1., 0.9, 0.80999994, 0.], dtype=float32)
+
+    """
+    same_tree = distance <= levels - 1
+    if version == 1:
+        not_root = levels > 1 and distance <= levels - 2
+        return same_tree*radius**not_root*(1 - radius)**np.ceil(distance)
+    return same_tree*radius**np.ceil(distance)
 
 
 @njit
@@ -85,8 +193,8 @@ def exponential(distance: float, radius: float) -> float:
 
     .. math:: w_{a_{i, j}} = \\frac{1}{\\exp(\\omega \\cdot d_{i, j})}
 
-    with :math:`r = \\frac{1}{\\omega}` and :math:`d_{i, j} =`
-    :mod:`weave.distance.euclidean`:math:`(a_i, a_j)`.
+    with :math:`d_{i, j} =`:mod:`weave.distance.euclidean`
+    :math:`(a_i, a_j)` and :math:`r = \\frac{1}{\\omega}`.
 
     Examples
     --------
@@ -141,10 +249,10 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
     ..  math:: w_{t_{i, j}} = \\left(1 - \\left(\\frac{d_{i,
                j}}{\\max_k|t_i - t_k| + 1}\\right)^\\lambda\\right)^3
 
-    with :math:`s = \\lambda` and :math:`d_{i, j} =`
-    :mod:`weave.distance.euclidean`:math:`(t_i, t_j)`. However, the
-    denominator in the CODEm weight varies by input :math:`t_i`, while
-    the kernel radius :math:`r` does not depend on the input :math:`d`.
+    with :math:`d_{i, j} =`:mod:`weave.distance.euclidean`
+    :math:`(t_i, t_j)` and :math:`s = \\lambda`. However, the
+    denominator in the CODEm weight varies based on the coordinate
+    :math:`t_i`, while the kernel radius :math:`r` is fixed.
 
     Examples
     --------
@@ -169,69 +277,6 @@ def tricubic(distance: float, radius: float, exponent: float) -> float:
 
     """
     return np.maximum(0, (1 - (distance/radius)**exponent)**3)
-
-
-@vectorize(['float32(float32,float32)'])
-def depth(distance: float, radius: float) -> float:
-    """Get depth smoothing weight.
-
-    Parameters
-    ----------
-    distance : nonnegative float32
-        Distance between points.
-    radius : float32 in (0, 1)
-        Kernel radius.
-
-    Returns
-    -------
-    nonnegative float32
-        Depth smoothing weight.
-
-    Notes
-    -----
-    The depth kernel function is defined as
-
-    .. math:: k(d; r) = \\begin{cases} r & \\text{if } d = 0, \\\\
-              r(1 - r) & \\text{if } 0 < d \\leq 1, \\\\ (1 - r)^2 &
-              \\text{if } 1 < d \\leq 2, \\\\ 0 & \\text{otherwise},
-              \\end{cases}
-
-    which is the same as CODEm's location scale factors with
-    :math:`r = \\zeta` and :math:`d =`
-    :mod:`weave.distance.hierarchical`:math:`(\\ell_i, \\ell_j)`. This
-    corresponds to points that have the same country, region, or super
-    region, respectively, but the kernel function has not yet been
-    generalized to consider further location divisions (e.g., state or
-    county).
-
-    Examples
-    --------
-    Get weight for a pair of points.
-
-    >>> import numpy as np
-    >>> from weave.kernels import depth
-    >>> radius = np.float32(0.9)
-    >>> distance = np.float32(1.)
-    >>> depth(distance, radius)
-    0.09000002
-
-    Get weights for a vector of point pairs.
-
-    >>> import numpy as np
-    >>> from weave.kernels import depth
-    >>> radius = np.float32(0.9)
-    >>> distance = np.array([0., 1., 2., 3.]).astype(np.float32)
-    >>> depth(distance, radius)
-    array([0.9, 0.09000002, 0.01, 0.], dtype=float32)
-
-    """
-    if distance == 0:
-        return radius
-    if distance <= 1:
-        return radius*(1 - radius)
-    if distance <= 2:
-        return (1 - radius)**2
-    return 0
 
 
 def get_typed_pars(kernel_pars: Optional[Dict[str, pars]] = None) \
@@ -270,7 +315,8 @@ def _check_pars(kernel_pars: Dict[str, pars], names: Union[str, List[str]],
     names : str or list of str
         Parameter names.
     types : str or list of str
-        Parameter types. Valid types are 'pos_num', 'pos_frac', 'bool'.
+        Parameter types. Valid types are 'pos_num', 'pos_int', 'pos_frac',
+        and 'bool'.
 
     Raises
     ------
@@ -292,30 +338,31 @@ def _check_pars(kernel_pars: Dict[str, pars], names: Union[str, List[str]],
         types = [types]*len(names)
 
     for idx_par, par_name in enumerate(names):
+        msg = f"`{par_name}` is not "
+
         # Check key
         if par_name not in kernel_pars:
-            raise KeyError(f"`{par_name}` is not in `pars`.")
+            raise KeyError(msg + 'in `pars`.')
         par_val = kernel_pars[par_name]
 
-        if types[idx_par] == 'pos_num':
-            # Check type
-            if not is_number(par_val):
-                raise TypeError(f"`{par_name}` is not an int or float.")
-
-            # Check value
-            if par_val <= 0.0:
-                raise ValueError(f"`{par_name}` is not positive.")
-
-        elif types[idx_par] == 'pos_frac':
-            # Check type
-            if not isinstance(par_val, (float, np.floating)):
-                raise TypeError(f"`{par_name}` is not a float.")
-
-            # Check value
-            if par_val <= 0.0 or par_val >= 1.0:
-                raise ValueError(f"`{par_name}` is not in (0, 1).")
-
-        else:  # 'bool'
-            # Check type
+        # Check type and value
+        if types[idx_par] == 'bool':
             if not isinstance(par_val, bool):
-                raise TypeError(f"`{par_name}` is not a bool.")
+                raise TypeError(msg + 'a bool.')
+        else:
+            if types[idx_par] == 'pos_frac':
+                if not is_float(par_val):
+                    raise TypeError(msg + 'a float.')
+                if par_val <= 0.0 or par_val >= 1.0:
+                    raise ValueError(msg + 'in (0, 1).')
+            else:
+                if types[idx_par] == 'pos_num':
+                    if not is_number(par_val):
+                        raise TypeError(msg + 'an int or float.')
+                else:  # 'pos_int'
+                    if not is_int(par_val):
+                        raise TypeError(msg + 'an int.')
+                    if par_name == 'version' and par_val not in [1, 2]:
+                        raise ValueError(msg + 'in {1, 2}.')
+                if par_val <= 0.0:
+                    raise ValueError(msg + 'positive.')

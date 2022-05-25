@@ -68,6 +68,71 @@ def flatten(values: List[Union[Any, List[Any]]]) -> List[Any]:
     return list(values[:1]) + flatten(values[1:])
 
 
+def is_int(value: Any) -> bool:
+    """Determine if `value` is an int.
+
+    Parameters
+    ----------
+    value : Any
+        Value to check.
+
+    Returns
+    -------
+    bool
+        If `value` is not an int.
+
+    Examples
+    --------
+    Returns ``True`` for ints but ``False`` otherwise.
+
+    >>> from weave.utils import is_int
+    >>> is_int(1)
+    True
+    >>> is_int(1.0)
+    False
+    >>> is_int(True)
+    False
+
+    """
+    is_ints = isinstance(value, (int, np.integer))
+    is_bool = isinstance(value, bool)
+    return is_ints and not is_bool
+
+
+def is_float(value: Any) -> bool:
+    """Determine if `value` is a float.
+
+    Parameters
+    ----------
+    value : Any
+        Value to check.
+
+    Returns
+    -------
+    bool
+        If `value` is a float.
+
+    Examples
+    --------
+    Returns ``True`` for floats, but ``False`` otherwise.
+
+    >>> from weave.utils import is_float
+    >>> is_float(1.0)
+    True
+    >>> is_float(1)
+    False
+    >>> is_float(np.nan)
+    False
+    >>> is_float(np.inf)
+    False
+
+    """
+    if isinstance(value, (float, np.floating)):
+        if not (np.isnan(value) or np.isinf(value)):
+            return True
+    return False
+
+
 def is_number(value: Any) -> bool:
     """Determine if `value` is an int or float.
 
@@ -90,13 +155,12 @@ def is_number(value: Any) -> bool:
     True
     >>> is_number(1.0)
     True
-    >>> is_number('one')
+    >>> is_number(True)
+    False
+    >>> is_number(np.nan)
+    False
+    >>> is_number(np.inf)
     False
 
     """
-    if isinstance(value, (int, np.integer)) and not isinstance(value, bool):
-        return True
-    if isinstance(value, (float, np.floating)):
-        if not (np.isnan(value) or np.isinf(value)):
-            return True
-    return False
+    return is_int(value) or is_float(value)

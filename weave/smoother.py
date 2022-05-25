@@ -10,8 +10,8 @@ from pandas import DataFrame  # type: ignore
 from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
 from weave.dimension import Dimension, TypedDimension, get_typed_dimension
-from weave.distance import dictionary, euclidean, hierarchical, get_typed_dict
-from weave.kernels import exponential, depth, tricubic, get_typed_pars
+from weave.distance import dictionary, euclidean, tree, get_typed_dict
+from weave.kernels import depth, exponential, tricubic, get_typed_pars
 from weave.utils import as_list, flatten
 
 WeightDict = Dict[Tuple[float, float], float]
@@ -61,7 +61,7 @@ class Smoother:
                 name='location_id',
                 coordinates=['super_region', 'region', 'country'],
                 kernel='depth',
-                kernel_pars={'radius': 0.9}
+                kernel_pars={'radius': 0.9, 'levels': 3}
             )
         >>> dimensions = [age, year, location]
         >>> smoother = Smoother(dimensions)
@@ -694,7 +694,7 @@ def get_weights(dim_list: List[TypedDimension], fit_points: np.ndarray,
 
 
 @njit
-def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
+def get_dim_distances(x: np.ndarray, Y: np.ndarray, distance: str,
                       distance_dict: Dict[Tuple[float, float], float]) \
         -> np.ndarray:
     """Get distances between `x` and `y`.
@@ -703,7 +703,7 @@ def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    y : 2D numpy.ndarray of float
+    Y : 2D numpy.ndarray of float
         Nearby points.
     distance : str
         Distance function name.
@@ -713,14 +713,14 @@ def get_dim_distances(x: np.ndarray, y: np.ndarray, distance: str,
     Returns
     -------
     1D numpy.ndarray of nonnegative float32
-        Distances between `x` and `y`.
+        Distances between `x` and `Y`.
 
     """
     if distance == 'dictionary':
-        return dictionary(x, y, distance_dict)
+        return dictionary(x, Y, distance_dict)
     if distance == 'euclidean':
-        return euclidean(x, y)
-    return hierarchical(x, y)
+        return euclidean(x, Y)
+    return tree(x, Y)
 
 
 @njit
@@ -748,4 +748,5 @@ def get_dim_weights(distance: np.ndarray, kernel: str,
     if kernel == 'tricubic':
         return tricubic(distance, kernel_pars['radius'],
                         kernel_pars['exponent']).astype(np.float32)
-    return depth(distance, kernel_pars['radius'])
+    return depth(distance, kernel_pars['radius'], kernel_pars['levels'],
+                 kernel_pars['version'])
