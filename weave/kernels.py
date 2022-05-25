@@ -113,7 +113,7 @@ def depth(distance: float, radius: float) -> float:
 
     which is the same as CODEm's location scale factors with
     :math:`r = \\zeta` and :math:`d =`
-    :mod:`weave.distance.hierarchical`:math:`(\\ell_i, \\ell_j)`. This
+    :mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`. This
     corresponds to points that have the same country, region, or super
     region, respectively, but the kernel function has not yet been
     generalized to consider further location divisions (e.g., state or

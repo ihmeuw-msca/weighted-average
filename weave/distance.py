@@ -23,8 +23,6 @@ import numpy as np
 def euclidean(x: np.ndarray, y: np.ndarray) -> float:
     """Get Euclidean distance between `x` and `y`.
 
-    Points `x` and `y` should have the same length.
-
     Parameters
     ----------
     x : 1D numpy.ndarray of float
@@ -84,7 +82,7 @@ def tree(x: np.ndarray, y: np.ndarray) -> float:
     ----------
     x : 1D numpy.ndarray of float
         Current point.
-    Y : 1D numpy.ndarray of float
+    y : 1D numpy.ndarray of float
         Nearby point.
 
     Returns

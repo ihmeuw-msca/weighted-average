@@ -5,6 +5,9 @@ In general, kernel functions should satisfy the following properties:
 2. k(x, y) <= k(x', y') if d(x, y) > d(x', y')
    k(x, y) >= k(x', y') if d(x, y) < d(x', y')
 
+TODO:
+* Add tests for specific values for exponential and tricubic
+
 """
 from hypothesis import given, settings
 from hypothesis.strategies import floats
