@@ -1,9 +1,11 @@
-# pylint: disable=E0611
+# pylint: disable=C0103, E0611
 """General utility functions."""
 from typing import Any, List, Union
 
 from numba.typed import List as TypedList
 import numpy as np
+
+number = Union[int, float]
 
 
 def as_list(values: Union[Any, List[Any]]) -> List[Any]:

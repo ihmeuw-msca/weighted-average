@@ -3,17 +3,44 @@
 from typing import Dict, List, Optional, Tuple, Union
 
 from numba.experimental import jitclass  # type: ignore
-from numba.typed import List as TypedList  # type: ignore
-from numba.types import DictType, ListType, UniTuple  # type: ignore
-from numba.types import float32, unicode_type  # type: ignore
+from numba.typed import Dict as TypedDict  # type: ignore
+from numba.types import DictType, UniTuple  # type: ignore
+from numba.types import boolean, float32, unicode_type  # type: ignore
+import numpy as np
+from pandas import DataFrame
 
-from weave.distance import get_typed_dict, _check_dict
-from weave.kernels import get_typed_pars, _check_pars
-from weave.utils import as_list
+from weave.distance import euclidean, tree
+from weave.kernels import exponential, depth, tricubic
+from weave.utils import as_list, is_number
 
 number = Union[int, float]
 pars = Union[number, bool]
 DistanceDict = Dict[Tuple[number, number], number]
+WeightDict = Dict[Tuple[float, float], float]
+
+
+@jitclass([('name', unicode_type),
+           ('weight_dict', DictType(UniTuple(float32, 2), float32)),
+           ('normalize', boolean)])
+class TypedDimension:
+    """Smoothing dimension specifications."""
+    def __init__(self, name: str, weight_dict: WeightDict, normalize: bool) \
+            -> None:
+        """Create smoothing dimension.
+
+        Parameters
+        ----------
+        name : unicode_type
+            Dimension name.
+        weight_dict : numba.typed.Dict of {(float32, float32): float32}
+            Dictionary of dimension smoothing weights.
+        normalize : bool
+            Normalize dimension weights in groups.
+
+        """
+        self.name = name
+        self.weight_dict = weight_dict
+        self.normalize = normalize
 
 
 class Dimension:
@@ -38,7 +65,7 @@ class Dimension:
         `['super_region', 'region', 'country']`. Can be same as `name`
         attribute if dimension is 1D.
 
-    kernel : {'identity', 'exponential', 'tricubic', 'depth'}
+    kernel : {'exponential', 'depth', 'identity', 'tricubic'}
         Kernel function name.
 
         Name of kernel function to compute smoothing weights.
@@ -53,7 +80,7 @@ class Dimension:
         Dictionary of kernel function parameters corresponding to
         `kernel` attribute.
 
-    distance : {'euclidean', 'hierarchical', 'dictionary'}
+    distance : {'euclidean', 'dictionary', 'tree'}
         Distance function name.
 
         Name of distance function to compute distance between points.
@@ -68,12 +95,25 @@ class Dimension:
         User-defined dictionary of distances between points if
         `distance` attribute is 'dictionary'. Dictionary keys are
         tuples of point ID pairs, and dictionary values are the
-        corresponding distances. Because distances are assumed to be
-        symmetric, point IDs are listed from smallest to largest.
+        corresponding distances.
 
-        See Also
-        --------
-        weave.distance.dictionary
+    normalize : bool
+        Normalize dimension weights in groups.
+
+        Whether or not the preceding dimension weights should be
+        normalized in groups based on the current dimension weight
+        values. This corresponds to the CODEm [1]_ framework where the
+        product of age and time weights are normalized in groups based
+        on the location hierarchy before being multiplied by location
+        weights. For example, for points :math:`i, j, k` from the same
+        country:
+
+        .. math:: w_{i, j} = w_{\\ell_{i, j}} \\cdot
+                  \\frac{w_{a_{i, j}} w_{t_{i, j}}} {\\sum_{k}
+                  w_{a_{i, k}} w_{t_{i, k}}}
+
+        This option may be inefficient if there is a large number of
+        possible weight values for the given dimension.
 
     """
 
@@ -81,7 +121,8 @@ class Dimension:
                  kernel: str = 'identity',
                  kernel_pars: Optional[Dict[str, pars]] = None,
                  distance: Optional[str] = None,
-                 distance_dict: Optional[DistanceDict] = None) -> None:
+                 distance_dict: Optional[DistanceDict] = None,
+                 normalize: Optional[bool] = None) -> None:
         """Create smoothing dimension.
 
         Parameters
@@ -101,88 +142,52 @@ class Dimension:
         distance_dict : dict of {(number, number): number}, optional
             Dictionary of distances between points, if `distance` is
             'dictionary'.
+        normalize : bool, optional
+            Normalize dimension weights in groups. If None, default is
+            used based on `kernel`.
 
         Notes
         -----
 
-        * Kernel-specific parameters and default distance functions are
-          given in the table below. The given dictionary `kernel_pars`
-          is converted to an instance of `numba.typed.Dict
-          <https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict>`_
-          within :func:`weave.smoother.Smoother`.
+        Kernel-specific parameters and default attributes are given in
+        the table below.
 
           .. list-table::
              :header-rows: 1
 
              * - Kernel
-               - Parameter
-               - Parameter type
-               - Default distance
-             * - ``identity``
-               - ``normalize``
-               - Boolean, optional (default is ``False``)
-               -  ``euclidean``
+               - Parameters
+               - Parameter types
+               - Default `distance`
+               - Default `normalize`
              * - ``exponential``
                - ``radius``
                - Positive number
                - ``euclidean``
-             * -
-               - ``normalize``
-               - Boolean, optional (default is ``False``)
+               - ``False``
+             * - ``depth``
+               - ``radius``
+               - Float in :math:`(0, 1)`
+               - ``tree``
+               - ``True``
+             * - ``identity``
                -
+               -
+               - ``euclidean``
+               - ``False``
              * - ``tricubic``
                - ``radius``
                - Positive number
                - ``euclidean``
-             * -
-               - ``normalize``
-               - Boolean, optional (default is ``False``)
-               -
+               - ``False``
              * -
                - ``exponent``
                - Positive number
                -
-             * - ``depth``
-               - ``radius``
-               - Float in :math:`(0, 1)`
-               - ``hierarchical``
-             * -
-               - ``normalize``
-               - Boolean, optional (default is ``True``)
                -
 
-        * The optional kernel parameter `normalize` indicates whether
-          or not the preceding dimension weights should be normalized
-          in groups based on the current dimension weight values. This
-          corresponds to the CODEm [1]_ framework where the product of
-          age and time weights are normalized in groups based on the
-          location hierarchy before being multiplied by location
-          weights. For example, for points :math:`i, j, k` from the
-          same country:
-
-          .. math:: w_{i, j} = w_{\\ell_{i, j}} \\cdot
-                    \\frac{w_{a_{i, j}} w_{t_{i, j}}} {\\sum_{k}
-                    w_{a_{i, k}} w_{t_{i, k}}}
-
-          This option may be inefficient if there is a large number of
-          possible weight values for the given dimension.
-
-        * The parameters for the identity kernel are optional because
-          the weight values are equal to the distance values. For
-          increased efficiency, you can precompute all dimension
-          weights as a dictionary and then use the identity kernel with
-          the dictionary distance. This is done automatically within
-          :func:`weave.smoother.__call__` if `precompute` is True.
-
-        * The parameter `distance_dict` contains the user-defined
-          distances between points if the distance attribute is
-          'dictionary'. Dictionary keys are tuples of point ID pairs,
-          and dictionary values are the corresponding distances.
-          Because distances are assumed to be symmetric, point IDs are
-          listed from smallest to largest. The given `distance_dict` is
-          converted to an instance of `numba.typed.Dict
-          <https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict>`_
-          within :func:`weave.smoother.Smoother`.
+        The identity kernel does not have any kernel parameters because
+        the weight values are equal to the distance values.
 
         References
         ----------
@@ -259,6 +264,7 @@ class Dimension:
         self.kernel_pars = kernel_pars  # type: ignore
         self.distance = distance  # type: ignore
         self.distance_dict = distance_dict  # type: ignore
+        self.normalize = normalize
 
     @property
     def name(self) -> str:
@@ -392,7 +398,7 @@ class Dimension:
             raise TypeError('`kernel` is not a str.')
 
         # Check value
-        if kernel not in ('identity', 'exponential', 'tricubic', 'depth'):
+        if kernel not in ('exponential', 'depth', 'identity', 'tricubic'):
             raise ValueError('`kernel` is not a valid kernel function.')
 
         self._kernel = kernel
@@ -419,31 +425,19 @@ class Dimension:
             Kernel function parameters.
 
         """
-        if kernel_pars is None:
-            kernel_pars = {}
-
-        # Check parameter values
-        if self._kernel == 'depth':
-            if 'normalize' not in kernel_pars:
-                kernel_pars['normalize'] = True
-            _check_pars(kernel_pars, ['radius', 'normalize'],
-                        ['pos_frac', 'bool'])
-            kernel_pars = {key: kernel_pars[key]
-                           for key in ['radius', 'normalize']}
-        else:
-            if 'normalize' not in kernel_pars:
-                kernel_pars['normalize'] = False
+        # Check values
+        if self._kernel != 'identity':
             if self._kernel == 'exponential':
-                _check_pars(kernel_pars, ['radius', 'normalize'],
-                            ['pos_num', 'bool'])
+                check_pars(kernel_pars, 'radius', 'pos_num')
+                kernel_pars = {'radius': kernel_pars['radius']}
+            if self._kernel == 'depth':
+                check_pars(kernel_pars, 'radius', 'pos_frac')
+                kernel_pars = {'radius': kernel_pars['radius']}
+            if self._kernel == 'tricubic':
+                check_pars(kernel_pars, ['radius', 'exponent'], 'pos_num')
                 kernel_pars = {key: kernel_pars[key]
-                               for key in ['radius', 'normalize']}
-            elif self._kernel == 'tricubic':
-                _check_pars(kernel_pars, ['radius', 'exponent', 'normalize'],
-                            ['pos_num', 'pos_num', 'bool'])
-                kernel_pars = {key: kernel_pars[key]
-                               for key in ['radius', 'exponent', 'normalize']}
-        self._kernel_pars = kernel_pars
+                               for key in ['radius', 'exponent']}
+            self._kernel_pars = kernel_pars
 
     @property
     def distance(self) -> str:
@@ -481,7 +475,7 @@ class Dimension:
         if hasattr(self, 'distance'):
             raise AttributeError('`distance` cannot be changed.')
 
-        # Set defaults
+        # Set default
         if distance is None:
             if self._kernel == 'depth':
                 distance = 'hierarchical'
@@ -493,7 +487,7 @@ class Dimension:
             raise TypeError('`distance` is not a str.')
 
         # Check value
-        if distance not in ('dictionary', 'euclidean', 'hierarchical'):
+        if distance not in ('euclidean', 'dictionary', 'tree'):
             msg = '`distance` is not a valid distance function.'
             raise ValueError(msg)
         if distance == 'dictionary' and len(self._coordinates) > 1:
@@ -541,66 +535,240 @@ class Dimension:
                 msg = "`distance` is 'dictionary', "
                 msg += 'but `distance_dict` is None.'
                 raise ValueError(msg)
-            _check_dict(distance_dict)
+            check_dict(distance_dict)
             self._distance_dict = distance_dict
 
+    @property
+    def normalize(self) -> bool:
+        """Get `normalize` attribute.
 
-@jitclass([('name', unicode_type),
-           ('coordinates', ListType(unicode_type)),
-           ('kernel', unicode_type),
-           ('kernel_pars', DictType(unicode_type, float32)),
-           ('distance', unicode_type),
-           ('distance_dict', DictType(UniTuple(float32, 2), float32))])
-class TypedDimension:
-    """Smoothing dimension specifications."""
-    def __init__(self, name: str, coordinates: List[str], kernel: str,
-                 kernel_pars: Dict[str, float], distance: str,
-                 distance_dict: Dict[Tuple[float, float], float]) -> None:
-        """Create smoothing dimension.
+        Returns
+        -------
+        bool
+            Normalize dimension weights in groups.
+
+        """
+        return self._normalize
+
+    @normalize.setter
+    def normalize(self, normalize: Optional[bool]) -> None:
+        """Set `normalize` attribute.
 
         Parameters
         ----------
-        name : unicode_type
-            Dimension name.
-        coordinates : numba.typed.List of unicode_type
-            Dimension coordinates.
-        kernel : {'exponential', 'tricubic', 'depth'}
-            Kernel function name.
-        kernel_pars : numba.typed.Dict of {unicode_type: float32}
-            Kernel function parameters.
-        distance : {'dictionary', 'euclidean', 'hierarchical'}
-            Distance function name.
-        distance_dict : numba.typed.Dict of {(float32, float32): float32}
-            Dictionary of distances between points if `distance` is
-            'dictionary'.
+        normalize : bool, optional
+            Normalize dimension weights in groups.
+
+        Raises
+        ------
+        AttributeError
+            If `normalize` has already been set.
+        TypeError
+            If `normalize` is not a bool or None.
 
         """
-        self.name = name
-        self.coordinates = coordinates
-        self.kernel = kernel
-        self.kernel_pars = kernel_pars
-        self.distance = distance
-        self.distance_dict = distance_dict
+        # Once set, `normalize` cannot be changed
+        if hasattr(self, 'normalize'):
+            raise AttributeError('`normalize` cannot be changed.')
+
+        # Set default
+        if normalize is None:
+            if self._distance == 'depth':
+                normalize = True
+            normalize = False
+
+        # Check type
+        if not isinstance(normalize, bool):
+            raise TypeError('`normalize` is not a bool.')
+
+        self._normalize = normalize
+
+    def get_typed_dimension(self, data: DataFrame) -> TypedDimension:
+        """Get smoothing dimension cast as jitclass object.
+
+        Parameters
+        ----------
+        dimension : Dimension
+            Smoothing dimension specifications.
+        data : DataFrame
+            Input data structure.
+
+        Returns
+        -------
+        TypedDimension
+            Smoothing dimension cast as jitclass object.
+
+        """
+        weight_dict = self.get_weight_dict(data)
+        return TypedDimension(self._name, weight_dict, self._normalize)
+
+    def get_weight_dict(self, data: DataFrame) -> WeightDict:
+        """Get dictionary of dimension smoothing weights.
+
+        Parameters
+        ----------
+        data : pandas.DataFrame
+            Input data structure.
+
+        Returns
+        -------
+        dict of {(float32, float32): float32}
+            Dictionary of dimension smoothing weights.
+
+        """
+        # Get point names and coordinates
+        points = data[[self._name] + [self._coordinates]]
+        points = np.array(points.drop_duplicates(), dtype=np.float32)
+        names = points[:, 0]
+        coords = points[:, 1:]
+
+        # Initialize weight dictionary
+        weight_dict = TypedDict.empty(
+            key_type=UniTuple(float32, 2),
+            value_type=float32
+        )
+
+        # Compute weights
+        for idx_x, x in enumerate(names):
+            for idx_y, y in enumerate(names):
+                distance = self.get_distance(coords[idx_x], coords[idx_y])
+                weight = self.get_weight(distance)
+                weight_dict[(x, y)] = weight
+        return weight_dict
+
+    def get_distance(self, x: np.ndarray, y: np.ndarray) -> float:
+        """Get distance between `x` and `y`.
+
+        Parameters
+        ----------
+        x : 1D numpy.ndarray of float
+            Current point.
+        y : 1D numpy.ndarray of float
+            Nearby point.
+
+        Returns
+        -------
+        nonnegative float32
+            Distance between `x` and `y`.
+
+        """
+        if self._distance == 'euclidean':
+            return euclidean(x, y)
+        if self._distance == 'dictionary':
+            return np.float32(self._distance_dict[(x[0], y[0])])
+        return tree(x, y)
+
+    def get_weight(self, distance: float) -> float:
+        """Get dimension smoothing weight.
+
+        Parameters
+        ----------
+        distance : float
+            Distance between points.
+
+        Returns
+        -------
+        nonnegative float32
+            Dimension smoothing weight.
+
+        """
+        if self._kernel == 'exponential':
+            return exponential(distance, **self._kernel_pars)
+        if self._kernel == 'depth':
+            return depth(distance, **self._kernel_pars)
+        if self._kernel == 'identity':
+            return np.float32(distance)
+        return tricubic(distance, **self._kernel_pars)
 
 
-def get_typed_dimension(dim: Dimension) -> TypedDimension:
-    """Get smoothing dimension cast as jitclass object.
+def check_pars(kernel_pars: Dict[str, number], names: Union[str, List[str]],
+               types: Union[str, List[str]]) -> None:
+    """Check kernel parameter types and values.
 
-    Returns
-    -------
-    TypedDimension
-        Smoothing dimension cast as jitclass object.
+    Parameters
+    ----------
+    pars : dict of {str: number}
+        Kernel parameters
+    names : str or list of str
+        Parameter names.
+    types : str or list of str
+        Parameter types. Valid types are 'pos_num' or 'pos_frac'.
+
+    Raises
+    ------
+    KeyError
+        If `pars` is missing a kernel parameter.
+    TypeError
+        If a kernel parameter is an invalid type.
+    ValueError
+        If a kernel parameter is an invalid value.
 
     """
-    # Get typed version of attributes
-    coordinates = TypedList(dim.coordinates)
-    kernel_pars = get_typed_pars(dim.kernel_pars)
-    if hasattr(dim, 'distance_dict'):
-        distance_dict = get_typed_dict(dim.distance_dict)
-    else:
-        distance_dict = get_typed_dict()
+    # Check type
+    if not isinstance(kernel_pars, dict):
+        raise TypeError('`kernel_pars` is not a dict.')
 
-    # Create typed dimension
-    typed_dim = TypedDimension(dim.name, coordinates, dim.kernel, kernel_pars,
-                               dim.distance, distance_dict)
-    return typed_dim
+    # Get parameter names
+    names = as_list(names)
+    if isinstance(types, str):
+        types = [types]*len(names)
+
+    for idx_par, par_name in enumerate(names):
+        # Check key
+        if par_name not in kernel_pars:
+            raise KeyError(f"`{par_name}` is not in `pars`.")
+        par_val = kernel_pars[par_name]
+
+        if types[idx_par] == 'pos_num':
+            # Check type
+            if not is_number(par_val):
+                raise TypeError(f"`{par_name}` is not an int or float.")
+
+            # Check value
+            if par_val <= 0.0:
+                raise ValueError(f"`{par_name}` is not positive.")
+
+        else:  # 'pos_frac'
+            # Check type
+            if not isinstance(par_val, (float, np.floating)):
+                raise TypeError(f"`{par_name}` is not a float.")
+
+            # Check value
+            if par_val <= 0.0 or par_val >= 1.0:
+                raise ValueError(f"`{par_name}` is not in (0, 1).")
+
+
+def check_dict(distance_dict: Dict[Tuple[number, number], number]) -> None:
+    """Check distance dictionary keys and values.
+
+    Parameters
+    ----------
+    distance_dict : dict of {(number, number): number}
+        Dictionary of distances between points.
+
+    Raises
+    ------
+    TypeError
+        If `distance_dict`, keys, or values are an invalid type.
+    ValueError
+        If `dictionary_dict` is empty, dictionary keys are not all
+        length 2, or dictionary values are not all nonnegative.
+
+    """
+    # Check types
+    if not isinstance(distance_dict, dict):
+        raise TypeError('`distance_dict` is not a dict.')
+    if not all(isinstance(key, tuple) for key in distance_dict):
+        raise TypeError('`distance_dict` keys not all tuple.')
+    if not all(is_number(point) for key in distance_dict for point in key):
+        raise TypeError('`distance_dict` key entries not all int or float.')
+    if not all(is_number(value) for value in distance_dict.values()):
+        raise TypeError('`distance_dict` values not all int or float.')
+
+    # Check values
+    if len(distance_dict) == 0:
+        raise ValueError('`distance_dict` is an empty dict.')
+    if any(len(key) != 2 for key in distance_dict):
+        raise ValueError('`distance_dict` keys are not all length 2.')
+    if any(value < 0.0 for value in distance_dict.values()):
+        raise ValueError('`distance_dict` contains negative values.')

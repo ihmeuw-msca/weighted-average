@@ -9,7 +9,7 @@ import numpy as np
 from pandas import DataFrame  # type: ignore
 from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
-from weave.dimension import Dimension, TypedDimension, get_typed_dimension
+from weave.dimension import Dimension, TypedDimension
 from weave.utils import as_list, flatten
 
 
@@ -430,7 +430,8 @@ class Smoother:
         points = [dim.name for dim in self._dimensions]
         return np.ascontiguousarray(data[points].values, dtype=np.float32)
 
-    def get_typed_dimensions(self, data: DataFrame) -> List[TypedDimension]:
+    def get_typed_dimensions(self, data: DataFrame) \
+            -> TypedList[TypedDimension]:
         """Get smoothing dimensions cast as jitclass objects.
 
         Parameters
@@ -444,8 +445,8 @@ class Smoother:
             Smoothing dimensions cast as jitclass objects.
 
         """
-        return TypedList([get_typed_dimension(dim, data)
-                          for dim in self._dimensions])
+        return TypedList([dimension.get_typed_dimension(data)
+                          for dimension in self._dimensions])
 
 
 @njit
