@@ -15,8 +15,9 @@ from hypothesis import given, settings
 from hypothesis.strategies import composite, integers, floats
 from hypothesis.extra.numpy import arrays
 import numpy as np
+import pytest
 
-from weave.distance import euclidean, tree
+from weave.distance import euclidean, tree, _check_input
 
 
 # Hypothesis types
@@ -32,9 +33,9 @@ def my_floats(draw):
 def my_arrays(draw, n=2):
     """Return n vectors of float32 with matching lengths."""
     m = draw(integers(min_value=1, max_value=5))
-    vec_list = [draw(arrays(np.float32, m, elements=my_floats()))
-                for ii in range(n)]
-    return vec_list
+    array_list = [draw(arrays(np.float32, m, elements=my_floats()))
+                  for ii in range(n)]
+    return array_list
 
 
 # Property 1: Output is a real-valued, finite, nonnegative float
@@ -42,7 +43,7 @@ def property_1(distance):
     """Output satisfies property 1."""
     assert np.isreal(distance)
     assert np.isfinite(distance)
-    assert distance >= 0.0
+    assert distance >= 0.
     assert isinstance(distance, np.float32)
 
 
@@ -51,8 +52,6 @@ def property_1(distance):
 def test_euclidean_type(xy):
     """Euclidean output satisfies property 1."""
     x, y = xy
-    print(type(x))
-    print(type(y))
     distance = euclidean(x, y)
     property_1(distance)
 
@@ -69,10 +68,10 @@ def test_tree_type(xy):
 # Property 2: Output == 0 iff x == y
 def property_2(x, y, distance):
     """Output satisfies property 2."""
-    if np.isclose(distance, 0.0):
-        assert np.allclose(x, y)
-    if np.allclose(x, y):
-        assert np.isclose(distance, 0.0)
+    if np.isclose(distance, 0.):
+        assert np.allclose(x, y, rtol=1e-6)
+    if np.allclose(x, y, rtol=1e0-6):
+        assert np.isclose(distance, 0.)
 
 
 @given(my_arrays())
@@ -144,27 +143,54 @@ def test_tree_triangle(xyz):
 # Test specific output values
 def test_same_country():
     """Test tree output with same country."""
-    x = np.array([1., 2., 4.])
-    y = np.array([1., 2., 4.])
+    x = np.array([1, 2, 4])
+    y = np.array([1, 2, 4])
     assert np.isclose(tree(x, y), 0.)
 
 
 def test_same_region():
     """Test tree output with same region."""
-    x = np.array([1., 2., 4.])
-    y = np.array([1., 2., 5.])
+    x = np.array([1, 2, 4])
+    y = np.array([1, 2, 5])
     assert np.isclose(tree(x, y), 1.)
 
 
 def test_same_super_region():
     """Test tree output with same super region."""
-    x = np.array([1., 2., 4.])
-    y = np.array([1., 3., 6.])
+    x = np.array([1, 2, 4])
+    y = np.array([1, 3, 6])
     assert np.isclose(tree(x, y), 2.)
 
 
 def test_different_super_region():
     """Test tree output with different super regions."""
-    x = np.array([1., 2., 4.])
-    y = np.array([7., 8., 9.])
+    x = np.array([1, 2, 4])
+    y = np.array([7, 8, 9])
     assert np.isclose(tree(x, y), 3.)
+
+
+# Test _check_inputs()
+@pytest.mark.parametrize('x', [1, 1., 'dummy', True, None, [], (), {}])
+def test_input_type(x):
+    """Raise TypeError if inputs not np.ndarray."""
+    y = np.zeros(2)
+    for a, b in [(x, y), (y, x), (x, x)]:
+        with pytest.raises(TypeError, match='numpy.ndarray'):
+            _check_input(a, b)
+
+
+def test_input_dim():
+    """Raise ValueError if inputs not 1D."""
+    for dim in [(1, 2), (2, 1), (2, 3)]:
+        x = np.zeros(dim)
+        y = np.ones(dim)
+        with pytest.raises(ValueError, match='1D'):
+            _check_input(x, y)
+
+
+def test_input_len():
+    """Raise ValueError if inputs have different lengths."""
+    x = np.zeros(2)
+    y = np.ones(3)
+    with pytest.raises(ValueError, match='lengths'):
+        _check_input(x, y)

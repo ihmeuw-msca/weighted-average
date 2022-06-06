@@ -20,19 +20,21 @@ References
 import numpy as np
 
 
-def euclidean(x: np.ndarray, y: np.ndarray) -> float:
+def euclidean(x: np.ndarray, y: np.ndarray) -> np.float32:
     """Get Euclidean distance between `x` and `y`.
+
+    Points `x` and `y` are specified as vectors of coordinate values.
 
     Parameters
     ----------
-    x : 1D numpy.ndarray of float
+    x : 1D numpy.ndarray
         Current point.
-    y : 1D numpy.ndarray of float
+    y : 1D numpy.ndarray
         Nearby point.
 
     Returns
     -------
-    nonnegative float32
+    nonnegative numpy.float32
         Euclidean distance between `x` and `y`.
 
     Notes
@@ -59,35 +61,37 @@ def euclidean(x: np.ndarray, y: np.ndarray) -> float:
 
     >>> import numpy as np
     >>> from weave.distance import euclidean
-    >>> euclidean(np.array([0., 0.]), np.array([0., 0.]))
-    >>> 0.0
-    >>> euclidean(np.array([0., 0.]), np.array([0., 1.]))
-    >>> 1.0
-    >>> euclidean(np.array([0., 0.]), np.array([1., 1.]))
+    >>> euclidean(np.array([0]), np.array([0]))
+    0.0
+    >>> euclidean(np.array([0, 0]), np.array([1, 1]))
     1.4142135
+    >>> euclidean(np.array([0, 0, 0]), np.array([1, 2, 3]))
+    3.7416575
 
     """
+    _check_input(x, y)
     return np.linalg.norm(x - y).astype(np.float32)
 
 
-def tree(x: np.ndarray, y: np.ndarray) -> float:
+def tree(x: np.ndarray, y: np.ndarray) -> np.float32:
     """Get tree distance between `x` and `y`.
 
-    Points are specified as a vector of IDs corresponding to nodes in a
-    tree, starting from the root node and ending at a leaf node.
-    The distance between two points is defined as the number of edges
-    between the leaf nodes and their nearest common parent node.
+    Points `x` and `y` are specified as vectors of IDs corresponding to
+    nodes in a tree, starting with the root node and ending at the leaf
+    node. The distance between two points is defined as the number of
+    edges between the leaf nodes and their nearest common ancestor
+    node.
 
     Parameters
     ----------
-    x : 1D numpy.ndarray of float
+    x : 1D numpy.ndarray
         Current point.
-    y : 1D numpy.ndarray of float
+    y : 1D numpy.ndarray
         Nearby point.
 
     Returns
     -------
-    nonnegative float32
+    nonnegative numpy.float32
         Tree distance between `x` and `y`.
 
     Examples
@@ -98,19 +102,65 @@ def tree(x: np.ndarray, y: np.ndarray) -> float:
 
     >>> import numpy as np
     >>> from weave.distance import tree
-    >>> tree(np.array([1., 2., 4.]), np.array([1., 2., 4.]))
+    >>> tree(np.array([1, 2, 4]), np.array([1, 2, 4]))
     0.0
-    >>> tree(np.array([1., 2., 4.]), np.array([1., 2., 5.]))
+    >>> tree(np.array([1, 2, 4]), np.array([1, 2, 5]))
     1.0
-    >>> tree(np.array([1., 2., 4.]), np.array([1., 3., 6.]))
+    >>> tree(np.array([1, 2, 4]), np.array([1, 3, 6]))
     2.0
-    >>> tree(np.array([1., 2., 4.]), np.array([7., 8., 9.]))
+    >>> tree(np.array([1, 2, 4]), np.array([7, 8, 9]))
     3.0
 
     """
+    _check_input(x, y)
+    return _tree(x, y, 0)
+
+
+def _tree(x: np.ndarray, y: np.ndarray, n: int) -> np.float32:
+    """Get tree distance between `x` and `y`.
+
+    Parameters
+    ----------
+    x : 1D numpy.ndarray
+        Current point.
+    y : 1D numpy.ndarray
+        Nearby point.
+    n : int
+        Recursion parameter.
+
+    Returns
+    -------
+    nonnegative numpy.float32
+        Tree distance between `x` and `y`.
+
+    """
     if (x == y).all():
-        return np.float32(0)
-    for ii in range(1, len(x)):
-        if (x[:-ii] == y[:-ii]).all():
-            return np.float32(ii)
-    return np.float32(len(x))
+        return np.float32(n)
+    return _tree(x[:-1], y[:-1], n + 1)
+
+
+def _check_input(x: np.ndarray, y: np.ndarray) -> None:
+    """Check distance function input.
+
+    Parameters
+    ----------
+    x : 1D numpy.ndarray
+        Current point.
+    y : 1D numpy.ndarray
+        Nearby point.
+
+    Raises
+    ------
+    TypeError
+        If inputs are not numpy.ndarray.
+    ValueError
+        If inputs are not 1D.
+        If inputs have different lengths.
+
+    """
+    if not (isinstance(x, np.ndarray) and isinstance(y, np.ndarray)):
+        raise TypeError('Inputs are not numpy.ndarray.')
+    if not (x.ndim == 1 and y.ndim == 1):
+        raise ValueError('Inputs are not 1D.')
+    if not len(x) == len(y):
+        raise ValueError('Inputs have different lengths.')
