@@ -7,9 +7,6 @@ In general, distance functions should satisfy the following properties:
 3. d(x, y) == d(y, x) (symmetry)
 4. d(x, y) <= d(x, z) + d(z, y) (triangle inequality)
 
-TODO:
-* Add tests for specific values for euclidean
-
 """
 from hypothesis import given, settings
 from hypothesis.strategies import composite, integers, floats
