@@ -72,3 +72,9 @@ def test_float_number(value):
 def test_not_number(value):
     """Return False if `value` is not an int or float."""
     assert is_number(value) is False
+
+
+# Test `is_int()`
+
+
+# Test `is_float()`
