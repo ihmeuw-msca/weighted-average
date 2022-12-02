@@ -3,8 +3,8 @@
 
 Notes
 -----
-In general, distance functions should satisfy the following properties
-[1]_:
+In general, distance functions :math:`d(x, y)` should satisfy the following
+properties [1]_:
 
 1. :math:`d(x, y)` is real-valued, finite, and nonnegative
 2. :math:`d(x, y) = 0` if and only if :math:`x = y`
@@ -61,10 +61,10 @@ def euclidean(x: np.ndarray, y: np.ndarray) -> np.float32:
 
     >>> import numpy as np
     >>> from weave.distance import euclidean
-    >>> euclidean(np.array([0]), np.array([0]))
-    0.0
-    >>> euclidean(np.array([0, 0]), np.array([1, 1]))
-    1.4142135
+    >>> euclidean(np.array([0]), np.array([1]))
+    1.0
+    >>> euclidean(np.array([0, 0]), np.array([1, 2]))
+    2.236068
     >>> euclidean(np.array([0, 0, 0]), np.array([1, 2, 3]))
     3.7416575
 
@@ -79,8 +79,7 @@ def tree(x: np.ndarray, y: np.ndarray) -> np.float32:
     Points `x` and `y` are specified as vectors of IDs corresponding to
     nodes in a tree, starting with the root node and ending at the leaf
     node. The distance between two points is defined as the number of
-    edges between the leaf nodes and their nearest common ancestor
-    node.
+    edges between the leaves and their nearest common ancestor.
 
     Parameters
     ----------
@@ -94,11 +93,17 @@ def tree(x: np.ndarray, y: np.ndarray) -> np.float32:
     nonnegative numpy.float32
         Tree distance between `x` and `y`.
 
+    Raises
+    ------
+    ValueError
+        If `x` and `y` have different roots (i.e., points are not from
+        the same tree.)
+
     Examples
     --------
     Get tree distances between leaf nodes from the following tree.
 
-    .. image:: images/hierarchy.png
+    .. image:: images/tree.png
 
     >>> import numpy as np
     >>> from weave.distance import tree
@@ -109,10 +114,12 @@ def tree(x: np.ndarray, y: np.ndarray) -> np.float32:
     >>> tree(np.array([1, 2, 4]), np.array([1, 3, 6]))
     2.0
     >>> tree(np.array([1, 2, 4]), np.array([7, 8, 9]))
-    3.0
+    ValueError: Points have different root nodes.
 
     """
     _check_input(x, y)
+    if x[0] != y[0]:
+        raise ValueError('Points have different root nodes.')
     return _tree(x, y, 0)
 
 

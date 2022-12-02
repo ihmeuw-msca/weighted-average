@@ -58,6 +58,7 @@ def test_euclidean_type(xy):
 def test_tree_type(xy):
     """Tree output satisfies property 1."""
     x, y = xy
+    x[0] = y[0]  # same roots
     distance = tree(x, y)
     property_1(distance)
 
@@ -83,6 +84,7 @@ def test_euclidean_zero(xy):
 def test_tree_zero(xy):
     """Tree output satisfies property 2."""
     x, y = xy
+    x[0] = y[0]  # same roots
     distance = tree(x, y)
     property_2(x, y, distance)
 
@@ -101,6 +103,7 @@ def test_euclidean_symmetric(xy):
 def test_tree_symmetric(xy):
     """Tree output satisfies property 3."""
     x, y = xy
+    x[0] = y[0]  # same roots
     distance_xy = tree(x, y)
     distance_yx = tree(y, x)
     assert np.isclose(distance_xy, distance_yx)
@@ -131,6 +134,7 @@ def test_euclidean_triangle(xyz):
 def test_tree_triangle(xyz):
     """Tree output satisfies property 4."""
     x, y, z = xyz
+    x[0], y[0] = z[0], z[0]  # same roots
     distance_xy = tree(x, y)
     distance_xz = tree(x, z)
     distance_zy = tree(z, y)
@@ -161,9 +165,10 @@ def test_same_super_region():
 
 def test_different_super_region():
     """Test tree output with different super regions."""
-    x = np.array([1, 2, 4])
-    y = np.array([7, 8, 9])
-    assert np.isclose(tree(x, y), 3.)
+    with pytest.raises(ValueError):
+        x = np.array([1, 2, 4])
+        y = np.array([7, 8, 9])
+        tree(x, y)
 
 
 # Test _check_inputs()
