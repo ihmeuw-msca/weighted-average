@@ -5,12 +5,9 @@ In general, kernel functions should satisfy the following properties:
 2. k(x, y) <= k(x', y') if d(x, y) > d(x', y')
    k(x, y) >= k(x', y') if d(x, y) < d(x', y')
 
-TODO:
-* Add tests for specific values for exponential and tricubic
-
 """
 from hypothesis import given, settings
-from hypothesis.strategies import floats
+from hypothesis.strategies import floats, integers
 import numpy as np
 
 from weave.kernels import exponential, depth, tricubic
@@ -18,6 +15,7 @@ from weave.kernels import exponential, depth, tricubic
 # Hypothesis types
 my_dist = floats(min_value=0.0, max_value=1e3, allow_nan=False,
                  allow_infinity=False, allow_subnormal=False)
+my_level = integers(min_value=1, max_value=10)
 my_radius1 = floats(min_value=1e2, max_value=1e3, allow_nan=False,
                     allow_infinity=False, allow_subnormal=False)
 my_radius2 = floats(min_value=0.0, max_value=1.0, allow_nan=False,
@@ -25,6 +23,7 @@ my_radius2 = floats(min_value=0.0, max_value=1.0, allow_nan=False,
                     exclude_min=True, exclude_max=True)
 my_exponent = floats(min_value=1e-1, max_value=1e1, allow_nan=False,
                      allow_infinity=False, allow_subnormal=False)
+my_version = integers(min_value=1, max_value=2)
 
 
 # Property 1: Output is a real-valued, finite, nonnegative float
@@ -45,10 +44,10 @@ def test_exponential_type(distance, radius):
 
 
 @settings(deadline=None)
-@given(my_dist, my_radius2)
-def test_depth_type(distance, radius):
+@given(my_dist, my_level, my_radius2, my_version)
+def test_depth_type(distance, levels, radius, version):
     """Depth output satisfies property 1."""
-    weight = depth(distance, radius)
+    weight = depth(distance, levels, radius, version)
     property_1(weight)
 
 
@@ -77,11 +76,11 @@ def test_exponential_direction(distance_a, distance_b, radius):
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 
-@given(my_dist, my_dist, my_radius2)
-def test_depth_direction(distance_a, distance_b, radius):
+@given(my_dist, my_dist, my_level, my_radius2, my_version)
+def test_depth_direction(distance_a, distance_b, levels, radius, version):
     """Depth output satisfies property 2."""
-    weight_a = depth(distance_a, radius)
-    weight_b = depth(distance_b, radius)
+    weight_a = depth(distance_a, levels, radius, version)
+    weight_b = depth(distance_b, levels, radius, version)
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 
@@ -96,23 +95,23 @@ def test_tricubic_direction(distance_a, distance_b, radius, exponent):
 # Test specific output values
 def test_same_country():
     """Test depth kernel with same country."""
-    weight = depth(0., 0.9)
-    assert np.isclose(weight, 0.9)
+    assert np.isclose(depth(0, 3, 0.9, 1), 0.9)
+    assert np.isclose(depth(0, 3, 0.9, 2), 1)
 
 
 def test_same_region():
     """Test depth kernel with same region."""
-    weight = depth(1., 0.9)
-    assert np.isclose(weight, 0.09)
+    assert np.isclose(depth(1, 3, 0.9, 1), 0.09)
+    assert np.isclose(depth(1, 3, 0.9, 2), 0.9)
 
 
 def test_same_super_region():
     """Test depth kernel with same super region."""
-    weight = depth(2., 0.9)
-    assert np.isclose(weight, 0.01)
+    assert np.isclose(depth(2, 3, 0.9, 1), 0.01)
+    assert np.isclose(depth(2, 3, 0.9, 2), 0.81)
 
 
 def test_different_super_region():
     """Test depth kernel with different super regions."""
-    weight = depth(3., 0.9)
-    assert np.isclose(weight, 0.0)
+    assert np.isclose(depth(3, 3, 0.9, 1), 0)
+    assert np.isclose(depth(3, 3, 0.9, 2), 0)
