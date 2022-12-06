@@ -478,7 +478,7 @@ class Dimension:
         # Set default
         if distance is None:
             if self._kernel == 'depth':
-                distance = 'hierarchical'
+                distance = 'tree'
             else:
                 distance = 'euclidean'
 

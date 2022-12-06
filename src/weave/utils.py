@@ -1,11 +1,9 @@
-# pylint: disable=C0103, E0611
+# pylint: disable=E0611
 """General utility functions."""
 from typing import Any, List, Union
 
 from numba.typed import List as TypedList
 import numpy as np
-
-number = Union[int, float]
 
 
 def as_list(values: Union[Any, List[Any]]) -> List[Any]:
@@ -90,15 +88,78 @@ def is_number(value: Any) -> bool:
     >>> from weave.utils import is_number
     >>> is_number(1)
     True
-    >>> is_number(1.0)
+    >>> is_number(1.)
     True
-    >>> is_number('one')
+    >>> is_number(True)
+    False
+    >>> is_number(np.inf)
+    False
+    >>> is_number(np.nan)
     False
 
     """
-    if isinstance(value, (int, np.integer)) and not isinstance(value, bool):
-        return True
+    return is_int(value) or is_float(value)
+
+
+def is_int(value: Any) -> bool:
+    """Determine if `value` in an int.
+
+    Parameters
+    ----------
+    value : Any
+        Value to check.
+
+    Returns
+    -------
+    bool
+        If `value` is an int.
+
+    Examples
+    --------
+    Returns ``True`` for ints, but ``False`` otherwise.
+
+    >>> from weave.utils import is_int
+    >>> is_int(1)
+    True
+    >>> is_int(1.)
+    False
+    >>> is_int(True)
+    False
+
+    """
+    if isinstance(value, (int, np.integer)):
+        return not isinstance(value, bool)
+    return False
+
+
+def is_float(value: Any) -> bool:
+    """Determine if `value` is a float.
+
+    Parameters
+    ----------
+    value : Any
+        Value to check.
+
+    Returns
+    -------
+    bool
+        If `value` is a float.
+
+    Examples
+    --------
+    Returns ``True`` for floats, but ``False`` otherwise.
+
+    >>> from weave.utils import is_float
+    >>> is_float(1.)
+    True
+    >>> is_float(1)
+    False
+    >>> is_float(np.inf)
+    False
+    >>> is_float(np.nan)
+    False
+
+    """
     if isinstance(value, (float, np.floating)):
-        if not (np.isnan(value) or np.isinf(value)):
-            return True
+        return np.isfinite(value)
     return False
