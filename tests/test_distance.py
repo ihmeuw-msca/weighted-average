@@ -14,7 +14,7 @@ from hypothesis.extra.numpy import arrays
 import numpy as np
 import pytest
 
-from weave.distance import euclidean, tree, _check_input
+from weave.distance import euclidean, tree
 
 
 # Hypothesis types
@@ -169,30 +169,3 @@ def test_different_super_region():
         x = np.array([1, 2, 4])
         y = np.array([7, 8, 9])
         tree(x, y)
-
-
-# Test _check_inputs()
-@pytest.mark.parametrize('x', [1, 1., 'dummy', True, None, [], (), {}])
-def test_input_type(x):
-    """Raise TypeError if inputs not np.ndarray."""
-    y = np.zeros(2)
-    for a, b in [(x, y), (y, x), (x, x)]:
-        with pytest.raises(TypeError, match='numpy.ndarray'):
-            _check_input(a, b)
-
-
-def test_input_dim():
-    """Raise ValueError if inputs not 1D."""
-    for dim in [(1, 2), (2, 1), (2, 3)]:
-        x = np.zeros(dim)
-        y = np.ones(dim)
-        with pytest.raises(ValueError, match='1D'):
-            _check_input(x, y)
-
-
-def test_input_len():
-    """Raise ValueError if inputs have different lengths."""
-    x = np.zeros(2)
-    y = np.ones(3)
-    with pytest.raises(ValueError, match='lengths'):
-        _check_input(x, y)

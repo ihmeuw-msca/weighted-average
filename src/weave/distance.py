@@ -69,7 +69,6 @@ def euclidean(x: np.ndarray, y: np.ndarray) -> np.float32:
     3.7416575
 
     """
-    _check_input(x, y)
     return np.linalg.norm(x - y).astype(np.float32)
 
 
@@ -117,7 +116,6 @@ def tree(x: np.ndarray, y: np.ndarray) -> np.float32:
     ValueError: Points have different root nodes.
 
     """
-    _check_input(x, y)
     if x[0] != y[0]:
         raise ValueError('Points have different root nodes.')
     return _tree(x, y, 0)
@@ -144,30 +142,3 @@ def _tree(x: np.ndarray, y: np.ndarray, n: int) -> np.float32:
     if (x == y).all():
         return np.float32(n)
     return _tree(x[:-1], y[:-1], n + 1)
-
-
-def _check_input(x: np.ndarray, y: np.ndarray) -> None:
-    """Check distance function input.
-
-    Parameters
-    ----------
-    x : 1D numpy.ndarray
-        Current point.
-    y : 1D numpy.ndarray
-        Nearby point.
-
-    Raises
-    ------
-    TypeError
-        If inputs are not numpy.ndarray.
-    ValueError
-        If inputs are not 1D.
-        If inputs have different lengths.
-
-    """
-    if not (isinstance(x, np.ndarray) and isinstance(y, np.ndarray)):
-        raise TypeError('Inputs are not numpy.ndarray.')
-    if not (x.ndim == 1 and y.ndim == 1):
-        raise ValueError('Inputs are not 1D.')
-    if not len(x) == len(y):
-        raise ValueError('Inputs have different lengths.')
