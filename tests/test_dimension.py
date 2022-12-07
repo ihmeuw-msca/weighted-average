@@ -12,6 +12,7 @@ not_bool = [1, 1.0, 'dummy', None, [], (), {}]
 not_tuple = [1, 1.0, 'dummy', True, None, [], {}]
 not_coordinates = not_str + [[value] for value in not_str]
 not_dict = [1, 1.0, 'dummy', True, None, [], ()]
+not_normalize = [1, 1.0, 'dummy', [], (), {}]
 
 # Example kernel parameters and distance dictionary
 kernel_pars = {'radius': 0.5, 'exponent': 3, 'version': 1}
@@ -116,6 +117,13 @@ def test_distance_dict_value_type(key1, key2, value):
     with pytest.raises(TypeError):
         bad_dict = {(key1, key2): value}
         Dimension('dummy', distance='dictionary', distance_dict=bad_dict)
+
+
+@pytest.mark.parametrize('normalize', not_normalize)
+def test_normalize_type(normalize):
+    """Raise TypeError if `normalize` is not a bool."""
+    with pytest.raises(TypeError):
+        Dimension('dummy', normalize=normalize)
 
 
 # Test constructor values
@@ -279,6 +287,19 @@ def test_distance_dict_coordinates():
                   distance_dict=distance_dict)
 
 
+def test_normalize_true_default():
+    """`normalize` set to True if not supplied."""
+    dim = Dimension('dummy', kernel='depth', kernel_pars=kernel_pars)
+    assert dim.normalize
+
+
+@pytest.mark.parametrize('kernel', ['identity', 'exponential', 'tricubic'])
+def test_normalize_false_default(kernel):
+    """`normalize` set to False if not supplied."""
+    dim = Dimension('dummy', kernel=kernel, kernel_pars=kernel_pars)
+    assert not dim.normalize
+
+
 # Test setter behavior
 def test_name_immutable():
     """Raise AttributeError if attempt to reset `name`."""
@@ -314,3 +335,10 @@ def test_distance_dict_immutable():
         dim = Dimension('dummy', distance='dictionary',
                         distance_dict=distance_dict)
         dim.distance_dict = {(2.0, 2.0): 2.0}
+
+
+def test_normalize_immutable():
+    """Raise AttributeError if attempt to reset `normalize`."""
+    with pytest.raises(AttributeError):
+        dim = Dimension('dummy')
+        dim.normalize = True
