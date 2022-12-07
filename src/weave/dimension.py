@@ -575,10 +575,7 @@ class Dimension:
 
         # Set default
         if normalize is None:
-            if self._distance == 'depth':
-                normalize = True
-            else:
-                normalize = False
+            normalize = self._distance == 'depth'
 
         # Check type
         if not isinstance(normalize, bool):
@@ -591,8 +588,6 @@ class Dimension:
 
         Parameters
         ----------
-        dimension : Dimension
-            Smoothing dimension specifications.
         data : DataFrame
             Input data structure.
 
@@ -635,16 +630,15 @@ class Dimension:
         for idx_x, x in enumerate(names):
             distances = {y: self.get_distance(coords[idx_x], coords[idx_y])
                          for idx_y, y in enumerate(names)}
-            depth_levels = len(coords[idx_x])
-            tricubic_radius = max(distances.values()) + 1
-            weights = {(x, y): self.get_weight(distances[y], depth_levels,
-                                               tricubic_radius)
+            radius = max(distances.values()) + 1  # tricubic kernel
+            levels = len(coords[idx_x])  # depth kernel
+            weights = {(x, y): self.get_weight(distances[y], radius, levels)
                        for y in names}
             weight_dict.update(weights)
 
         return weight_dict
 
-    def get_distance(self, x: np.ndarray, y: np.ndarray) -> float:
+    def get_distance(self, x: np.ndarray, y: np.ndarray) -> np.float32:
         """Get distance between `x` and `y`.
 
         Parameters
@@ -662,22 +656,22 @@ class Dimension:
         """
         if self._distance == 'euclidean':
             return euclidean(x, y)
-        if self._distance == 'dictionary':
-            return np.float32(self._distance_dict[(x[0], y[0])])
-        return tree(x, y)
+        if self._distance == 'tree':
+            return tree(x, y)
+        return np.float32(self._distance_dict[(x[0], y[0])])
 
-    def get_weight(self, distance: number, depth_levels: Optional[int] = None,
-                   tricubic_radius: Optional[number] = None) -> float:
+    def get_weight(self, distance: number, radius: number, levels: int) \
+            -> np.float32:
         """Get dimension smoothing weight.
 
         Parameters
         ----------
         distance : nonnegative int or float
             Distance between points.
-        depth_levels : positive int, optional
-            Number of levels for `kernels.depth`.
-        tricubic_radius : positive int or float, optional
+        radius : positive int or float, optional
             Kernel radius for `kernels.tricubic`.
+        levels : positive int, optional
+            Number of levels for `kernels.depth`.
 
         Returns
         -------
@@ -685,13 +679,13 @@ class Dimension:
             Dimension smoothing weight.
 
         """
-        if self._kernel == 'exponential':
-            return exponential(distance, **self._kernel_pars)
-        if self._kernel == 'depth':
-            return depth(distance, depth_levels, **self._kernel_pars)
         if self._kernel == 'identity':
             return np.float32(distance)
-        return tricubic(distance, tricubic_radius, **self._kernel_pars)
+        if self._kernel == 'exponential':
+            return exponential(distance, **self._kernel_pars)
+        if self._kernel == 'tricubic':
+            return tricubic(distance, radius, **self._kernel_pars)
+        return depth(distance, levels, **self._kernel_pars)
 
 
 def check_pars(kernel_pars: Dict[str, number], names: Union[str, List[str]],
