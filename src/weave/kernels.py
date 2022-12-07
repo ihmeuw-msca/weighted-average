@@ -1,3 +1,4 @@
+# pylint: disable=C0103
 """Calculate the smoothing weight for nearby point given current point.
 
 Notes
@@ -135,7 +136,7 @@ def depth(distance: number, levels: int, radius: float, version: int) \
     return np.float32(same_tree*radius**np.ceil(distance))
 
 
-def exponential(distance: float, radius: float) -> np.float32:
+def exponential(distance: number, radius: number) -> np.float32:
     """Get exponential smoothing weight.
 
     Parameters
@@ -180,7 +181,7 @@ def exponential(distance: float, radius: float) -> np.float32:
     return np.float32(1/np.exp(distance/radius))
 
 
-def tricubic(distance: float, radius: float, exponent: float) -> np.float32:
+def tricubic(distance: number, radius: number, exponent: number) -> np.float32:
     """Get tricubic smoothing weight.
 
     Parameters
@@ -204,15 +205,15 @@ def tricubic(distance: float, radius: float, exponent: float) -> np.float32:
     .. math:: k(d; r, s) = \\left(1 -
               \\left(\\frac{d}{r}\\right)^s\\right)^3_+,
 
-    which is similar to the CODEm time weight
+    which is equivalent to the CODEm time weight
 
     ..  math:: w_{t_{i, j}} = \\left(1 - \\left(\\frac{d_{i,
                j}}{\\max_k|t_i - t_k| + 1}\\right)^\\lambda\\right)^3
 
-    with :math:`s = \\lambda` and :math:`d_{i, j} =`
-    :mod:`weave.distance.euclidean`:math:`(t_i, t_j)`. However, the
-    denominator in the CODEm weight varies by input :math:`t_i`, while
-    the kernel radius :math:`r` does not depend on the input :math:`d`.
+    with :math:`r = \\max_k|t_i - t_k| + 1`, :math:`s = \\lambda` and
+    :math:`d_{i, j} =`:mod:`weave.distance.euclidean`:math:`(t_i, t_j)`.
+    Because the radius depends on input :math:`t_i`, this kernel is not
+    symmetric.
 
     Examples
     --------
@@ -220,14 +221,11 @@ def tricubic(distance: float, radius: float, exponent: float) -> np.float32:
 
     >>> import numpy as np
     >>> from weave.kernels import tricubic
-    >>> distance = np.array([0., 1., 2.])
-    >>> radius = 2.
-    >>> exponent = 3.
-    >>> tricubic(0., radius, exponent)
+    >>> tricubic(0, 2, 3)
     1.0
-    >>> tricubic(1., radius, exponent)
+    >>> tricubic(1, 2, 3)
     0.6699219
-    >>> tricubic(2., radius, exponent)
+    >>> tricubic(2, 2, 3)
     0.0
 
     """
