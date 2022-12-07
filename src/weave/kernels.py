@@ -47,95 +47,6 @@ import numpy as np
 number = Union[int, float]
 
 
-def depth(distance: number, levels: int, radius: float, version: int) \
-        -> np.float32:
-    """Get depth smoothing weight.
-
-    Parameters
-    ----------
-    distance : nonnegative int or float
-        Distance between points.
-    levels : positive int
-        Number of levels. If `dimension.distance` is 'tree', this is
-        equal to the length of `dimension.coordinates`.
-    radius : float in (0, 1)
-        Kernel radius.
-    version : int in {1, 2}
-        Depth kernel version; 1 corresponds to CODEm's location scale
-        factors and 2 corresponds to ST-GPR's location scale factors.
-
-    Returns
-    -------
-    nonnegative numpy.float32
-        Depth smoothing weight.
-
-    Notes
-    -----
-    When `version` = 1, the depth kernel is defined as
-
-    .. math:: k(d; r, s) = \\begin{cases} r & \\text{if } d = 0, \\\\
-              r(1 - r)^{\\lceil d \\rceil} & \\text{if } 0 < d \\leq
-              s - 2, \\\\ (1 - r)^{\\lceil d \\rceil} & \\text{if }
-              s - 2 < d \\leq s - 1, \\\\ 0 & \\text{if } d > s - 1,
-              \\end{cases}
-
-    which is the same as CODEm's location scale factors with
-    :math:`d =`:mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`,
-    :math:`r = \\zeta`, and :math:`s =` the number of levels in the
-    location hierarchy (e.g., locations with coordinates
-    'super_region', 'region', and 'country' would have :math:`s = 3`).
-    If :math:`s = 1`, the possible weight values are 1 and 0.
-
-    When `version` = 2, the depth kernel function is defined as
-
-    .. math:: k(d; r, s) = \\begin{cases} 1 & \\text{if } d = 0, \\\\
-              r^{\\lceil d \\rceil} & \\text{if } 0 < d \\leq s - 1,
-              \\\\ 0 & \\text{if } d > s - 1, \\end{cases}
-
-    which is the same as ST-GPR's location scale factors with
-    :math:`d =`:mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`,
-    :math:`r = \\zeta`, and :math:`s =` the number of levels in the
-    location hierarchy (e.g., locations with coordinates
-    'super_region', 'region', and 'country' would have :math:`s = 3`).
-    If :math:`s = 1`, the possible weight values are 1 and 0.
-
-    Examples
-    --------
-    Get weight for a pair of points (version 1).
-
-    >>> import numpy as np
-    >>> from weave.kernels import depth
-    >>> depth(0, 3, 0.9, 1)
-    0.9
-    >>> depth(1, 3, 0.9, 1)
-    0.09
-    >>> depth(2, 3, 0.9, 1)
-    0.01
-    >>> depth(3, 3, 0.9, 1)
-    0.0
-
-    Get weight for a pair of points (version 2).
-
-    >>> import numpy as np
-    >>> from weave.kernels import depth
-    >>> depth(0, 3, 0.9, 2)
-    1.0
-    >>> depth(1, 3, 0.9, 2)
-    0.9
-    >>> depth(2, 3, 0.9, 2)
-    0.81
-    >>> depth(3, 3, 0.9, 2)
-    0.0
-
-    """
-    same_tree = distance <= levels - 1
-    if version == 1:
-        not_root = levels > 1 and distance <= levels - 2
-        weight = same_tree*radius**not_root*(1 - radius)**np.ceil(distance)
-        return np.float32(weight)
-    return np.float32(same_tree*radius**np.ceil(distance))
-
-
 def exponential(distance: number, radius: number) -> np.float32:
     """Get exponential smoothing weight.
 
@@ -210,9 +121,12 @@ def tricubic(distance: number, radius: number, exponent: number) -> np.float32:
     ..  math:: w_{t_{i, j}} = \\left(1 - \\left(\\frac{d_{i,
                j}}{\\max_k|t_i - t_k| + 1}\\right)^\\lambda\\right)^3
 
-    with :math:`r = \\max_k|t_i - t_k| + 1`, :math:`s = \\lambda` and
+    with :math:`r = \\max_k|t_i - t_k| + 1`, :math:`s = \\lambda`, and
     :math:`d_{i, j} =`:mod:`weave.distance.euclidean`:math:`(t_i, t_j)`.
-    Because the radius depends on input :math:`t_i`, this kernel is not
+
+    The parameter `radius` is not assigned in `dimension.kernel_pars`
+    because it is automatically set to :math:`\\max_k d_{i, k} + 1`.
+    Since the radius depends on :math:`t_i`, this kernel is not
     symmetric.
 
     Examples
@@ -230,3 +144,95 @@ def tricubic(distance: number, radius: number, exponent: number) -> np.float32:
 
     """
     return np.float32(np.maximum(0, (1 - (distance/radius)**exponent)**3))
+
+
+def depth(distance: number, levels: int, radius: float, version: int) \
+        -> np.float32:
+    """Get depth smoothing weight.
+
+    Parameters
+    ----------
+    distance : nonnegative int or float
+        Distance between points.
+    levels : positive int
+        Number of levels in `distance.tree`.
+    radius : float in (0, 1)
+        Kernel radius.
+    version : int in {1, 2}
+        Depth kernel version; 1 corresponds to CODEm's location scale
+        factors and 2 corresponds to ST-GPR's location scale factors.
+
+    Returns
+    -------
+    nonnegative numpy.float32
+        Depth smoothing weight.
+
+    Notes
+    -----
+    When `version` = 1, the depth kernel is defined as
+
+    .. math:: k(d; r, s) = \\begin{cases} r & \\text{if } d = 0, \\\\
+              r(1 - r)^{\\lceil d \\rceil} & \\text{if } 0 < d \\leq
+              s - 2, \\\\ (1 - r)^{\\lceil d \\rceil} & \\text{if }
+              s - 2 < d \\leq s - 1, \\\\ 0 & \\text{if } d > s - 1,
+              \\end{cases}
+
+    which is the same as CODEm's location scale factors with
+    :math:`d =`:mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`,
+    :math:`r = \\zeta`, and :math:`s =` the number of levels in the
+    location hierarchy (e.g., locations with coordinates
+    'super_region', 'region', and 'country' would have :math:`s = 3`).
+    If :math:`s = 1`, the possible weight values are 1 and 0.
+
+    When `version` = 2, the depth kernel function is defined as
+
+    .. math:: k(d; r, s) = \\begin{cases} 1 & \\text{if } d = 0, \\\\
+              r^{\\lceil d \\rceil} & \\text{if } 0 < d \\leq s - 1,
+              \\\\ 0 & \\text{if } d > s - 1, \\end{cases}
+
+    which is the same as ST-GPR's location scale factors with
+    :math:`d =`:mod:`weave.distance.tree`:math:`(\\ell_i, \\ell_j)`,
+    :math:`r = \\zeta`, and :math:`s =` the number of levels in the
+    location hierarchy (e.g., locations with coordinates
+    'super_region', 'region', and 'country' would have :math:`s = 3`).
+    If :math:`s = 1`, the possible weight values are 1 and 0.
+
+    The parameter `levels` is not assigned in `dimension.kernel_pars`
+    because it is automatically set to the length of
+    `dimension.coordinates`.
+
+    Examples
+    --------
+    Get weight for a pair of points (version 1).
+
+    >>> import numpy as np
+    >>> from weave.kernels import depth
+    >>> depth(0, 3, 0.9, 1)
+    0.9
+    >>> depth(1, 3, 0.9, 1)
+    0.09
+    >>> depth(2, 3, 0.9, 1)
+    0.01
+    >>> depth(3, 3, 0.9, 1)
+    0.0
+
+    Get weight for a pair of points (version 2).
+
+    >>> import numpy as np
+    >>> from weave.kernels import depth
+    >>> depth(0, 3, 0.9, 2)
+    1.0
+    >>> depth(1, 3, 0.9, 2)
+    0.9
+    >>> depth(2, 3, 0.9, 2)
+    0.81
+    >>> depth(3, 3, 0.9, 2)
+    0.0
+
+    """
+    same_tree = distance <= levels - 1
+    if version == 1:
+        not_root = levels > 1 and distance <= levels - 2
+        weight = same_tree*radius**not_root*(1 - radius)**np.ceil(distance)
+        return np.float32(weight)
+    return np.float32(same_tree*radius**np.ceil(distance))
