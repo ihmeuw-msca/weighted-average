@@ -80,6 +80,9 @@ def tree(x: np.ndarray, y: np.ndarray) -> np.float32:
     node. The distance between two points is defined as the number of
     edges between the leaves and their nearest common ancestor.
 
+    If `x` and `y` have different roots (i.e., points are not from the
+    same tree, then the length of the points is returned.
+
     Parameters
     ----------
     x : 1D numpy.ndarray
@@ -91,12 +94,6 @@ def tree(x: np.ndarray, y: np.ndarray) -> np.float32:
     -------
     nonnegative numpy.float32
         Tree distance between `x` and `y`.
-
-    Raises
-    ------
-    ValueError
-        If `x` and `y` have different roots (i.e., points are not from
-        the same tree.)
 
     Examples
     --------
@@ -113,11 +110,9 @@ def tree(x: np.ndarray, y: np.ndarray) -> np.float32:
     >>> tree(np.array([1, 2, 4]), np.array([1, 3, 6]))
     2.0
     >>> tree(np.array([1, 2, 4]), np.array([7, 8, 9]))
-    ValueError: Points have different root nodes.
+    3.0
 
     """
-    if x[0] != y[0]:
-        raise ValueError('Points have different root nodes.')
     return _tree(x, y, 0)
 
 

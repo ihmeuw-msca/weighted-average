@@ -165,7 +165,6 @@ def test_same_super_region():
 
 def test_different_super_region():
     """Test tree output with different super regions."""
-    with pytest.raises(ValueError):
-        x = np.array([1, 2, 4])
-        y = np.array([7, 8, 9])
-        tree(x, y)
+    x = np.array([1, 2, 4])
+    y = np.array([7, 8, 9])
+    assert np.isclose(tree(x, y), 3.)
