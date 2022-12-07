@@ -1,10 +1,4 @@
-"""Tests for smoother function.
-
-TODO:
-* Test behavior of functions within smoother module
-  (create separate module)
-
-"""
+"""Tests inputs for smoother function."""
 import pytest
 
 import numpy as np
@@ -21,11 +15,22 @@ not_dimensions = value_list + [[value] for value in value_list]
 not_columns = not_str + [[value] for value in not_str]
 
 # Example smoother
-age = Dimension('age_id', 'age_id', 'exponential', {'radius': 1}, 'euclidean')
-year = Dimension('year_id', 'year_id', 'tricubic',
-                 {'radius': 40, 'exponent': 0.5}, 'euclidean')
-location = Dimension('location_id', ['level_1', 'level_2', 'level_3'], 'depth',
-                     {'radius': 0.9}, 'hierarchical')
+age = Dimension(
+    name='age_id',
+    kernel='exponential',
+    kernel_pars={'radius': 1}
+)
+year = Dimension(
+    name='year_id',
+    kernel='tricubic',
+    kernel_pars={'exponent': 0.5}
+)
+location = Dimension(
+    name='location_id',
+    coordinates=['super_region', 'region', 'country'],
+    kernel='depth',
+    kernel_pars={'radius': 0.9}
+)
 smoother = Smoother([age, year, location])
 
 # Example data
@@ -34,9 +39,9 @@ data = DataFrame({
     'age_mean': [0.5, 1.5, 2.5, 3.5, 3.5],
     'year_id': [1980, 1990, 2000, 2010, 2020],
     'location_id': [5, 5, 6, 7, 9],
-    'level_1': [1, 1, 1, 1, 2],
-    'level_2': [3, 3, 3, 4, 8],
-    'level_3': [5, 5, 6, 7, 9],
+    'super_region': [1, 1, 1, 1, 2],
+    'region': [3, 3, 3, 4, 8],
+    'country': [5, 5, 6, 7, 9],
     'fit': [True, False, False, True, True],
     'predict': [False, True, True, False, False],
     'count': [1.0, 2.0, 3.0, 4.0, 5.0],
@@ -61,27 +66,21 @@ def test_dimensions_values():
         Smoother([])
 
 
-@pytest.mark.parametrize('kernel1', ['exponential', 'tricubic', 'depth'])
-@pytest.mark.parametrize('kernel2', ['exponential', 'tricubic', 'depth'])
-def test_duplicate_names(kernel1, kernel2):
+def test_duplicate_names():
     """Raise ValueError if duplicate names in `dimensions`."""
     with pytest.raises(ValueError):
-        pars = {'radius': 0.5, 'exponent': 3}
-        dim1 = Dimension('dummy', 'columns1', kernel1, pars)
-        dim2 = Dimension('dummy', 'columns2', kernel2, pars)
+        dim1 = Dimension('dummy', 'columns1')
+        dim2 = Dimension('dummy', 'columns2')
         Smoother([dim1, dim2])
 
 
 @pytest.mark.parametrize('coords1', ['dummy1', ['dummy1', 'dummy2']])
 @pytest.mark.parametrize('coords2', ['dummy1', ['dummy1', 'dummy2']])
-@pytest.mark.parametrize('kernel1', ['exponential', 'tricubic', 'depth'])
-@pytest.mark.parametrize('kernel2', ['exponential', 'tricubic', 'depth'])
-def test_duplicate_columns(coords1, coords2, kernel1, kernel2):
+def test_duplicate_columns(coords1, coords2):
     """Raise ValueError if duplicate coordinates in `dimensions`."""
     with pytest.raises(ValueError):
-        pars = {'radius': 0.5, 'exponent': 3}
-        dim1 = Dimension('dummy1', coords1, kernel1, pars)
-        dim2 = Dimension('dummy2', coords2, kernel2, pars)
+        dim1 = Dimension('dummy1', coords1)
+        dim2 = Dimension('dummy2', coords2)
         Smoother([dim1, dim2])
 
 
@@ -148,7 +147,7 @@ def test_columns_duplicates():
 def test_names_in_data():
     """Raise KeyError if `dimension.name` not in `data`."""
     with pytest.raises(KeyError):
-        dummy = Dimension('dummy', 'age_id', 'exponential', {'radius': 0.9})
+        dummy = Dimension('dummy', 'age_id')
         smoother2 = Smoother([dummy, year, location])
         smoother2(data, 'residual')
 
@@ -157,7 +156,7 @@ def test_names_in_data():
 def test_coordinates_in_data(coords):
     """Raise KeyError if `dimension.coordinates` not in `data`."""
     with pytest.raises(KeyError):
-        dummy = Dimension('age_id', coords, 'exponential', {'radius': 0.9})
+        dummy = Dimension('age_id', coords)
         smoother2 = Smoother([dummy, year, location])
         smoother2(data, 'residual')
 
@@ -194,7 +193,7 @@ def test_coordinates_in_distance_dict():
 def test_data_name_type():
     """Raise TypeError if `dimension.name` not int or float."""
     with pytest.raises(TypeError):
-        dummy = Dimension('name', 'age_id', 'exponential', {'radius': 0.9})
+        dummy = Dimension('name', 'age_id')
         smoother2 = Smoother([dummy, year, location])
         smoother2(data, 'residual')
 
@@ -203,7 +202,7 @@ def test_data_name_type():
 def test_data_coordinates_type(coords):
     """Raise TypeError if `dimension.coordinates` not int or float."""
     with pytest.raises(TypeError):
-        dummy = Dimension('age_id', coords, 'exponential', {'radius': 0.9})
+        dummy = Dimension('age_id', coords)
         smoother2 = Smoother([dummy, year, location])
         smoother2(data, 'residual')
 
