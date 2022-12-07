@@ -105,15 +105,28 @@ class Dimension:
         values. This corresponds to the CODEm [1]_ framework where the
         product of age and time weights are normalized in groups based
         on the location hierarchy before being multiplied by location
-        weights. For example, for points :math:`i, j, k` from the same
-        country:
+        weights. For example, for dimensions based on age, time, and
+        location with `normalize` = True, points :math:`i, j, k` from
+        the same country :math:`\mathcal{C}` are computed with
 
         .. math:: w_{i, j} = w_{\\ell_{i, j}} \\cdot
-                  \\frac{w_{a_{i, j}} w_{t_{i, j}}} {\\sum_{k}
-                  w_{a_{i, k}} w_{t_{i, k}}}
+                  \\frac{w_{a_{i, j}} w_{t_{i, j}}} {\\sum_{k \\in
+                  \\mathcal{C}} w_{a_{i, k}} w_{t_{i, k}}},
 
-        This option may be inefficient if there is a large number of
-        possible weight values for the given dimension.
+        but if `normalize` = False, the weights are
+
+        .. math:: w_{i, j} = w_{\\ell_{i, j}} w_{a_{i, j}} w_{t_{i, j}}.
+
+        Note that the final weights are always normalized after the
+        dimension weights have been combined,
+
+        .. math:: w_{i, j} = \\frac{w_{i, j}}{\\sum_{k} w_{i, k}},
+
+        so that the weights for each point sum to 1.
+
+        This option is meant to be used with the :func:`weave.depth`
+        kernel and :func:`weave.tree` distance, and may be inefficient
+        for other kernels.
 
     """
 
@@ -231,10 +244,10 @@ class Dimension:
                 kernel_pars={'exponent': 3},
                 distance='dictionary',
                 distance_dict={
-                    (4, 4): 0.,
-                    (4, 5): 1.,
-                    (4, 6): 2.,
-                    (5, 6): 2.
+                    (4, 4): 0,
+                    (4, 5): 1,
+                    (4, 6): 2,
+                    (5, 6): 2
                 }
             )
 
@@ -575,7 +588,7 @@ class Dimension:
 
         # Set default
         if normalize is None:
-            normalize = self._distance == 'depth'
+            normalize = self._kernel == 'depth'
 
         # Check type
         if not isinstance(normalize, bool):
