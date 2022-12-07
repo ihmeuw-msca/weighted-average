@@ -1,4 +1,4 @@
-# pylint: disable=C0103, E0611, R0902, R0903, R0913
+# pylint: disable=C0103, E0611, R0902, R0903, R0912, R0913
 """Smoothing dimension specifications."""
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -11,7 +11,7 @@ from pandas import DataFrame
 
 from weave.distance import euclidean, tree
 from weave.kernels import exponential, depth, tricubic
-from weave.utils import as_list, is_number
+from weave.utils import as_list, is_int, is_float, is_number
 
 number = Union[int, float]
 pars = Union[number, bool]
@@ -65,7 +65,7 @@ class Dimension:
         `['super_region', 'region', 'country']`. Can be same as `name`
         attribute if dimension is 1D.
 
-    kernel : {'exponential', 'depth', 'identity', 'tricubic'}
+    kernel : {'identity', 'exponential', 'tricubic', 'depth'}
         Kernel function name.
 
         Name of kernel function to compute smoothing weights.
@@ -80,7 +80,7 @@ class Dimension:
         Dictionary of kernel function parameters corresponding to
         `kernel` attribute.
 
-    distance : {'euclidean', 'dictionary', 'tree'}
+    distance : {'euclidean', 'tree', 'dictionary'}
         Distance function name.
 
         Name of distance function to compute distance between points.
@@ -136,7 +136,7 @@ class Dimension:
         kernel_pars : dict of {str: number or bool}
             Kernel function parameters. Optional if `kernel` is
             'identity'.
-        distance : {'dictionary', 'euclidean', 'hierarchical'}, optional
+        distance : {'euclidean', 'tree', 'dictionary'}, optional
             Distance function name. If None, default distance function
             is used based on `kernel`.
         distance_dict : dict of {(number, number): number}, optional
@@ -160,8 +160,18 @@ class Dimension:
                - Parameter types
                - Default `distance`
                - Default `normalize`
+             * - ``identity``
+               -
+               -
+               - ``euclidean``
+               - ``False``
              * - ``exponential``
                - ``radius``
+               - Positive number
+               - ``euclidean``
+               - ``False``
+             * - ``tricubic``
+               - ``exponent``
                - Positive number
                - ``euclidean``
                - ``False``
@@ -170,19 +180,9 @@ class Dimension:
                - Float in :math:`(0, 1)`
                - ``tree``
                - ``True``
-             * - ``identity``
-               -
-               -
-               - ``euclidean``
-               - ``False``
-             * - ``tricubic``
-               - ``radius``
-               - Positive number
-               - ``euclidean``
-               - ``False``
              * -
-               - ``exponent``
-               - Positive number
+               - ``version``
+               - Integer in :math:`\\{1, 2\\}`, optional (default is 1)
                -
                -
 
@@ -219,7 +219,7 @@ class Dimension:
         >>> year = Dimension(
                 name='year_id',
                 kernel='tricubic',
-                kernel_pars={'radius': 2, 'exponent': 3}
+                kernel_pars={'exponent': 3}
             )
 
         Dimension with tricubic kernel and dictionary distance.
@@ -228,7 +228,7 @@ class Dimension:
         >>> location = Dimension(
                 name='location_id',
                 kernel='tricubic',
-                kernel_pars={'radius': 2, 'exponent': 3},
+                kernel_pars={'exponent': 3},
                 distance='dictionary',
                 distance_dict={
                     (4, 4): 0.,
@@ -238,7 +238,7 @@ class Dimension:
                 }
             )
 
-        Dimension with depth kernel and default hierarchical distance.
+        Dimension with depth kernel and default tree distance.
 
         >>> from weave.dimension import Dimension
         >>> location = Dimension(
@@ -398,7 +398,7 @@ class Dimension:
             raise TypeError('`kernel` is not a str.')
 
         # Check value
-        if kernel not in ('exponential', 'depth', 'identity', 'tricubic'):
+        if kernel not in ('identity', 'exponential', 'tricubic', 'depth'):
             raise ValueError('`kernel` is not a valid kernel function.')
 
         self._kernel = kernel
@@ -430,13 +430,15 @@ class Dimension:
             if self._kernel == 'exponential':
                 check_pars(kernel_pars, 'radius', 'pos_num')
                 kernel_pars = {'radius': kernel_pars['radius']}
-            if self._kernel == 'depth':
-                check_pars(kernel_pars, 'radius', 'pos_frac')
-                kernel_pars = {'radius': kernel_pars['radius']}
             if self._kernel == 'tricubic':
-                check_pars(kernel_pars, ['radius', 'exponent'], 'pos_num')
-                kernel_pars = {key: kernel_pars[key]
-                               for key in ['radius', 'exponent']}
+                check_pars(kernel_pars, 'exponent', 'pos_num')
+                kernel_pars = {'exponent': kernel_pars['exponent']}
+            if self._kernel == 'depth':
+                if 'version' not in kernel_pars:
+                    kernel_pars['version'] = 1
+                kpars = ['radius', 'version']
+                check_pars(kernel_pars, kpars, ['pos_frac', 'pos_int'])
+                kernel_pars = {key: kernel_pars[key] for key in kpars}
             self._kernel_pars = kernel_pars
 
     @property
@@ -457,7 +459,7 @@ class Dimension:
 
         Parameters
         ----------
-        distance : {'dictionary', 'euclidean', 'hierarchical', None}
+        distance : {'dictionary', 'euclidean', 'tree', None}
             Distance function name.
 
         Raises
@@ -487,7 +489,7 @@ class Dimension:
             raise TypeError('`distance` is not a str.')
 
         # Check value
-        if distance not in ('euclidean', 'dictionary', 'tree'):
+        if distance not in ('euclidean', 'tree', 'dictionary'):
             msg = '`distance` is not a valid distance function.'
             raise ValueError(msg)
         if distance == 'dictionary' and len(self._coordinates) > 1:
@@ -575,7 +577,8 @@ class Dimension:
         if normalize is None:
             if self._distance == 'depth':
                 normalize = True
-            normalize = False
+            else:
+                normalize = False
 
         # Check type
         if not isinstance(normalize, bool):
@@ -630,10 +633,15 @@ class Dimension:
 
         # Compute weights
         for idx_x, x in enumerate(names):
-            for idx_y, y in enumerate(names):
-                distance = self.get_distance(coords[idx_x], coords[idx_y])
-                weight = self.get_weight(distance)
-                weight_dict[(x, y)] = weight
+            distances = {y: self.get_distance(coords[idx_x], coords[idx_y])
+                         for idx_y, y in enumerate(names)}
+            depth_levels = len(coords[idx_x])
+            tricubic_radius = max(distances.values()) + 1
+            weights = {(x, y): self.get_weight(distances[y], depth_levels,
+                                               tricubic_radius)
+                       for y in names}
+            weight_dict.update(weights)
+
         return weight_dict
 
     def get_distance(self, x: np.ndarray, y: np.ndarray) -> float:
@@ -658,13 +666,18 @@ class Dimension:
             return np.float32(self._distance_dict[(x[0], y[0])])
         return tree(x, y)
 
-    def get_weight(self, distance: float) -> float:
+    def get_weight(self, distance: number, depth_levels: Optional[int] = None,
+                   tricubic_radius: Optional[number] = None) -> float:
         """Get dimension smoothing weight.
 
         Parameters
         ----------
-        distance : float
+        distance : nonnegative int or float
             Distance between points.
+        depth_levels : positive int, optional
+            Number of levels for `kernels.depth`.
+        tricubic_radius : positive int or float, optional
+            Kernel radius for `kernels.tricubic`.
 
         Returns
         -------
@@ -675,10 +688,10 @@ class Dimension:
         if self._kernel == 'exponential':
             return exponential(distance, **self._kernel_pars)
         if self._kernel == 'depth':
-            return depth(distance, **self._kernel_pars)
+            return depth(distance, depth_levels, **self._kernel_pars)
         if self._kernel == 'identity':
             return np.float32(distance)
-        return tricubic(distance, **self._kernel_pars)
+        return tricubic(distance, tricubic_radius, **self._kernel_pars)
 
 
 def check_pars(kernel_pars: Dict[str, number], names: Union[str, List[str]],
@@ -692,7 +705,8 @@ def check_pars(kernel_pars: Dict[str, number], names: Union[str, List[str]],
     names : str or list of str
         Parameter names.
     types : str or list of str
-        Parameter types. Valid types are 'pos_num' or 'pos_frac'.
+        Parameter types. Valid types are 'pos_num', 'pos_int', and
+        'pos_frac'.
 
     Raises
     ------
@@ -714,28 +728,29 @@ def check_pars(kernel_pars: Dict[str, number], names: Union[str, List[str]],
         types = [types]*len(names)
 
     for idx_par, par_name in enumerate(names):
+        msg = f"`{par_name}` is not "
+
         # Check key
         if par_name not in kernel_pars:
-            raise KeyError(f"`{par_name}` is not in `pars`.")
+            raise KeyError(msg + 'in `pars`.')
         par_val = kernel_pars[par_name]
 
+        # Check type and value
+        if par_val <= 0.0:
+            raise ValueError(msg + 'positive.')
         if types[idx_par] == 'pos_num':
-            # Check type
             if not is_number(par_val):
-                raise TypeError(f"`{par_name}` is not an int or float.")
-
-            # Check value
-            if par_val <= 0.0:
-                raise ValueError(f"`{par_name}` is not positive.")
-
+                raise TypeError(msg + 'an int or float.')
+        elif types[idx_par] == 'pos_int':
+            if not is_int(par_val):
+                raise TypeError(msg + 'an int.')
+            if par_name == 'version' and par_val not in (1, 2):
+                raise ValueError(msg + 'in {1, 2}.')
         else:  # 'pos_frac'
-            # Check type
-            if not isinstance(par_val, (float, np.floating)):
-                raise TypeError(f"`{par_name}` is not a float.")
-
-            # Check value
-            if par_val <= 0.0 or par_val >= 1.0:
-                raise ValueError(f"`{par_name}` is not in (0, 1).")
+            if not is_float(par_val):
+                raise TypeError(msg + 'a float.')
+            if par_val >= 1.0:
+                raise ValueError(msg + 'in (0, 1).')
 
 
 def check_dict(distance_dict: Dict[Tuple[number, number], number]) -> None:
@@ -753,6 +768,11 @@ def check_dict(distance_dict: Dict[Tuple[number, number], number]) -> None:
     ValueError
         If `dictionary_dict` is empty, dictionary keys are not all
         length 2, or dictionary values are not all nonnegative.
+
+    Notes
+    -----
+    Does not check that the values in `distance_dict` satisfy
+    properties 2-4 in `weave.distance`.
 
     """
     # Check types
