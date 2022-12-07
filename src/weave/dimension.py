@@ -107,7 +107,7 @@ class Dimension:
         on the location hierarchy before being multiplied by location
         weights. For example, for dimensions based on age, time, and
         location with `normalize` = True, points :math:`i, j, k` from
-        the same country :math:`\mathcal{C}` are computed with
+        the same country :math:`\\mathcal{C}` are computed with
 
         .. math:: w_{i, j} = w_{\\ell_{i, j}} \\cdot
                   \\frac{w_{a_{i, j}} w_{t_{i, j}}} {\\sum_{k \\in
@@ -628,7 +628,7 @@ class Dimension:
 
         """
         # Get point names and coordinates
-        points = data[[self._name] + [self._coordinates]]
+        points = data[[self._name] + self._coordinates]
         points = np.array(points.drop_duplicates(), dtype=np.float32)
         names = points[:, 0]
         coords = points[:, 1:]
