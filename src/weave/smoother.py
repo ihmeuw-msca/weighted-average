@@ -51,7 +51,7 @@ class Smoother:
         >>> year = Dimension(
                 name='year_id',
                 kernel='tricubic',
-                kernel_pars={'radius': 40, 'exponent': 0.5}
+                kernel_pars={'exponent': 0.5}
             )
         >>> location = Dimension(
                 name='location_id',
@@ -356,11 +356,12 @@ class Smoother:
 
         # Check `name` and `coordinates` one-to-one
         for dim in self._dimensions:
-            dim_points = data[[dim.name] + dim.coordinates].drop_duplicates()
             if [dim.name] != dim.coordinates:
-                if any(dim_points.groupby(dim.name).size() != 1):
+                points = data[[dim.name] + dim.coordinates].drop_duplicates()
+                points = points.loc[:, ~points.columns.duplicated()]
+                if any(points.groupby(dim.name).size() != 1):
                     raise ValueError('`name` maps to multiple `coordinates`.')
-                if any(dim_points.groupby(dim.coordinates).size() != 1):
+                if any(points.groupby(dim.coordinates).size() != 1):
                     raise ValueError('`coordinates` maps to multiple `name`.')
 
         # Check values
