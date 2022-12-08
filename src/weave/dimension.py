@@ -65,7 +65,7 @@ class Dimension:
         `['super_region', 'region', 'country']`. Can be same as `name`
         attribute if dimension is 1D.
 
-    kernel : {'identity', 'exponential', 'tricubic', 'depth'}
+    kernel : {'depth', 'exponential', 'identity', 'tricubic'}
         Kernel function name.
 
         Name of kernel function to compute smoothing weights.
@@ -144,7 +144,7 @@ class Dimension:
             Dimension name.
         coordinates : str or list of str, optional
             Dimension coordinates, if different from `name`.
-        kernel : {'identity', 'exponential', 'tricubic', 'depth'}, optional
+        kernel : {'depth', 'exponential', 'identity', 'tricubic'}, optional
             Kernel function name. Default is 'identity'.
         kernel_pars : dict of {str: number or bool}
             Kernel function parameters. Optional if `kernel` is
@@ -258,7 +258,7 @@ class Dimension:
                 name='location_id',
                 coordinates=['super_region', 'region', 'country'],
                 kernel='depth',
-                kernel_pars={'radius': 0.9}
+                kernel_pars={'radius': 0.9, 'levels': 3}
             )
 
         Dimension with identity kernel and default Euclidean distance.
@@ -389,7 +389,7 @@ class Dimension:
 
         Parameters
         ----------
-        kernel : {'identity', 'exponential', 'tricubic', 'depth'}
+        kernel : {'depth', 'exponential', 'identity', 'tricubic'}
             Kernel function name.
 
         Raises
@@ -411,7 +411,7 @@ class Dimension:
             raise TypeError('`kernel` is not a str.')
 
         # Check value
-        if kernel not in ('identity', 'exponential', 'tricubic', 'depth'):
+        if kernel not in ('depth', 'exponential', 'identity', 'tricubic'):
             raise ValueError('`kernel` is not a valid kernel function.')
 
         self._kernel = kernel

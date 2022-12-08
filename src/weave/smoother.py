@@ -57,7 +57,7 @@ class Smoother:
                 name='location_id',
                 coordinates=['super_region', 'region', 'country'],
                 kernel='depth',
-                kernel_pars={'radius': 0.9}
+                kernel_pars={'radius': 0.9, 'levels': 3}
             )
         >>> dimensions = [age, year, location]
         >>> smoother = Smoother(dimensions)
@@ -605,3 +605,4 @@ def get_weights(dim_list: List[TypedDimension], fit_points: np.ndarray,
             weights *= dim_weights
 
     return weights/weights.sum()
+

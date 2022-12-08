@@ -275,7 +275,7 @@
 <span class="sd">        `['super_region', 'region', 'country']`. Can be same as `name`</span>
 <span class="sd">        attribute if dimension is 1D.</span>
 
-<span class="sd">    kernel : {'identity', 'exponential', 'tricubic', 'depth'}</span>
+<span class="sd">    kernel : {'depth', 'exponential', 'identity', 'tricubic'}</span>
 <span class="sd">        Kernel function name.</span>
 
 <span class="sd">        Name of kernel function to compute smoothing weights.</span>
@@ -354,7 +354,7 @@
 <span class="sd">            Dimension name.</span>
 <span class="sd">        coordinates : str or list of str, optional</span>
 <span class="sd">            Dimension coordinates, if different from `name`.</span>
-<span class="sd">        kernel : {'identity', 'exponential', 'tricubic', 'depth'}, optional</span>
+<span class="sd">        kernel : {'depth', 'exponential', 'identity', 'tricubic'}, optional</span>
 <span class="sd">            Kernel function name. Default is 'identity'.</span>
 <span class="sd">        kernel_pars : dict of {str: number or bool}</span>
 <span class="sd">            Kernel function parameters. Optional if `kernel` is</span>
@@ -411,7 +411,6 @@
 
 <span class="sd">        The identity kernel does not have any kernel parameters because</span>
 <span class="sd">        the weight values are equal to the distance values.</span>
-
 <span class="sd">        References</span>
 <span class="sd">        ----------</span>
 <span class="sd">        .. [1] `Cause of Death Ensemble model</span>
@@ -468,7 +467,7 @@
 <span class="sd">                name='location_id',</span>
 <span class="sd">                coordinates=['super_region', 'region', 'country'],</span>
 <span class="sd">                kernel='depth',</span>
-<span class="sd">                kernel_pars={'radius': 0.9}</span>
+<span class="sd">                kernel_pars={'radius': 0.9, 'levels': 3}</span>
 <span class="sd">            )</span>
 
 <span class="sd">        Dimension with identity kernel and default Euclidean distance.</span>
@@ -599,7 +598,7 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        kernel : {'identity', 'exponential', 'tricubic', 'depth'}</span>
+<span class="sd">        kernel : {'depth', 'exponential', 'identity', 'tricubic'}</span>
 <span class="sd">            Kernel function name.</span>
 
 <span class="sd">        Raises</span>
@@ -621,7 +620,7 @@
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`kernel` is not a str.'</span><span class="p">)</span>
 
         <span class="c1"># Check value</span>
-        <span class="k">if</span> <span class="n">kernel</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'identity'</span><span class="p">,</span> <span class="s1">'exponential'</span><span class="p">,</span> <span class="s1">'tricubic'</span><span class="p">,</span> <span class="s1">'depth'</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">kernel</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'depth'</span><span class="p">,</span> <span class="s1">'exponential'</span><span class="p">,</span> <span class="s1">'identity'</span><span class="p">,</span> <span class="s1">'tricubic'</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`kernel` is not a valid kernel function.'</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">=</span> <span class="n">kernel</span>
@@ -663,7 +662,6 @@
                 <span class="n">check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="n">kpars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'pos_frac'</span><span class="p">,</span> <span class="s1">'pos_int'</span><span class="p">])</span>
                 <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kpars</span><span class="p">}</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_pars</span> <span class="o">=</span> <span class="n">kernel_pars</span>
-
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">"""Get distance function name.</span>
@@ -790,7 +788,6 @@
 <span class="sd">            If `normalize` has already been set.</span>
 <span class="sd">        TypeError</span>
 <span class="sd">            If `normalize` is not a bool or None.</span>
-
 <span class="sd">        """</span>
         <span class="c1"># Once set, `normalize` cannot be changed</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">):</span>

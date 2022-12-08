@@ -42,6 +42,38 @@ def test_kernel_type(kernel):
         Dimension('dummy', kernel=kernel)
 
 
+@pytest.mark.parametrize('radius', not_float)
+def test_depth_radius_type(radius):
+    """Raise TypeError if `radius` is not a float."""
+    with pytest.raises(TypeError):
+        bad_pars = {'radius': radius, 'levels': 3}
+        Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
+
+
+@pytest.mark.parametrize('levels', not_int)
+def test_depth_levels_type(levels):
+    """Raise TypeError if `levels` is not an int."""
+    with pytest.raises(TypeError):
+        bad_pars = {'radius': 0.5, 'levels': levels}
+        Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
+
+
+@pytest.mark.parametrize('version', not_int)
+def test_depth_version_type(version):
+    """Raise TypeError if `version` is not an int."""
+    with pytest.raises(TypeError):
+        bad_pars = {'radius': 0.5, 'levels': 3, 'version': version}
+        Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
+
+
+@pytest.mark.parametrize('normalize', not_bool)
+def test_depth_normalize_type(normalize):
+    """Raise TypeError if `normalize` is not a bool."""
+    with pytest.raises(TypeError):
+        bad_pars = {'radius': 0.5, 'levels': 3, 'normalize': normalize}
+        Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
+
+
 @pytest.mark.parametrize('radius', not_numeric)
 def test_exponential_radius_type(radius):
     """Raise TypeError if `radius` is not an int or float."""
@@ -157,6 +189,56 @@ def test_kernel_default():
     assert dim.kernel == 'identity'
 
 
+def test_depth_radius_exist():
+    """Raise KeyError if `radius` is not passed."""
+    with pytest.raises(KeyError):
+        Dimension('dummy', kernel='depth', kernel_pars={'levels': 3})
+
+
+@pytest.mark.parametrize('radius', [-1.0, 0.0, 1.0, 2.0])
+def test_depth_radius_value(radius):
+    """Raise ValueError if `radius` is not valid."""
+    with pytest.raises(ValueError):
+        bad_pars = {'radius': radius, 'exponent': 3}
+        Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
+
+
+def test_depth_levels_exist():
+    """Raise KeyError if `levels` is not passed."""
+    with pytest.raises(KeyError):
+        Dimension('dummy', kernel='depth', kernel_pars={'radius': 0.5})
+
+
+@pytest.mark.parametrize('levels', [-1, 0])
+def test_depth_levels_value(levels):
+    """Raise ValueError if `levels` is not valid."""
+    with pytest.raises(ValueError):
+        bad_pars = {'radius': 0.5, 'levels': levels}
+        Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
+
+
+def test_depth_version_default():
+    """`version` set to 1 if not supplied."""
+    pars = {'radius': 0.5, 'levels': 3}
+    dim = Dimension('dummy', kernel='depth', kernel_pars=pars)
+    assert dim.kernel_pars['version'] == 1
+
+
+@pytest.mark.parametrize('version', [-1, 0, 3])
+def test_depth_version_value(version):
+    """Raise ValueError if `version` is not valid."""
+    with pytest.raises(ValueError):
+        bad_pars = {'radius': 0.5, 'levels': 3, 'version': version}
+        Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
+
+
+def test_depth_normalize_default():
+    """`normalize` set to True if not supplied."""
+    pars = {'radius': 0.5, 'levels': 3}
+    dim = Dimension('dummy', kernel='depth', kernel_pars=pars)
+    assert dim.kernel_pars['normalize'] is True
+
+
 def test_exponential_radius_exist():
     """Raise KeyError if `radius` is not passed."""
     with pytest.raises(KeyError):
@@ -167,7 +249,7 @@ def test_exponential_radius_exist():
 def test_exponential_radius_value(radius):
     """Raise ValueError if `radius` is not valid."""
     with pytest.raises(ValueError):
-        bad_pars = {'radius': radius, 'exponent': 3}
+        bad_pars = {'radius': radius}
         Dimension('dummy', kernel='exponential', kernel_pars=bad_pars)
 
 
@@ -247,6 +329,12 @@ def test_tree_default():
     """`distance` is set to 'tree' if not supplied."""
     dim = Dimension('dummy', kernel='depth', kernel_pars=kernel_pars)
     assert dim.distance == 'tree'
+
+
+def test_tricubic_distance_default():
+    """`distance` is set to 'euclidean' if not supplied."""
+    dim = Dimension('dummy', kernel='tricubic', kernel_pars=kernel_pars)
+    assert dim.distance == 'euclidean'
 
 
 def test_dictionary_distance_dict():

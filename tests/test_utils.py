@@ -1,13 +1,16 @@
 """Tests for general utility functions."""
 from hypothesis import given
 from hypothesis.strategies import integers, floats
+import numpy as np
 import pytest
 
 from weave.utils import as_list, flatten, is_number, is_int, is_float
 
 # Example types
 value_list = [1, 1.0, 'dummy', True, None, (), {}]
-not_number = ['dummy', True, None, [], (), {}]
+not_int = [1.0, np.nan, np.inf, 'dummy', True, None, [], (), {}]
+not_float = [1, np.nan, np.inf, 'dummy', True, None, (), {}]
+not_number = [np.nan, np.inf, 'dummy', True, None, [], (), {}]
 
 # Hypothesis types
 my_integers = integers(min_value=-1e5, max_value=1e5)
@@ -55,21 +58,47 @@ def test_flatten_flat():
     assert flatten(values) == values
 
 
+# Test `is_int()`
+@given(my_integers)
+def test_int_true(value):
+    """Return True if `value` is an int."""
+    assert is_int(value) is True
+
+
+@pytest.mark.parametrize('value', not_int)
+def test_int_false(value):
+    """Return False if `value` is not an int."""
+    assert is_int(value) is False
+
+
+# Test `is_float()`
+@given(my_floats)
+def test_float_true(value):
+    """Return True if `value` is a float."""
+    assert is_float(value) is True
+
+
+@pytest.mark.parametrize('value', not_float)
+def test_float_false(value):
+    """Return False if `value` is not a float."""
+    assert is_float(value) is False
+
+
 # Test `is_number()`
 @given(my_integers)
-def test_int_number(value):
+def test_number_int_true(value):
     """Return True if `value` is an int."""
     assert is_number(value)
 
 
 @given(my_floats)
-def test_float_number(value):
+def test_number_float_true(value):
     """Return True if `value` is a float."""
     assert is_number(value)
 
 
 @pytest.mark.parametrize('value', not_number)
-def test_not_number(value):
+def test_number_false(value):
     """Return False if `value` is not an int or float."""
     assert not is_number(value)
 
