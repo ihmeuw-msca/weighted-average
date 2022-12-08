@@ -605,4 +605,3 @@ def get_weights(dim_list: List[TypedDimension], fit_points: np.ndarray,
             weights *= dim_weights
 
     return weights/weights.sum()
-
