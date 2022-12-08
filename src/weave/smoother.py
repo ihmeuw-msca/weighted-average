@@ -173,10 +173,10 @@ class Smoother:
             })
         >>> smoother(data, ['count', 'fraction'])
            age_id  ...  count  fraction  count_smooth  fraction_smooth
-        0      1  ...    1.0       0.1      1.249567         0.124957
-        1      2  ...    2.0       0.2      2.070433         0.207043
-        2      3  ...    3.0       0.3      2.913803         0.291380
-        3      4  ...    4.0       0.4      3.988203         0.398820
+        0      1  ...    1.0       0.1      1.250974         0.125097
+        1      2  ...    2.0       0.2      2.084069         0.208407
+        2      3  ...    3.0       0.3      2.919984         0.291998
+        3      4  ...    4.0       0.4      3.988642         0.398864
         4      4  ...    5.0       0.5      5.000000         0.500000
 
         Create smoothed version of one column for all points using a
@@ -197,8 +197,8 @@ class Smoother:
         >>> data['predict'] = [False, True, True, False, False]
         >>> smoother(data, 'fraction', predict='predict')
            age_id  ...  count  fraction  predict  fraction_smooth
-        0      2  ...    2.0       0.2     True         0.207043
-        1      3  ...    3.0       0.3     True         0.291380
+        0      2  ...    2.0       0.2     True         0.208407
+        1      3  ...    3.0       0.3     True         0.291998
 
         """
         # Check input
