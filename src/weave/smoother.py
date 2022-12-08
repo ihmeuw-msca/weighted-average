@@ -114,7 +114,7 @@ class Smoother:
         self._dimensions = dimensions
 
     def __call__(self, data: DataFrame, columns: Union[str, List[str]],
-                 fit: str = None, predict: str = None, loop: bool = False,
+                 fit: str = None, predict: str = None, matrix: bool = False,
                  parallel: bool = True) -> DataFrame:
         """Smooth data across dimensions with weighted averages.
 
@@ -137,15 +137,15 @@ class Smoother:
         predict : str, optional
             Column name indicating points to predict smoothed values.
             If None, predictions are made for all points in `data`.
-        loop : bool, optional
-            If True, smooth values for each point in `predict`
-            separately in a loop. Requires less memory, but is slower.
-            Otherwise, populate a matrix of weights for all points in
+        matrix : bool, optional
+            If True, populate a matrix of weights for all points in
             `predict` and smooth values using matrix--vector
             multiplication. Requires more memory, but is faster.
-            Default is False.
+            Otherwise, populate a vector of weights for each point in
+            `predict` and smooth values using vector dot-products in a
+            loop. Requires less memory, but is slower. Default is True.
         parallel : bool, optional
-            If True, parallelize the loop over the predict points.
+            If True, parallelize function that computes weights.
             Default is True.
 
         Returns
@@ -202,7 +202,7 @@ class Smoother:
 
         """
         # Check input
-        self.check_args(data, columns, fit, predict, loop, parallel)
+        self.check_args(data, columns, fit, predict, matrix, parallel)
         self.check_data(data, columns, fit, predict)
 
         # Extract data
@@ -215,10 +215,10 @@ class Smoother:
         # Calculate smoothed values
         if parallel:
             cols_smooth = smooth_parallel(dim_list, points, cols, idx_fit,
-                                          idx_pred, loop)
+                                          idx_pred, matrix)
         else:
             cols_smooth = smooth(dim_list, points, cols, idx_fit, idx_pred,
-                                 loop)
+                                 matrix)
 
         # Construct smoothed data frame
         data_smooth = data.iloc[idx_pred].reset_index(drop=True)
@@ -229,7 +229,7 @@ class Smoother:
 
     @staticmethod
     def check_args(data: DataFrame, columns: Union[str, List[str]],
-                   fit: Optional[str], predict: Optional[str], loop: bool,
+                   fit: Optional[str], predict: Optional[str], matrix: bool,
                    parallel: bool) -> None:
         """Check `smoother` argument types and values.
 
@@ -244,12 +244,16 @@ class Smoother:
             averages.
         predict : str or None
             Column name indicating points to predict smoothed values.
-        loop : bool
-            If True, smooth values for each point in `predict`
-            separately in a loop. Otherwise, populate a matrix of weights
-            for all points in `predict` and smooth values together.
-        parallel : bool
-            If True, parallelize the loop over the predict points.
+        matrix : bool, optional
+            If True, populate a matrix of weights for all points in
+            `predict` and smooth values using matrix--vector
+            multiplication. Requires more memory, but is faster.
+            Otherwise, populate a vector of weights for each point in
+            `predict` and smooth values using vector dot-products in a
+            loop. Requires less memory, but is slower. Default is True.
+        parallel : bool, optional
+            If True, parallelize function that computes weights.
+            Default is True.
 
         Raises
         ------
@@ -269,8 +273,8 @@ class Smoother:
             raise TypeError('`fit` is not a str.')
         if predict is not None and not isinstance(predict, str):
             raise TypeError('`predict` is not a str.')
-        if not isinstance(loop, bool):
-            raise TypeError('`loop` is not a bool.')
+        if not isinstance(matrix, bool):
+            raise TypeError('`matrix` is not a bool.')
         if not isinstance(parallel, bool):
             raise TypeError('`parallel` is not a bool.')
 
@@ -453,7 +457,7 @@ class Smoother:
 @njit
 def smooth(dim_list: List[TypedDimension], points: np.ndarray,
            cols: np.ndarray, idx_fit: np.ndarray, idx_pred: np.ndarray,
-           loop: bool = False) -> np.ndarray:
+           matrix: bool = False) -> np.ndarray:
     """Smooth data across dimensions with weighted averages.
 
     Parameters
@@ -468,12 +472,13 @@ def smooth(dim_list: List[TypedDimension], points: np.ndarray,
         Indices of points to include in weighted averages.
     idx_pred: 1D numpy.ndarray of int
         Indices of points to predict smoothed values.
-    loop : bool, optional
-        If True, smooth values for each point in `predict`
-        separately in a loop. Requires less memory, but is slower.
-        Otherwise, populate a matrix of weights for all points in
-        `predict` and smooth values together. Requires more
-        memory, but is faster. Default is False.
+    matrix : bool, optional
+        If True, populate a matrix of weights for all points in
+        `predict` and smooth values using matrix--vector
+        multiplication. Requires more memory, but is faster.
+        Otherwise, populate a vector of weights for each point in
+        `predict` and smooth values using vector dot-products in a
+        loop. Requires less memory, but is slower. Default is True.
 
     Returns
     -------
@@ -489,18 +494,18 @@ def smooth(dim_list: List[TypedDimension], points: np.ndarray,
     # Extract fit points
     fit_points = points[idx_fit, :]
 
-    if loop:  # Calculate smoothed values one point at a time
-        cols_smooth = np.empty((n_pred, n_cols), dtype=np.float32)
-        for idx_x in range(n_pred):
-            pred_point = points[idx_pred[idx_x], :]
-            weights = get_weights(dim_list, fit_points, pred_point)
-            cols_smooth[idx_x, :] = weights.dot(cols)
-    else:  # Calculate smoothed values together
+    if matrix:  # Calculate matrix of weights
         weights = np.empty((n_pred, n_fit), dtype=np.float32)
         for idx_x in range(n_pred):
             pred_point = points[idx_pred[idx_x]]
             weights[idx_x, :] = get_weights(dim_list, fit_points, pred_point)
         cols_smooth = weights.dot(cols)
+    else:  # Calculate vector of weights one point at a time
+        cols_smooth = np.empty((n_pred, n_cols), dtype=np.float32)
+        for idx_x in range(n_pred):
+            pred_point = points[idx_pred[idx_x], :]
+            weights = get_weights(dim_list, fit_points, pred_point)
+            cols_smooth[idx_x, :] = weights.dot(cols)
 
     return cols_smooth.astype(np.float32)
 
@@ -508,7 +513,7 @@ def smooth(dim_list: List[TypedDimension], points: np.ndarray,
 @njit(parallel=True)
 def smooth_parallel(dim_list: List[TypedDimension], points: np.ndarray,
                     cols: np.ndarray, idx_fit: np.ndarray,
-                    idx_pred: np.ndarray, loop: bool = False) -> np.ndarray:
+                    idx_pred: np.ndarray, matrix: bool = False) -> np.ndarray:
     """Smooth data across dimensions with weighted averages.
 
     Parameters
@@ -523,12 +528,13 @@ def smooth_parallel(dim_list: List[TypedDimension], points: np.ndarray,
         Indices of points to include in weighted averages.
     idx_pred: 1D numpy.ndarray of int
         Indices of points to predict smoothed values.
-    loop : bool, optional
-        If True, smooth values for each point in `predict`
-        separately in a loop. Requires less memory, but is slower.
-        Otherwise, populate a matrix of weights for all points in
-        `predict` and smooth values together. Requires more
-        memory, but is faster. Default is False.
+    matrix : bool, optional
+        If True, populate a matrix of weights for all points in
+        `predict` and smooth values using matrix--vector
+        multiplication. Requires more memory, but is faster.
+        Otherwise, populate a vector of weights for each point in
+        `predict` and smooth values using vector dot-products in a
+        loop. Requires less memory, but is slower. Default is True.
 
     Returns
     -------
@@ -544,18 +550,18 @@ def smooth_parallel(dim_list: List[TypedDimension], points: np.ndarray,
     # Extract fit points
     fit_points = points[idx_fit, :]
 
-    if loop:  # Calculate smoothed values one point at a time
-        cols_smooth = np.empty((n_pred, n_cols), dtype=np.float32)
-        for idx_x in prange(n_pred):
-            pred_point = points[idx_pred[idx_x], :]
-            weights = get_weights(dim_list, fit_points, pred_point)
-            cols_smooth[idx_x, :] = weights.dot(cols)
-    else:  # Calculate smoothed values together
+    if matrix:  # Calculate matrix of weights
         weights = np.empty((n_pred, n_fit), dtype=np.float32)
         for idx_x in prange(n_pred):
             pred_point = points[idx_pred[idx_x]]
             weights[idx_x, :] = get_weights(dim_list, fit_points, pred_point)
         cols_smooth = weights.dot(cols)
+    else:  # Calculate vector of weights one point at a time
+        cols_smooth = np.empty((n_pred, n_cols), dtype=np.float32)
+        for idx_x in prange(n_pred):
+            pred_point = points[idx_pred[idx_x], :]
+            weights = get_weights(dim_list, fit_points, pred_point)
+            cols_smooth[idx_x, :] = weights.dot(cols)
 
     return cols_smooth.astype(np.float32)
 

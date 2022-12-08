@@ -116,11 +116,11 @@ def test_predict_type(predict):
             smoother(data, 'residual', predict=predict)
 
 
-@pytest.mark.parametrize('loop', not_bool)
-def test_loop_type(loop):
-    """Raise TypeError if `loop` is not a bool."""
+@pytest.mark.parametrize('matrix', not_bool)
+def test_matrix_type(matrix):
+    """Raise TypeError if `matrix` is not a bool."""
     with pytest.raises(TypeError):
-        smoother(data, 'residual', loop=loop)
+        smoother(data, 'residual', matrix=matrix)
 
 
 @pytest.mark.parametrize('parallel', not_bool)
