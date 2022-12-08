@@ -62,26 +62,26 @@ def test_flatten_flat():
 @given(my_integers)
 def test_int_true(value):
     """Return True if `value` is an int."""
-    assert is_int(value) is True
+    assert is_int(value)
 
 
 @pytest.mark.parametrize('value', not_int)
 def test_int_false(value):
     """Return False if `value` is not an int."""
-    assert is_int(value) is False
+    assert not is_int(value)
 
 
 # Test `is_float()`
 @given(my_floats)
 def test_float_true(value):
     """Return True if `value` is a float."""
-    assert is_float(value) is True
+    assert is_float(value)
 
 
 @pytest.mark.parametrize('value', not_float)
 def test_float_false(value):
     """Return False if `value` is not a float."""
-    assert is_float(value) is False
+    assert not is_float(value)
 
 
 # Test `is_number()`
@@ -101,29 +101,3 @@ def test_number_float_true(value):
 def test_number_false(value):
     """Return False if `value` is not an int or float."""
     assert not is_number(value)
-
-
-# Test `is_int()`
-@given(my_integers)
-def test_int_int(value):
-    """Return True if `value` is an int."""
-    assert is_int(value)
-
-
-@pytest.mark.parametrize('value', not_number + [1.0])
-def test_not_int(value):
-    """Return False if `value` is not an int."""
-    assert not is_int(value)
-
-
-# Test `is_float()`
-@given(my_floats)
-def test_float_float(value):
-    """Return True if `value` is a float."""
-    assert is_float(value)
-
-
-@pytest.mark.parametrize('value', not_number + [1])
-def test_not_float(value):
-    """Return False if `value` is not a float."""
-    assert not is_float(value)
