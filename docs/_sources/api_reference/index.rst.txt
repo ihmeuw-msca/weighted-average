@@ -9,4 +9,3 @@ API Reference
    weave.dimension
    weave.kernels
    weave.distance
-   weave.utils

@@ -179,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="weave.dimension.html">weave.dimension</a></li>
 <li class="toctree-l2"><a class="reference internal" href="weave.kernels.html">weave.kernels</a></li>
 <li class="toctree-l2"><a class="reference internal" href="weave.distance.html">weave.distance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="weave.utils.html">weave.utils</a></li>
 </ul>
 </li>
 </ul>
@@ -252,7 +251,7 @@ and location.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">year</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
 <span class="go">        name='year_id',</span>
 <span class="go">        kernel='tricubic',</span>
-<span class="go">        kernel_pars={'radius': 40, 'exponent': 0.5}</span>
+<span class="go">        kernel_pars={'exponent': 0.5}</span>
 <span class="go">    )</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">location</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
 <span class="go">        name='location_id',</span>
@@ -266,7 +265,7 @@ and location.</p>
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="weave.smoother.Smoother.__call__">
-<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precompute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.__call__" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">matrix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Smooth data across dimensions with weighted averages.</p>
 <p>For each point in <cite>predict</cite>, calculate a smoothed value of each
 column in <cite>columns</cite> using a weighted average of points in
@@ -283,17 +282,13 @@ each for each column in <cite>columns</cite>.</p>
 averages. If None, all points in <cite>data</cite> are used.</p></li>
 <li><p><strong>predict</strong> (<em>str</em><em>, </em><em>optional</em>) – Column name indicating points to predict smoothed values.
 If None, predictions are made for all points in <cite>data</cite>.</p></li>
-<li><p><strong>loop</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, smooth values for each point in <cite>predict</cite>
-separately in a loop. Requires less memory, but is slower.
-Otherwise, populate a matrix of weights for all points in
+<li><p><strong>matrix</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, populate a matrix of weights for all points in
 <cite>predict</cite> and smooth values using matrix–vector
 multiplication. Requires more memory, but is faster.
-Default is False.</p></li>
-<li><p><strong>precompute</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, precompute all dimension weights and store in a
-dictionary. Requires more memory, but is faster. Otherwise,
-compute all dimension distances and weights on-the-fly.
-Requires less memory, but is slower. Default is True.</p></li>
-<li><p><strong>parallel</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, parallelize the loop over the predict points.
+Otherwise, populate a vector of weights for each point in
+<cite>predict</cite> and smooth values using vector dot-products in a
+loop. Requires less memory, but is slower. Default is True.</p></li>
+<li><p><strong>parallel</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, parallelize function that computes weights.
 Default is True.</p></li>
 </ul>
 </dd>
@@ -322,10 +317,10 @@ multiple columns for all points using all points.</p>
 <span class="go">    })</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="s1">'count'</span><span class="p">,</span> <span class="s1">'fraction'</span><span class="p">])</span>
 <span class="go">   age_id  ...  count  fraction  count_smooth  fraction_smooth</span>
-<span class="go">0      1  ...    1.0       0.1      1.249567         0.124957</span>
-<span class="go">1      2  ...    2.0       0.2      2.070433         0.207043</span>
-<span class="go">2      3  ...    3.0       0.3      2.913803         0.291380</span>
-<span class="go">3      4  ...    4.0       0.4      3.988203         0.398820</span>
+<span class="go">0      1  ...    1.0       0.1      1.250974         0.125097</span>
+<span class="go">1      2  ...    2.0       0.2      2.084069         0.208407</span>
+<span class="go">2      3  ...    3.0       0.3      2.919984         0.291998</span>
+<span class="go">3      4  ...    4.0       0.4      3.988642         0.398864</span>
 <span class="go">4      4  ...    5.0       0.5      5.000000         0.500000</span>
 </pre></div>
 </div>
@@ -346,8 +341,8 @@ using all points.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="p">[</span><span class="s1">'predict'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'fraction'</span><span class="p">,</span> <span class="n">predict</span><span class="o">=</span><span class="s1">'predict'</span><span class="p">)</span>
 <span class="go">   age_id  ...  count  fraction  predict  fraction_smooth</span>
-<span class="go">0      2  ...    2.0       0.2     True         0.207043</span>
-<span class="go">1      3  ...    3.0       0.3     True         0.291380</span>
+<span class="go">0      2  ...    2.0       0.2     True         0.208407</span>
+<span class="go">1      3  ...    3.0       0.3     True         0.291998</span>
 </pre></div>
 </div>
 </dd></dl>

@@ -179,7 +179,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.dimension.html">weave.dimension</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.kernels.html">weave.kernels</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.distance.html">weave.distance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../api_reference/weave.utils.html">weave.utils</a></li>
 </ul>
 </li>
 </ul>
@@ -209,22 +208,49 @@
         </div>
         <article role="main">
           <h1>Source code for weave.dimension</h1><div class="highlight"><pre>
-<span></span><span class="c1"># pylint: disable=C0103, E0611, R0902, R0903, R0913</span>
+<span></span><span class="c1"># pylint: disable=C0103, E0611, R0902, R0903, R0912, R0913</span>
 <span class="sd">"""Smoothing dimension specifications."""</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">numba.experimental</span> <span class="kn">import</span> <span class="n">jitclass</span>  <span class="c1"># type: ignore</span>
-<span class="kn">from</span> <span class="nn">numba.typed</span> <span class="kn">import</span> <span class="n">List</span> <span class="k">as</span> <span class="n">TypedList</span>  <span class="c1"># type: ignore</span>
-<span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">DictType</span><span class="p">,</span> <span class="n">ListType</span><span class="p">,</span> <span class="n">UniTuple</span>  <span class="c1"># type: ignore</span>
-<span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">float32</span><span class="p">,</span> <span class="n">unicode_type</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">numba.typed</span> <span class="kn">import</span> <span class="n">Dict</span> <span class="k">as</span> <span class="n">TypedDict</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">DictType</span><span class="p">,</span> <span class="n">UniTuple</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">numba.types</span> <span class="kn">import</span> <span class="n">boolean</span><span class="p">,</span> <span class="n">float32</span><span class="p">,</span> <span class="n">unicode_type</span>  <span class="c1"># type: ignore</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
 
-<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">get_typed_dict</span><span class="p">,</span> <span class="n">_check_dict</span>
-<span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">get_typed_pars</span><span class="p">,</span> <span class="n">_check_pars</span>
-<span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span>
+<span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">euclidean</span><span class="p">,</span> <span class="n">tree</span>
+<span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">exponential</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">tricubic</span>
+<span class="kn">from</span> <span class="nn">weave.utils</span> <span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">is_int</span><span class="p">,</span> <span class="n">is_float</span><span class="p">,</span> <span class="n">is_number</span>
 
 <span class="n">number</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
 <span class="n">pars</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">number</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span>
 <span class="n">DistanceDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">number</span><span class="p">,</span> <span class="n">number</span><span class="p">],</span> <span class="n">number</span><span class="p">]</span>
+<span class="n">WeightDict</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span>
+
+
+<span class="nd">@jitclass</span><span class="p">([(</span><span class="s1">'name'</span><span class="p">,</span> <span class="n">unicode_type</span><span class="p">),</span>
+           <span class="p">(</span><span class="s1">'weight_dict'</span><span class="p">,</span> <span class="n">DictType</span><span class="p">(</span><span class="n">UniTuple</span><span class="p">(</span><span class="n">float32</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">float32</span><span class="p">)),</span>
+           <span class="p">(</span><span class="s1">'normalize'</span><span class="p">,</span> <span class="n">boolean</span><span class="p">)])</span>
+<span class="k">class</span> <span class="nc">TypedDimension</span><span class="p">:</span>
+    <span class="sd">"""Smoothing dimension specifications."""</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">weight_dict</span><span class="p">:</span> <span class="n">WeightDict</span><span class="p">,</span> <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">"""Create smoothing dimension.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name : unicode_type</span>
+<span class="sd">            Dimension name.</span>
+<span class="sd">        weight_dict : numba.typed.Dict of {(float32, float32): float32}</span>
+<span class="sd">            Dictionary of dimension smoothing weights.</span>
+<span class="sd">        normalize : bool</span>
+<span class="sd">            Normalize dimension weights in groups.</span>
+
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight_dict</span> <span class="o">=</span> <span class="n">weight_dict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span> <span class="o">=</span> <span class="n">normalize</span>
 
 
 <div class="viewcode-block" id="Dimension"><a class="viewcode-back" href="../../api_reference/weave.dimension.html#weave.dimension.Dimension">[docs]</a><span class="k">class</span> <span class="nc">Dimension</span><span class="p">:</span>
@@ -264,7 +290,7 @@
 <span class="sd">        Dictionary of kernel function parameters corresponding to</span>
 <span class="sd">        `kernel` attribute.</span>
 
-<span class="sd">    distance : {'euclidean', 'hierarchical', 'dictionary'}</span>
+<span class="sd">    distance : {'euclidean', 'tree', 'dictionary'}</span>
 <span class="sd">        Distance function name.</span>
 
 <span class="sd">        Name of distance function to compute distance between points.</span>
@@ -279,12 +305,38 @@
 <span class="sd">        User-defined dictionary of distances between points if</span>
 <span class="sd">        `distance` attribute is 'dictionary'. Dictionary keys are</span>
 <span class="sd">        tuples of point ID pairs, and dictionary values are the</span>
-<span class="sd">        corresponding distances. Because distances are assumed to be</span>
-<span class="sd">        symmetric, point IDs are listed from smallest to largest.</span>
+<span class="sd">        corresponding distances.</span>
 
-<span class="sd">        See Also</span>
-<span class="sd">        --------</span>
-<span class="sd">        weave.distance.dictionary</span>
+<span class="sd">    normalize : bool</span>
+<span class="sd">        Normalize dimension weights in groups.</span>
+
+<span class="sd">        Whether or not the preceding dimension weights should be</span>
+<span class="sd">        normalized in groups based on the current dimension weight</span>
+<span class="sd">        values. This corresponds to the CODEm [1]_ framework where the</span>
+<span class="sd">        product of age and time weights are normalized in groups based</span>
+<span class="sd">        on the location hierarchy before being multiplied by location</span>
+<span class="sd">        weights. For example, for dimensions based on age, time, and</span>
+<span class="sd">        location with `normalize` = True, points :math:`i, j, k` from</span>
+<span class="sd">        the same country :math:`\\mathcal{C}` are computed with</span>
+
+<span class="sd">        .. math:: w_{i, j} = w_{\\ell_{i, j}} \\cdot</span>
+<span class="sd">                  \\frac{w_{a_{i, j}} w_{t_{i, j}}} {\\sum_{k \\in</span>
+<span class="sd">                  \\mathcal{C}} w_{a_{i, k}} w_{t_{i, k}}},</span>
+
+<span class="sd">        but if `normalize` = False, the weights are</span>
+
+<span class="sd">        .. math:: w_{i, j} = w_{\\ell_{i, j}} w_{a_{i, j}} w_{t_{i, j}}.</span>
+
+<span class="sd">        Note that the final weights are always normalized after the</span>
+<span class="sd">        dimension weights have been combined,</span>
+
+<span class="sd">        .. math:: w_{i, j} = \\frac{w_{i, j}}{\\sum_{k} w_{i, k}},</span>
+
+<span class="sd">        so that the weights for each point sum to 1.</span>
+
+<span class="sd">        This option is meant to be used with the :func:`weave.depth`</span>
+<span class="sd">        kernel and :func:`weave.tree` distance, and may be inefficient</span>
+<span class="sd">        for other kernels.</span>
 
 <span class="sd">    """</span>
 
@@ -292,7 +344,8 @@
                  <span class="n">kernel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'identity'</span><span class="p">,</span>
                  <span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pars</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">distance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">distance_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DistanceDict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                 <span class="n">distance_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DistanceDict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">normalize</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">"""Create smoothing dimension.</span>
 
 <span class="sd">        Parameters</span>
@@ -306,94 +359,58 @@
 <span class="sd">        kernel_pars : dict of {str: number or bool}</span>
 <span class="sd">            Kernel function parameters. Optional if `kernel` is</span>
 <span class="sd">            'identity'.</span>
-<span class="sd">        distance : {'dictionary', 'euclidean', 'hierarchical'}, optional</span>
+<span class="sd">        distance : {'euclidean', 'tree', 'dictionary'}, optional</span>
 <span class="sd">            Distance function name. If None, default distance function</span>
 <span class="sd">            is used based on `kernel`.</span>
 <span class="sd">        distance_dict : dict of {(number, number): number}, optional</span>
 <span class="sd">            Dictionary of distances between points, if `distance` is</span>
 <span class="sd">            'dictionary'.</span>
+<span class="sd">        normalize : bool, optional</span>
+<span class="sd">            Normalize dimension weights in groups. If None, default is</span>
+<span class="sd">            used based on `kernel`.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
 
-<span class="sd">        * Kernel-specific parameters and default distance functions are</span>
-<span class="sd">          given in the table below. The given dictionary `kernel_pars`</span>
-<span class="sd">          is converted to an instance of `numba.typed.Dict</span>
-<span class="sd">          &lt;https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict&gt;`_</span>
-<span class="sd">          within :func:`weave.smoother.Smoother`.</span>
+<span class="sd">        Kernel-specific parameters and default attributes are given in</span>
+<span class="sd">        the table below.</span>
 
 <span class="sd">          .. list-table::</span>
 <span class="sd">             :header-rows: 1</span>
 
 <span class="sd">             * - Kernel</span>
-<span class="sd">               - Parameter</span>
-<span class="sd">               - Parameter type</span>
-<span class="sd">               - Default distance</span>
+<span class="sd">               - Parameters</span>
+<span class="sd">               - Parameter types</span>
+<span class="sd">               - Default `distance`</span>
+<span class="sd">               - Default `normalize`</span>
 <span class="sd">             * - ``identity``</span>
-<span class="sd">               - ``normalize``</span>
-<span class="sd">               - Boolean, optional (default is ``False``)</span>
-<span class="sd">               -  ``euclidean``</span>
+<span class="sd">               -</span>
+<span class="sd">               -</span>
+<span class="sd">               - ``euclidean``</span>
+<span class="sd">               - ``False``</span>
 <span class="sd">             * - ``exponential``</span>
 <span class="sd">               - ``radius``</span>
 <span class="sd">               - Positive number</span>
 <span class="sd">               - ``euclidean``</span>
-<span class="sd">             * -</span>
-<span class="sd">               - ``normalize``</span>
-<span class="sd">               - Boolean, optional (default is ``False``)</span>
-<span class="sd">               -</span>
+<span class="sd">               - ``False``</span>
 <span class="sd">             * - ``tricubic``</span>
-<span class="sd">               - ``radius``</span>
-<span class="sd">               - Positive number</span>
-<span class="sd">               - ``euclidean``</span>
-<span class="sd">             * -</span>
-<span class="sd">               - ``normalize``</span>
-<span class="sd">               - Boolean, optional (default is ``False``)</span>
-<span class="sd">               -</span>
-<span class="sd">             * -</span>
 <span class="sd">               - ``exponent``</span>
 <span class="sd">               - Positive number</span>
-<span class="sd">               -</span>
+<span class="sd">               - ``euclidean``</span>
+<span class="sd">               - ``False``</span>
 <span class="sd">             * - ``depth``</span>
 <span class="sd">               - ``radius``</span>
 <span class="sd">               - Float in :math:`(0, 1)`</span>
-<span class="sd">               - ``hierarchical``</span>
+<span class="sd">               - ``tree``</span>
+<span class="sd">               - ``True``</span>
 <span class="sd">             * -</span>
-<span class="sd">               - ``normalize``</span>
-<span class="sd">               - Boolean, optional (default is ``True``)</span>
+<span class="sd">               - ``version``</span>
+<span class="sd">               - Integer in :math:`\\{1, 2\\}`, optional (default is 1)</span>
+<span class="sd">               -</span>
 <span class="sd">               -</span>
 
-<span class="sd">        * The optional kernel parameter `normalize` indicates whether</span>
-<span class="sd">          or not the preceding dimension weights should be normalized</span>
-<span class="sd">          in groups based on the current dimension weight values. This</span>
-<span class="sd">          corresponds to the CODEm [1]_ framework where the product of</span>
-<span class="sd">          age and time weights are normalized in groups based on the</span>
-<span class="sd">          location hierarchy before being multiplied by location</span>
-<span class="sd">          weights. For example, for points :math:`i, j, k` from the</span>
-<span class="sd">          same country:</span>
-
-<span class="sd">          .. math:: w_{i, j} = w_{\\ell_{i, j}} \\cdot</span>
-<span class="sd">                    \\frac{w_{a_{i, j}} w_{t_{i, j}}} {\\sum_{k}</span>
-<span class="sd">                    w_{a_{i, k}} w_{t_{i, k}}}</span>
-
-<span class="sd">          This option may be inefficient if there is a large number of</span>
-<span class="sd">          possible weight values for the given dimension.</span>
-
-<span class="sd">        * The parameters for the identity kernel are optional because</span>
-<span class="sd">          the weight values are equal to the distance values. For</span>
-<span class="sd">          increased efficiency, you can precompute all dimension</span>
-<span class="sd">          weights as a dictionary and then use the identity kernel with</span>
-<span class="sd">          the dictionary distance. This is done automatically within</span>
-<span class="sd">          :func:`weave.smoother.__call__` if `precompute` is True.</span>
-
-<span class="sd">        * The parameter `distance_dict` contains the user-defined</span>
-<span class="sd">          distances between points if the distance attribute is</span>
-<span class="sd">          'dictionary'. Dictionary keys are tuples of point ID pairs,</span>
-<span class="sd">          and dictionary values are the corresponding distances.</span>
-<span class="sd">          Because distances are assumed to be symmetric, point IDs are</span>
-<span class="sd">          listed from smallest to largest. The given `distance_dict` is</span>
-<span class="sd">          converted to an instance of `numba.typed.Dict</span>
-<span class="sd">          &lt;https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict&gt;`_</span>
-<span class="sd">          within :func:`weave.smoother.Smoother`.</span>
+<span class="sd">        The identity kernel does not have any kernel parameters because</span>
+<span class="sd">        the weight values are equal to the distance values.</span>
 
 <span class="sd">        References</span>
 <span class="sd">        ----------</span>
@@ -425,7 +442,7 @@
 <span class="sd">        &gt;&gt;&gt; year = Dimension(</span>
 <span class="sd">                name='year_id',</span>
 <span class="sd">                kernel='tricubic',</span>
-<span class="sd">                kernel_pars={'radius': 2, 'exponent': 3}</span>
+<span class="sd">                kernel_pars={'exponent': 3}</span>
 <span class="sd">            )</span>
 
 <span class="sd">        Dimension with tricubic kernel and dictionary distance.</span>
@@ -434,17 +451,17 @@
 <span class="sd">        &gt;&gt;&gt; location = Dimension(</span>
 <span class="sd">                name='location_id',</span>
 <span class="sd">                kernel='tricubic',</span>
-<span class="sd">                kernel_pars={'radius': 2, 'exponent': 3},</span>
+<span class="sd">                kernel_pars={'exponent': 3},</span>
 <span class="sd">                distance='dictionary',</span>
 <span class="sd">                distance_dict={</span>
-<span class="sd">                    (4, 4): 0.,</span>
-<span class="sd">                    (4, 5): 1.,</span>
-<span class="sd">                    (4, 6): 2.,</span>
-<span class="sd">                    (5, 6): 2.</span>
+<span class="sd">                    (4, 4): 0,</span>
+<span class="sd">                    (4, 5): 1,</span>
+<span class="sd">                    (4, 6): 2,</span>
+<span class="sd">                    (5, 6): 2</span>
 <span class="sd">                }</span>
 <span class="sd">            )</span>
 
-<span class="sd">        Dimension with depth kernel and default hierarchical distance.</span>
+<span class="sd">        Dimension with depth kernel and default tree distance.</span>
 
 <span class="sd">        &gt;&gt;&gt; from weave.dimension import Dimension</span>
 <span class="sd">        &gt;&gt;&gt; location = Dimension(</span>
@@ -470,6 +487,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">kernel_pars</span> <span class="o">=</span> <span class="n">kernel_pars</span>  <span class="c1"># type: ignore</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span>  <span class="c1"># type: ignore</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">distance_dict</span> <span class="o">=</span> <span class="n">distance_dict</span>  <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span> <span class="o">=</span> <span class="n">normalize</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -630,31 +648,21 @@
 <span class="sd">            Kernel function parameters.</span>
 
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="n">kernel_pars</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{}</span>
-
-        <span class="c1"># Check parameter values</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'depth'</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s1">'normalize'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
-                <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">],</span>
-                        <span class="p">[</span><span class="s1">'pos_frac'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
-            <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-                           <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]}</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s1">'normalize'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
-                <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'normalize'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># Check values</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">!=</span> <span class="s1">'identity'</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'exponential'</span><span class="p">:</span>
-                <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">],</span>
-                            <span class="p">[</span><span class="s1">'pos_num'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
-                <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-                               <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]}</span>
-            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'tricubic'</span><span class="p">:</span>
-                <span class="n">_check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">],</span>
-                            <span class="p">[</span><span class="s1">'pos_num'</span><span class="p">,</span> <span class="s1">'pos_num'</span><span class="p">,</span> <span class="s1">'bool'</span><span class="p">])</span>
-                <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-                               <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">]}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_pars</span> <span class="o">=</span> <span class="n">kernel_pars</span>
+                <span class="n">check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'pos_num'</span><span class="p">)</span>
+                <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'radius'</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">]}</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'tricubic'</span><span class="p">:</span>
+                <span class="n">check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="s1">'exponent'</span><span class="p">,</span> <span class="s1">'pos_num'</span><span class="p">)</span>
+                <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'exponent'</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'exponent'</span><span class="p">]}</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'depth'</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">'version'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
+                    <span class="n">kernel_pars</span><span class="p">[</span><span class="s1">'version'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">kpars</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'radius'</span><span class="p">,</span> <span class="s1">'version'</span><span class="p">]</span>
+                <span class="n">check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="n">kpars</span><span class="p">,</span> <span class="p">[</span><span class="s1">'pos_frac'</span><span class="p">,</span> <span class="s1">'pos_int'</span><span class="p">])</span>
+                <span class="n">kernel_pars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kpars</span><span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_pars</span> <span class="o">=</span> <span class="n">kernel_pars</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -674,7 +682,7 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        distance : {'dictionary', 'euclidean', 'hierarchical', None}</span>
+<span class="sd">        distance : {'dictionary', 'euclidean', 'tree', None}</span>
 <span class="sd">            Distance function name.</span>
 
 <span class="sd">        Raises</span>
@@ -692,10 +700,10 @@
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'distance'</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`distance` cannot be changed.'</span><span class="p">)</span>
 
-        <span class="c1"># Set defaults</span>
+        <span class="c1"># Set default</span>
         <span class="k">if</span> <span class="n">distance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'depth'</span><span class="p">:</span>
-                <span class="n">distance</span> <span class="o">=</span> <span class="s1">'hierarchical'</span>
+                <span class="n">distance</span> <span class="o">=</span> <span class="s1">'tree'</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">distance</span> <span class="o">=</span> <span class="s1">'euclidean'</span>
 
@@ -704,7 +712,7 @@
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance` is not a str.'</span><span class="p">)</span>
 
         <span class="c1"># Check value</span>
-        <span class="k">if</span> <span class="n">distance</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'dictionary'</span><span class="p">,</span> <span class="s1">'euclidean'</span><span class="p">,</span> <span class="s1">'hierarchical'</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">distance</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'euclidean'</span><span class="p">,</span> <span class="s1">'tree'</span><span class="p">,</span> <span class="s1">'dictionary'</span><span class="p">):</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s1">'`distance` is not a valid distance function.'</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">distance</span> <span class="o">==</span> <span class="s1">'dictionary'</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coordinates</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
@@ -752,69 +760,255 @@
                 <span class="n">msg</span> <span class="o">=</span> <span class="s2">"`distance` is 'dictionary', "</span>
                 <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'but `distance_dict` is None.'</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-            <span class="n">_check_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_distance_dict</span> <span class="o">=</span> <span class="n">distance_dict</span></div>
+            <span class="n">check_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_distance_dict</span> <span class="o">=</span> <span class="n">distance_dict</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">"""Get `normalize` attribute.</span>
 
-<span class="nd">@jitclass</span><span class="p">([(</span><span class="s1">'name'</span><span class="p">,</span> <span class="n">unicode_type</span><span class="p">),</span>
-           <span class="p">(</span><span class="s1">'coordinates'</span><span class="p">,</span> <span class="n">ListType</span><span class="p">(</span><span class="n">unicode_type</span><span class="p">)),</span>
-           <span class="p">(</span><span class="s1">'kernel'</span><span class="p">,</span> <span class="n">unicode_type</span><span class="p">),</span>
-           <span class="p">(</span><span class="s1">'kernel_pars'</span><span class="p">,</span> <span class="n">DictType</span><span class="p">(</span><span class="n">unicode_type</span><span class="p">,</span> <span class="n">float32</span><span class="p">)),</span>
-           <span class="p">(</span><span class="s1">'distance'</span><span class="p">,</span> <span class="n">unicode_type</span><span class="p">),</span>
-           <span class="p">(</span><span class="s1">'distance_dict'</span><span class="p">,</span> <span class="n">DictType</span><span class="p">(</span><span class="n">UniTuple</span><span class="p">(</span><span class="n">float32</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">float32</span><span class="p">))])</span>
-<span class="k">class</span> <span class="nc">TypedDimension</span><span class="p">:</span>
-    <span class="sd">"""Smoothing dimension specifications."""</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">coordinates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">kernel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">distance</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">distance_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">"""Create smoothing dimension.</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            Normalize dimension weights in groups.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize</span>
+
+    <span class="nd">@normalize</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">normalize</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">"""Set `normalize` attribute.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        name : unicode_type</span>
-<span class="sd">            Dimension name.</span>
-<span class="sd">        coordinates : numba.typed.List of unicode_type</span>
-<span class="sd">            Dimension coordinates.</span>
-<span class="sd">        kernel : {'exponential', 'tricubic', 'depth'}</span>
-<span class="sd">            Kernel function name.</span>
-<span class="sd">        kernel_pars : numba.typed.Dict of {unicode_type: float32}</span>
-<span class="sd">            Kernel function parameters.</span>
-<span class="sd">        distance : {'dictionary', 'euclidean', 'hierarchical'}</span>
-<span class="sd">            Distance function name.</span>
-<span class="sd">        distance_dict : numba.typed.Dict of {(float32, float32): float32}</span>
-<span class="sd">            Dictionary of distances between points if `distance` is</span>
-<span class="sd">            'dictionary'.</span>
+<span class="sd">        normalize : bool, optional</span>
+<span class="sd">            Normalize dimension weights in groups.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AttributeError</span>
+<span class="sd">            If `normalize` has already been set.</span>
+<span class="sd">        TypeError</span>
+<span class="sd">            If `normalize` is not a bool or None.</span>
 
 <span class="sd">        """</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> <span class="n">coordinates</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span> <span class="o">=</span> <span class="n">kernel</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">kernel_pars</span> <span class="o">=</span> <span class="n">kernel_pars</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">distance_dict</span> <span class="o">=</span> <span class="n">distance_dict</span>
+        <span class="c1"># Once set, `normalize` cannot be changed</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`normalize` cannot be changed.'</span><span class="p">)</span>
+
+        <span class="c1"># Set default</span>
+        <span class="k">if</span> <span class="n">normalize</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">normalize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'depth'</span>
+
+        <span class="c1"># Check type</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">normalize</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`normalize` is not a bool.'</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_normalize</span> <span class="o">=</span> <span class="n">normalize</span>
+
+    <span class="k">def</span> <span class="nf">get_typed_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TypedDimension</span><span class="p">:</span>
+        <span class="sd">"""Get smoothing dimension cast as jitclass object.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data : DataFrame</span>
+<span class="sd">            Input data structure.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TypedDimension</span>
+<span class="sd">            Smoothing dimension cast as jitclass object.</span>
+
+<span class="sd">        """</span>
+        <span class="n">weight_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_weight_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">TypedDimension</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">weight_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_weight_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WeightDict</span><span class="p">:</span>
+        <span class="sd">"""Get dictionary of dimension smoothing weights.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data : pandas.DataFrame</span>
+<span class="sd">            Input data structure.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict of {(float32, float32): float32}</span>
+<span class="sd">            Dictionary of dimension smoothing weights.</span>
+
+<span class="sd">        """</span>
+        <span class="c1"># Get point names and coordinates</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="n">data</span><span class="p">[[</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coordinates</span><span class="p">]</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">points</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">(),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="n">points</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">points</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span>
+
+        <span class="c1"># Initialize weight dictionary</span>
+        <span class="n">weight_dict</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
+            <span class="n">key_type</span><span class="o">=</span><span class="n">UniTuple</span><span class="p">(</span><span class="n">float32</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="n">value_type</span><span class="o">=</span><span class="n">float32</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Compute weights</span>
+        <span class="k">for</span> <span class="n">idx_x</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
+            <span class="n">distances</span> <span class="o">=</span> <span class="p">{</span><span class="n">y</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_distance</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="n">idx_x</span><span class="p">],</span> <span class="n">coords</span><span class="p">[</span><span class="n">idx_y</span><span class="p">])</span>
+                         <span class="k">for</span> <span class="n">idx_y</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">names</span><span class="p">)}</span>
+            <span class="n">radius</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">distances</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># tricubic kernel</span>
+            <span class="n">levels</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="n">idx_x</span><span class="p">])</span>  <span class="c1"># depth kernel</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="p">{(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_weight</span><span class="p">(</span><span class="n">distances</span><span class="p">[</span><span class="n">y</span><span class="p">],</span> <span class="n">radius</span><span class="p">,</span> <span class="n">levels</span><span class="p">)</span>
+                       <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">names</span><span class="p">}</span>
+            <span class="n">weight_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">weight_dict</span>
+
+    <span class="k">def</span> <span class="nf">get_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">:</span>
+        <span class="sd">"""Get distance between `x` and `y`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : 1D numpy.ndarray of float</span>
+<span class="sd">            Current point.</span>
+<span class="sd">        y : 1D numpy.ndarray of float</span>
+<span class="sd">            Nearby point.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        nonnegative float32</span>
+<span class="sd">            Distance between `x` and `y`.</span>
+
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_distance</span> <span class="o">==</span> <span class="s1">'euclidean'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">euclidean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_distance</span> <span class="o">==</span> <span class="s1">'tree'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">tree</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_distance_dict</span><span class="p">[(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">])])</span>
+
+    <span class="k">def</span> <span class="nf">get_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">distance</span><span class="p">:</span> <span class="n">number</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="n">number</span><span class="p">,</span> <span class="n">levels</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">:</span>
+        <span class="sd">"""Get dimension smoothing weight.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        distance : nonnegative int or float</span>
+<span class="sd">            Distance between points.</span>
+<span class="sd">        radius : positive int or float, optional</span>
+<span class="sd">            Kernel radius for `kernels.tricubic`.</span>
+<span class="sd">        levels : positive int, optional</span>
+<span class="sd">            Number of levels for `kernels.depth`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        nonnegative float32</span>
+<span class="sd">            Dimension smoothing weight.</span>
+
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'identity'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'exponential'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">exponential</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel_pars</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'tricubic'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">tricubic</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel_pars</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">levels</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel_pars</span><span class="p">)</span></div>
 
 
-<span class="k">def</span> <span class="nf">get_typed_dimension</span><span class="p">(</span><span class="n">dim</span><span class="p">:</span> <span class="n">Dimension</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TypedDimension</span><span class="p">:</span>
-    <span class="sd">"""Get smoothing dimension cast as jitclass object.</span>
+<span class="k">def</span> <span class="nf">check_pars</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">number</span><span class="p">],</span> <span class="n">names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+               <span class="n">types</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">"""Check kernel parameter types and values.</span>
 
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    TypedDimension</span>
-<span class="sd">        Smoothing dimension cast as jitclass object.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pars : dict of {str: number}</span>
+<span class="sd">        Kernel parameters</span>
+<span class="sd">    names : str or list of str</span>
+<span class="sd">        Parameter names.</span>
+<span class="sd">    types : str or list of str</span>
+<span class="sd">        Parameter types. Valid types are 'pos_num', 'pos_int', and</span>
+<span class="sd">        'pos_frac'.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    KeyError</span>
+<span class="sd">        If `pars` is missing a kernel parameter.</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If a kernel parameter is an invalid type.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If a kernel parameter is an invalid value.</span>
 
 <span class="sd">    """</span>
-    <span class="c1"># Get typed version of attributes</span>
-    <span class="n">coordinates</span> <span class="o">=</span> <span class="n">TypedList</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">coordinates</span><span class="p">)</span>
-    <span class="n">kernel_pars</span> <span class="o">=</span> <span class="n">get_typed_pars</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">kernel_pars</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="s1">'distance_dict'</span><span class="p">):</span>
-        <span class="n">distance_dict</span> <span class="o">=</span> <span class="n">get_typed_dict</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">distance_dict</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">distance_dict</span> <span class="o">=</span> <span class="n">get_typed_dict</span><span class="p">()</span>
+    <span class="c1"># Check type</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernel_pars</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`kernel_pars` is not a dict.'</span><span class="p">)</span>
 
-    <span class="c1"># Create typed dimension</span>
-    <span class="n">typed_dim</span> <span class="o">=</span> <span class="n">TypedDimension</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">coordinates</span><span class="p">,</span> <span class="n">dim</span><span class="o">.</span><span class="n">kernel</span><span class="p">,</span> <span class="n">kernel_pars</span><span class="p">,</span>
-                               <span class="n">dim</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span> <span class="n">distance_dict</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">typed_dim</span>
+    <span class="c1"># Get parameter names</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">types</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">types</span> <span class="o">=</span> <span class="p">[</span><span class="n">types</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">idx_par</span><span class="p">,</span> <span class="n">par_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">par_name</span><span class="si">}</span><span class="s2">` is not "</span>
+
+        <span class="c1"># Check key</span>
+        <span class="k">if</span> <span class="n">par_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kernel_pars</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'in `pars`.'</span><span class="p">)</span>
+        <span class="n">par_val</span> <span class="o">=</span> <span class="n">kernel_pars</span><span class="p">[</span><span class="n">par_name</span><span class="p">]</span>
+
+        <span class="c1"># Check type and value</span>
+        <span class="k">if</span> <span class="n">par_val</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'positive.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'pos_num'</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_number</span><span class="p">(</span><span class="n">par_val</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'an int or float.'</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">types</span><span class="p">[</span><span class="n">idx_par</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'pos_int'</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_int</span><span class="p">(</span><span class="n">par_val</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'an int.'</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">par_name</span> <span class="o">==</span> <span class="s1">'version'</span> <span class="ow">and</span> <span class="n">par_val</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'in {1, 2}.'</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># 'pos_frac'</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_float</span><span class="p">(</span><span class="n">par_val</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'a float.'</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">par_val</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s1">'in (0, 1).'</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">check_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">number</span><span class="p">,</span> <span class="n">number</span><span class="p">],</span> <span class="n">number</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">"""Check distance dictionary keys and values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    distance_dict : dict of {(number, number): number}</span>
+<span class="sd">        Dictionary of distances between points.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If `distance_dict`, keys, or values are an invalid type.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If `dictionary_dict` is empty, dictionary keys are not all</span>
+<span class="sd">        length 2, or dictionary values are not all nonnegative.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Does not check that the values in `distance_dict` satisfy</span>
+<span class="sd">    properties 2-4 in `weave.distance`.</span>
+
+<span class="sd">    """</span>
+    <span class="c1"># Check types</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance_dict` is not a dict.'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance_dict` keys not all tuple.'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_number</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">distance_dict</span> <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance_dict` key entries not all int or float.'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_number</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance_dict` values not all int or float.'</span><span class="p">)</span>
+
+    <span class="c1"># Check values</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`distance_dict` is an empty dict.'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`distance_dict` keys are not all length 2.'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">value</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`distance_dict` contains negative values.'</span><span class="p">)</span>
 </pre></div>
         </article>
       </div>
