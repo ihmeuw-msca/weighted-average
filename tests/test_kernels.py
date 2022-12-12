@@ -18,7 +18,7 @@ my_dist = floats(min_value=0.0, max_value=1e3, allow_nan=False,
 my_level = integers(min_value=1, max_value=10)
 my_radius1 = floats(min_value=1e2, max_value=1e3, allow_nan=False,
                     allow_infinity=False, allow_subnormal=False)
-my_radius2 = floats(min_value=0.0, max_value=1.0, allow_nan=False,
+my_radius2 = floats(min_value=0.5, max_value=1.0, allow_nan=False,
                     allow_infinity=False, allow_subnormal=False,
                     exclude_min=True, exclude_max=True)
 my_exponent = floats(min_value=1e-1, max_value=1e1, allow_nan=False,
