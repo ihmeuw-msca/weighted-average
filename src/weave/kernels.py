@@ -156,7 +156,7 @@ def depth(distance: number, levels: int, radius: float, version: int) \
         Distance between points.
     levels : positive int
         Number of levels in `distance.tree`.
-    radius : float in (0, 1)
+    radius : float in (0.5, 1)
         Kernel radius.
     version : int in {1, 2}
         Depth kernel version; 1 corresponds to CODEm's location scale

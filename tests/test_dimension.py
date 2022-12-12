@@ -15,7 +15,7 @@ not_dict = [1, 1.0, 'dummy', True, None, [], ()]
 not_normalize = [1, 1.0, 'dummy', [], (), {}]
 
 # Example kernel parameters and distance dictionary
-kernel_pars = {'radius': 0.5, 'exponent': 3, 'version': 1}
+kernel_pars = {'radius': 0.6, 'exponent': 3, 'version': 1}
 distance_dict = {(1.0, 1.0): 1.0}
 
 
@@ -70,7 +70,7 @@ def test_depth_radius_type(radius):
 def test_depth_version_type(version):
     """Raise TypeError if `version` not an int."""
     with pytest.raises(TypeError):
-        bad_pars = {'radius': 0.5, 'version': version}
+        bad_pars = {'radius': 0.6, 'version': version}
         Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
 
 
@@ -203,20 +203,20 @@ def test_depth_radius_value(radius):
 def test_depth_version_value(version):
     """Raise ValueError if `version` is not valid."""
     with pytest.raises(ValueError):
-        bad_pars = {'radius': 0.5, 'version': version}
+        bad_pars = {'radius': 0.6, 'version': version}
         Dimension('dummy', kernel='depth', kernel_pars=bad_pars)
 
 
 def test_depth_version_default():
     """`version` set to 1 if not passed."""
-    dim = Dimension('dummy', kernel='depth', kernel_pars={'radius': 0.5})
+    dim = Dimension('dummy', kernel='depth', kernel_pars={'radius': 0.6})
     assert dim.kernel_pars['version'] == 1
 
 
 @pytest.mark.parametrize('kernel', ['exponential', 'tricubic', 'depth'])
 def test_no_extra_pars(kernel):
     """Only relevant parameters saved to `kernel_pars`."""
-    extra_pars = {'radius': 0.5, 'exponent': 3, 'version': 1, 'dummy': 100}
+    extra_pars = {'radius': 0.6, 'exponent': 3, 'version': 1, 'dummy': 100}
     dim = Dimension('dummy', kernel=kernel, kernel_pars=extra_pars)
     if kernel == 'exponential':
         assert 'radius' in dim.kernel_pars

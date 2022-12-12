@@ -190,7 +190,7 @@ class Dimension:
                - ``False``
              * - ``depth``
                - ``radius``
-               - Float in :math:`(0, 1)`
+               - Float in :math:`(0.5, 1)`
                - ``tree``
                - ``True``
              * -
@@ -756,8 +756,8 @@ def check_pars(kernel_pars: Dict[str, number], names: Union[str, List[str]],
         else:  # 'pos_frac'
             if not is_float(par_val):
                 raise TypeError(msg + 'a float.')
-            if par_val >= 1.0:
-                raise ValueError(msg + 'in (0, 1).')
+            if par_val <= 0.5 or par_val >= 1.0:
+                raise ValueError(msg + 'in (0.5, 1).')
 
 
 def check_dict(distance_dict: Dict[Tuple[number, number], number]) -> None:
