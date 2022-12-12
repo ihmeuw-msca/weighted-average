@@ -171,10 +171,15 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul>
-<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../user_guide/index.html">User Guide</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/intro.html">What is <cite>weave</cite>?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/quickstart.html">Quickstart</a></li>
+</ul>
+</li>
 </ul>
 <ul class="current">
-<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="weave.smoother.html">weave.smoother</a></li>
 <li class="toctree-l2"><a class="reference internal" href="weave.dimension.html">weave.dimension</a></li>
 <li class="toctree-l2"><a class="reference internal" href="weave.kernels.html">weave.kernels</a></li>
@@ -225,55 +230,6 @@ properties <a class="footnote-reference brackets" href="#id2" id="id1">1</a>:</p
 <dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Metric_(mathematics)">Metric (mathematics)</a></p>
 </dd>
 </dl>
-<dl class="py function">
-<dt class="sig sig-object py" id="weave.distance.dictionary">
-<span class="sig-prename descclassname"><span class="pre">weave.distance.</span></span><span class="sig-name descname"><span class="pre">dictionary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/distance.html#dictionary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.distance.dictionary" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get dictionary distances between <cite>x</cite> and <cite>Y</cite>.</p>
-<p>Returns user-defined distances between points <cite>x</cite> and <cite>Y</cite>,
-specified in the dictionary <cite>distance_dict</cite>. Dictionary keys are
-tuples of point ID pairs <cite>(x, y)</cite>, and dictionary values are the
-corresponding distances. Because distances are assumed to be
-symmetric, point IDs are listed from smallest to largest, e.g.
-<cite>x</cite> <span class="math notranslate nohighlight">\(\leq\)</span> <cite>y</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>1D numpy.ndarray of float</em>) – Current point.</p></li>
-<li><p><strong>Y</strong> (<em>2D numpy.ndarray of float</em>) – Matrix of nearby points.</p></li>
-<li><p><strong>distance_dict</strong> (<em>numba.typed.Dict of {</em><em>(</em><em>float32</em><em>, </em><em>float32</em><em>)</em><em>: float32}</em>) – Typed dictionary of distances between points.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Dictionary distances between <cite>x</cite> and <cite>Y</cite>.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>1D numpy.ndarray of nonnegative float32</p>
-</dd>
-</dl>
-<p class="rubric">Notes</p>
-<p>Because this is a Numba just-in-time function, the parameter
-<cite>distance_dict</cite> must be of type <a class="reference external" href="https://numba.readthedocs.io/en/stable/reference/pysupported.html#typed-dict">numba.typed.Dict</a>.
-Dictionaries can be cast as a typed dictionary using the function
-<a class="reference internal" href="#weave.distance.get_typed_dict" title="weave.distance.get_typed_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_typed_dict()</span></code></a>, but values are not checked for validity.</p>
-<p class="rubric">Examples</p>
-<p>Get user-defined distances between points based on scalar point
-IDs.</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.distance</span> <span class="kn">import</span> <span class="n">dictionary</span><span class="p">,</span> <span class="n">get_typed_dict</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">distance_dict</span> <span class="o">=</span> <span class="p">{</span>
-<span class="go">        (4, 4): 0,</span>
-<span class="go">        (4, 5): 1,</span>
-<span class="go">        (4, 6): 2,</span>
-<span class="go">        (5, 6): 2</span>
-<span class="go">    }</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">typed_dict</span> <span class="o">=</span> <span class="n">get_typed_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">4.</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">4.</span><span class="p">],</span> <span class="p">[</span><span class="mf">5.</span><span class="p">],</span> <span class="p">[</span><span class="mf">6.</span><span class="p">]])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">dictionary</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">typed_dict</span><span class="p">)</span>
-<span class="go">array([0., 1., 2.], dtype=float32)</span>
-</pre></div>
-</div>
-</dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="weave.distance.euclidean">
 <span class="sig-prename descclassname"><span class="pre">weave.distance.</span></span><span class="sig-name descname"><span class="pre">euclidean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/distance.html#euclidean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.distance.euclidean" title="Permalink to this definition">¶</a></dt>
