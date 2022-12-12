@@ -4,34 +4,13 @@
 
 # WEighted-AVErage (weave)
 
-Smooth data across multiple dimensions using weighted averages.
-
-Method inspired by the spatial-temporal models developed in the following paper:
+The `weave` package smooths data across multiple dimensions using weighted averages with methods inspired by the spatial-temporal models developed in the following paper:
 
 Foreman, K.J., Lozano, R., Lopez, A.D., et al. "[Modeling causes
 of death: an integrated approach using CODEm](https://pophealthmetrics.biomedcentral.com/articles/10.1186/1478-7954-10-1)," Popul Health Metrics,
 vol. 10, no. 1, pp. 1-23, 2012.
 
-## Installing `weave`
-
-To install `weave` from a local directory (in develop mode), follow these steps:
-```
-git clone https://github.com/ihmeuw-msca/weighted-average.git
-cd weighted-average
-pip install -e .
-```
-
-To install `weave` from a specific branch, follow these steps:
-```
-pip install git+https://github.com/ihmeuw-msca/weighted-average.git@<branch-name>
-```
-
-## Using `weave`
-
-To use `weave`, follow these steps:
-```
-<usage-example>
-```
+For instructions on how to install and use `weave`, please refer to the [documentation](https://ihmeuw-msca.github.io/weighted-average/).
 
 ## License
 
