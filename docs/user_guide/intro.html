@@ -236,11 +236,11 @@ second stage, the inspiration for <cite>weave</cite>, in more detail.</p>
 <div class="section" id="spatial-temporal-models">
 <h3>Spatial-Temporal Models<a class="headerlink" href="#spatial-temporal-models" title="Permalink to this headline">¶</a></h3>
 <p>After the first stage linear mixed effects models have been run, the residuals
-are calculated (predicted - observed dependent variable). It is assummed that
+are calculated (observed - predicted dependent variable). It is assummed that
 these residuals contain patterns that vary systematically across age, time, and
 location that are not captured by the linear mixed effects models.
 Spatial-temporal smoothing is applied to the residuals and the result added to
-the first stage predictions in an effort to account for this important
+the first stage predictions in an effort to account for this additional
 information.</p>
 <p>For each observation <span class="math notranslate nohighlight">\(i\)</span> in the data set <span class="math notranslate nohighlight">\(\mathcal{D}\)</span>, weights
 are assigned to the remaining observations <span class="math notranslate nohighlight">\(j\)</span> based on their similarity
@@ -280,16 +280,17 @@ dimensions using the <a class="reference internal" href="../api_reference/weave.
 where <a class="reference internal" href="../api_reference/weave.distance.html"><span class="doc">distance</span></a> and
 <a class="reference internal" href="../api_reference/weave.kernels.html"><span class="doc">kernel</span></a> functions determine how
 weights are calculated.</p>
-<p>Distance functions <span class="math notranslate nohighlight">\(d(x, y)\)</span> calculate the distance between points
-<span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span>, and kernel functions <span class="math notranslate nohighlight">\(k(d; r)\)</span> calculate
-smoothing weights given distance <span class="math notranslate nohighlight">\(d\)</span> and a set of parameters <span class="math notranslate nohighlight">\(r\)</span>.
-In <cite>weave</cite>, you can choose from three distance functions and four kernel
+<p>Distance functions <span class="math notranslate nohighlight">\(d(x_i, x_j)\)</span> calculate the distance between points
+<span class="math notranslate nohighlight">\(x_i\)</span> and <span class="math notranslate nohighlight">\(x_j\)</span>, and kernel functions
+<span class="math notranslate nohighlight">\(k(d_{i, j} \, ; p_1, p_2, \dots)\)</span> calculate smoothing weights given
+distance <span class="math notranslate nohighlight">\(d_{i, j}\)</span> and a set of parameters <span class="math notranslate nohighlight">\(p_1, p_2, \dots\)</span>. In
+<cite>weave</cite>, you can choose from three distance functions and four kernel
 functions.</p>
-<p>Weighted averages are calculated using the
-<a class="reference internal" href="../api_reference/weave.smoother.html"><span class="doc">Smoother</span></a> class for observations
-<span class="math notranslate nohighlight">\(i\)</span> in data set <span class="math notranslate nohighlight">\(\mathcal{D}\)</span> with</p>
+<p>Weighted averages <span class="math notranslate nohighlight">\(\hat{y}\)</span> of dependent variables <span class="math notranslate nohighlight">\(y\)</span> are
+calculated using the <a class="reference internal" href="../api_reference/weave.smoother.html"><span class="doc">Smoother</span></a> class
+for observations <span class="math notranslate nohighlight">\(i\)</span> in data set <span class="math notranslate nohighlight">\(\mathcal{D}\)</span> with</p>
 <div class="math-wrapper"><div class="math notranslate nohighlight">
-\[\hat{x}_i = \sum_{j \in \mathcal{D}} w_{i, j} \, x_j,\]</div></div>
+\[\hat{y}_i = \sum_{j \in \mathcal{D}} w_{i, j} \, y_j,\]</div></div>
 <p>where weights are first calculated for dimensions <span class="math notranslate nohighlight">\(a, b, c, \dots\)</span>, then
 multiplied,</p>
 <div class="math-wrapper"><div class="math notranslate nohighlight">

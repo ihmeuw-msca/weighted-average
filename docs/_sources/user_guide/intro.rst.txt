@@ -30,11 +30,11 @@ Spatial-Temporal Models
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 After the first stage linear mixed effects models have been run, the residuals
-are calculated (predicted - observed dependent variable). It is assummed that
+are calculated (observed - predicted dependent variable). It is assummed that
 these residuals contain patterns that vary systematically across age, time, and
 location that are not captured by the linear mixed effects models.
 Spatial-temporal smoothing is applied to the residuals and the result added to
-the first stage predictions in an effort to account for this important
+the first stage predictions in an effort to account for this additional
 information.
 
 For each observation :math:`i` in the data set :math:`\mathcal{D}`, weights
@@ -81,17 +81,18 @@ where :doc:`distance <../api_reference/weave.distance>` and
 :doc:`kernel <../api_reference/weave.kernels>` functions determine how
 weights are calculated.
 
-Distance functions :math:`d(x, y)` calculate the distance between points
-:math:`x` and :math:`y`, and kernel functions :math:`k(d; r)` calculate
-smoothing weights given distance :math:`d` and a set of parameters :math:`r`.
-In `weave`, you can choose from three distance functions and four kernel
+Distance functions :math:`d(x_i, x_j)` calculate the distance between points
+:math:`x_i` and :math:`x_j`, and kernel functions
+:math:`k(d_{i, j} \, ; p_1, p_2, \dots)` calculate smoothing weights given
+distance :math:`d_{i, j}` and a set of parameters :math:`p_1, p_2, \dots`. In
+`weave`, you can choose from three distance functions and four kernel
 functions.
 
-Weighted averages are calculated using the
-:doc:`Smoother <../api_reference/weave.smoother>` class for observations
-:math:`i` in data set :math:`\mathcal{D}` with
+Weighted averages :math:`\hat{y}` of dependent variables :math:`y` are
+calculated using the :doc:`Smoother <../api_reference/weave.smoother>` class
+for observations :math:`i` in data set :math:`\mathcal{D}` with
 
-.. math:: \hat{x}_i = \sum_{j \in \mathcal{D}} w_{i, j} \, x_j,
+.. math:: \hat{y}_i = \sum_{j \in \mathcal{D}} w_{i, j} \, y_j,
 
 where weights are first calculated for dimensions :math:`a, b, c, \dots`, then
 multiplied,
