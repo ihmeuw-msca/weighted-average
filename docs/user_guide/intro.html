@@ -146,7 +146,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -206,7 +206,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -214,21 +214,95 @@
         <article role="main">
           <div class="section" id="what-is-weave">
 <h1>What is <cite>weave</cite>?<a class="headerlink" href="#what-is-weave" title="Permalink to this headline">¶</a></h1>
-<p>The <cite>weave</cite> package smooths data across multiple dimensions using
-weighted averages with methods inspired by the spatial-temporal models
-developed in the following paper:</p>
-<p>Foreman, K.J., Lozano, R., Lopez, A.D., et al. “<a class="reference external" href="https://pophealthmetrics.biomedcentral.com/articles/10.1186/1478-7954-10-1">Modeling causes of
-death: an integrated approach using CODEm</a>”,
+<p>The <cite>weave</cite> package smooths data across multiple dimensions using weighted
+averages with methods inspired by the spatial-temporal models developed in the
+following paper:</p>
+<p>Foreman, K.J., Lozano, R., Lopez, A.D., et al. “<a class="reference external" href="https://pophealthmetrics.biomedcentral.com/articles/10.1186/1478-7954-10-1">Modeling causes of death: an
+integrated approach using CODEm</a>”,
 Popul Health Metrics, vol. 10, no. 1, pp. 1-23, 2012.</p>
-<p>Notes
-* The spatio-temporal models then utilize additional regression analysis to take into account how the dependent variable further varies across time, space, and age.
-* Local regression in three dimensions
-* Assumes that residuals contain valuable information that cannot be directly observed but nonetheless vary systematically across geographic region, time, and age group.</p>
-<p>Local regression is different than weighted average
-* Local regression solves for each point using weighted least squares on nearby subset of the data point
-* Usually first or second degree; using 0 means moving weighted average (!)</p>
-<p>Should I connect it to CODEm (i.e., discuss residual smoothing?) or just general weighted averages?
-Should I use a specific data set for the Quickstart?</p>
+<div class="section" id="cause-of-death-ensemble-model">
+<h2>Cause of Death Ensemble Model<a class="headerlink" href="#cause-of-death-ensemble-model" title="Permalink to this headline">¶</a></h2>
+<p>The Cause of Death Ensemble model (CODEm) predicts cause-specific mortality for
+a large number of countries. As an ensemble model, it combines results from
+many model families to produce predictions with improved accuracy. Two of the
+model families included in CODEm, called spatial-temporal models, use weighted
+averages to smooth results across age, time, and location.</p>
+<p>These spatial-temporal models are created in three stages. First, either the
+logit of the cause fraction or the natural log of the death rate is modeled
+using a linear mixed effects model. Next, spatial-temporal smoothing is used to
+account for additional variations across age, time, and location. Finally,
+Gaussian process regression is applied to predict uncertainty. We describe the
+second stage, the inspiration for <cite>weave</cite>, in more detail.</p>
+<div class="section" id="spatial-temporal-models">
+<h3>Spatial-Temporal Models<a class="headerlink" href="#spatial-temporal-models" title="Permalink to this headline">¶</a></h3>
+<p>After the first stage linear mixed effects models have been run, the residuals
+are calculated (predicted - observed dependent variable). It is assummed that
+these residuals contain patterns that vary systematically across age, time, and
+location that are not captured by the linear mixed effects models.
+Spatial-temporal smoothing is applied to the residuals and the result added to
+the first stage predictions in an effort to account for this important
+information.</p>
+<p>For each observation <span class="math notranslate nohighlight">\(i\)</span> in the data set <span class="math notranslate nohighlight">\(\mathcal{D}\)</span>, weights
+are assigned to the remaining observations <span class="math notranslate nohighlight">\(j\)</span> based on their similarity
+across age, time, and location. The predicted or smoothed residual
+<span class="math notranslate nohighlight">\(\hat{r}\)</span> is then the weighted average of the residuals <span class="math notranslate nohighlight">\(r\)</span>,</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[\hat{r}_i = \sum_{j \in \mathcal{D}} w_{i, j} \, r_j.\]</div></div>
+<p>Weights are calculated based on similarity in age,</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[w_{a_{i, j}} = \frac{1}{\exp(\omega \, |a_i - a_j|)}\]</div></div>
+<p>similarity in year,</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[w_{t_{i, j}} = \left(1 - \left(\frac{|t_i - t_j|}
+{\max_{k \in \mathcal{D}}|t_i - t_k| + 1}\right)^\lambda\right)^3,\]</div></div>
+<p>and similarity in location,</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[\begin{split}w_{\ell_{i, j}} = \begin{cases} \zeta &amp; \text{same country}, \\
+\zeta(1 - \zeta) &amp; \text{same region}, \\ (1 - \zeta)^2 &amp;
+\text{same super region}, \\ 0 &amp; \text{otherwise}, \end{cases}\end{split}\]</div></div>
+<p>and then combined into a single weight,</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[\tilde{w}_{i, j} = w_{\ell_{i, j}} \, \frac{w_{a_{i, j}} \,
+w_{t_{i, j}}}{\sum_{k \in \mathcal{D}} w_{a_{i, k}} \,
+w_{t_{i, k}}}.\]</div></div>
+<p>Finally, weights are normalized so that all weights for each observation
+<span class="math notranslate nohighlight">\(i\)</span> sum to one,</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[w_{i, j} = \frac{\tilde{w}_{i, j}}{\sum_{k \in \mathcal{D}}
+\tilde{w}_{i, k}}.\]</div></div>
+</div>
+</div>
+<div class="section" id="weighted-averages-with-weave">
+<h2>Weighted Averages with <cite>weave</cite><a class="headerlink" href="#weighted-averages-with-weave" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>weave</cite> package generalizes the spatial-temporal models in CODEm to smooth
+data across mutliple dimensions using weighted averages. Users can specify
+dimensions using the <a class="reference internal" href="../api_reference/weave.dimension.html"><span class="doc">Dimension</span></a> class,
+where <a class="reference internal" href="../api_reference/weave.distance.html"><span class="doc">distance</span></a> and
+<a class="reference internal" href="../api_reference/weave.kernels.html"><span class="doc">kernel</span></a> functions determine how
+weights are calculated.</p>
+<p>Distance functions <span class="math notranslate nohighlight">\(d(x, y)\)</span> calculate the distance between points
+<span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span>, and kernel functions <span class="math notranslate nohighlight">\(k(d; r)\)</span> calculate
+smoothing weights given distance <span class="math notranslate nohighlight">\(d\)</span> and a set of parameters <span class="math notranslate nohighlight">\(r\)</span>.
+In <cite>weave</cite>, you can choose from three distance functions and four kernel
+functions.</p>
+<p>Weighted averages are calculated using the
+<a class="reference internal" href="../api_reference/weave.smoother.html"><span class="doc">Smoother</span></a> class for observations
+<span class="math notranslate nohighlight">\(i\)</span> in data set <span class="math notranslate nohighlight">\(\mathcal{D}\)</span> with</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[\hat{x}_i = \sum_{j \in \mathcal{D}} w_{i, j} \, x_j,\]</div></div>
+<p>where weights are first calculated for dimensions <span class="math notranslate nohighlight">\(a, b, c, \dots\)</span>, then
+multiplied,</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[\tilde{w}_{i, j} = w_{a_{i, j}} \, w_{b_{i, j}} \, w_{c_{i, j}}
+\cdots,\]</div></div>
+<p>and finally normalized,</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[w_{i, j} = \frac{\tilde{w}_{i, j}}{\sum_{k \in \mathcal{D}}
+\tilde{w}_{i, k}}.\]</div></div>
+<p>For instructions on how to get started, see the <a class="reference internal" href="quickstart.html"><span class="doc">Quickstart</span></a>.
+For descriptions of the modules, objects, and functions included in <cite>weave</cite>,
+see the <a class="reference internal" href="../api_reference/index.html"><span class="doc">API Reference</span></a>.</p>
+</div>
 </div>
 
         </article>
@@ -270,8 +344,31 @@ Should I use a specific data set for the Quickstart?</p>
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            Contents
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">What is <cite>weave</cite>?</a><ul>
+<li><a class="reference internal" href="#cause-of-death-ensemble-model">Cause of Death Ensemble Model</a><ul>
+<li><a class="reference internal" href="#spatial-temporal-models">Spatial-Temporal Models</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#weighted-averages-with-weave">Weighted Averages with <cite>weave</cite></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
@@ -281,5 +378,6 @@ Should I use a specific data set for the Quickstart?</p>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/scripts/furo.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </body>
 </html>
