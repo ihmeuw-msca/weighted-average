@@ -414,13 +414,13 @@ distance.</p>
 <span class="go">        name='age_id',</span>
 <span class="go">        coordinates='age_mean',</span>
 <span class="go">        kernel='exponential',</span>
-<span class="go">        kernel_pars={'radius': 0.5}</span>
+<span class="go">        radius=0.5</span>
 <span class="go">    )</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">location</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
 <span class="go">        name='location_id',</span>
 <span class="go">        coordinates=['lat', 'lon'],</span>
 <span class="go">        kernel='exponential',</span>
-<span class="go">        kernel_pars={'radius': 0.5}</span>
+<span class="go">        radius=0.5</span>
 <span class="go">    )</span>
 </pre></div>
 </div>
@@ -429,7 +429,7 @@ distance.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">year</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
 <span class="go">        name='year_id',</span>
 <span class="go">        kernel='tricubic',</span>
-<span class="go">        kernel_pars={'exponent': 3}</span>
+<span class="go">        exponent=3</span>
 <span class="go">    )</span>
 </pre></div>
 </div>
@@ -438,7 +438,7 @@ distance.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">location</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
 <span class="go">        name='location_id',</span>
 <span class="go">        kernel='tricubic',</span>
-<span class="go">        kernel_pars={'exponent': 3},</span>
+<span class="go">        exponent=3,</span>
 <span class="go">        distance='dictionary',</span>
 <span class="go">        distance_dict={</span>
 <span class="go">            (4, 4): 0,</span>
@@ -455,7 +455,7 @@ distance.</p>
 <span class="go">        name='location_id',</span>
 <span class="go">        coordinates=['super_region', 'region', 'country'],</span>
 <span class="go">        kernel='depth',</span>
-<span class="go">        kernel_pars={'radius': 0.9}</span>
+<span class="go">        radius=0.9</span>
 <span class="go">    )</span>
 </pre></div>
 </div>

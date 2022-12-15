@@ -234,10 +234,11 @@
 
 
 <span class="nd">@jitclass</span><span class="p">([(</span><span class="s1">'name'</span><span class="p">,</span> <span class="n">unicode_type</span><span class="p">),</span>
+           <span class="p">(</span><span class="s1">'kernel'</span><span class="p">,</span> <span class="n">unicode_type</span><span class="p">),</span>
            <span class="p">(</span><span class="s1">'weight_dict'</span><span class="p">,</span> <span class="n">DictType</span><span class="p">(</span><span class="n">UniTuple</span><span class="p">(</span><span class="n">float32</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">float32</span><span class="p">))])</span>
 <span class="k">class</span> <span class="nc">TypedDimension</span><span class="p">:</span>
     <span class="sd">"""Smoothing dimension specifications."""</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">weight_dict</span><span class="p">:</span> <span class="n">WeightDict</span><span class="p">)</span> \
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">kernel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">weight_dict</span><span class="p">:</span> <span class="n">WeightDict</span><span class="p">)</span> \
             <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">"""Create smoothing dimension.</span>
 
@@ -245,11 +246,14 @@
 <span class="sd">        ----------</span>
 <span class="sd">        name : unicode_type</span>
 <span class="sd">            Dimension name.</span>
+<span class="sd">        kernel : unicode_type</span>
+<span class="sd">            Kernel function name.</span>
 <span class="sd">        weight_dict : numba.typed.Dict of {(float32, float32): float32}</span>
 <span class="sd">            Dictionary of dimension smoothing weights.</span>
 
 <span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span> <span class="o">=</span> <span class="n">kernel</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">weight_dict</span> <span class="o">=</span> <span class="n">weight_dict</span>
 
 
@@ -412,13 +416,13 @@
 <span class="sd">                name='age_id',</span>
 <span class="sd">                coordinates='age_mean',</span>
 <span class="sd">                kernel='exponential',</span>
-<span class="sd">                kernel_pars={'radius': 0.5}</span>
+<span class="sd">                radius=0.5</span>
 <span class="sd">            )</span>
 <span class="sd">        &gt;&gt;&gt; location = Dimension(</span>
 <span class="sd">                name='location_id',</span>
 <span class="sd">                coordinates=['lat', 'lon'],</span>
 <span class="sd">                kernel='exponential',</span>
-<span class="sd">                kernel_pars={'radius': 0.5}</span>
+<span class="sd">                radius=0.5</span>
 <span class="sd">            )</span>
 
 <span class="sd">        Dimension with tricubic kernel and default Euclidean distance.</span>
@@ -427,7 +431,7 @@
 <span class="sd">        &gt;&gt;&gt; year = Dimension(</span>
 <span class="sd">                name='year_id',</span>
 <span class="sd">                kernel='tricubic',</span>
-<span class="sd">                kernel_pars={'exponent': 3}</span>
+<span class="sd">                exponent=3</span>
 <span class="sd">            )</span>
 
 <span class="sd">        Dimension with tricubic kernel and dictionary distance.</span>
@@ -436,7 +440,7 @@
 <span class="sd">        &gt;&gt;&gt; location = Dimension(</span>
 <span class="sd">                name='location_id',</span>
 <span class="sd">                kernel='tricubic',</span>
-<span class="sd">                kernel_pars={'exponent': 3},</span>
+<span class="sd">                exponent=3,</span>
 <span class="sd">                distance='dictionary',</span>
 <span class="sd">                distance_dict={</span>
 <span class="sd">                    (4, 4): 0,</span>
@@ -453,7 +457,7 @@
 <span class="sd">                name='location_id',</span>
 <span class="sd">                coordinates=['super_region', 'region', 'country'],</span>
 <span class="sd">                kernel='depth',</span>
-<span class="sd">                kernel_pars={'radius': 0.9}</span>
+<span class="sd">                radius=0.9</span>
 <span class="sd">            )</span>
 
 <span class="sd">        Dimension with identity kernel and default Euclidean distance.</span>
@@ -852,7 +856,7 @@
 
 <span class="sd">        """</span>
         <span class="n">weight_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_weight_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">TypedDimension</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">weight_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">TypedDimension</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span><span class="p">,</span> <span class="n">weight_dict</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_weight_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WeightDict</span><span class="p">:</span>
         <span class="sd">"""Get dictionary of dimension smoothing weights.</span>
@@ -936,7 +940,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'tricubic'</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">tricubic</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exponent</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'depth'</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_radius</span><span class="p">,</span> <span class="n">levels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_version</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">depth</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">levels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_radius</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_version</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span>  <span class="c1"># identity</span></div>
 
 
