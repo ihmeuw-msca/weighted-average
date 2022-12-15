@@ -187,11 +187,6 @@ class Dimension:
         The identity kernel does not have any kernel parameters because
         the weight values are equal to the distance values.
 
-        References
-        ----------
-        .. [1] `Cause of Death Ensemble model
-               <https://pophealthmetrics.biomedcentral.com/articles/10.1186/1478-7954-10-1>`_
-
         Examples
         --------
         Dimensions with exponential kernel and default Euclidean
@@ -726,7 +721,7 @@ class Dimension:
         if self._kernel == 'tricubic':
             return tricubic(distance, radius, self._exponent)
         if self._kernel == 'depth':
-            return depth(distance, self._radius, levels, self._version)
+            return depth(distance, levels, self._radius, self._version)
         return np.float32(distance)  # identity
 
 
