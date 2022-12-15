@@ -158,9 +158,9 @@ def depth(distance: number, levels: int, radius: float, version: int) \
         Number of levels in `distance.tree`.
     radius : float in (0.5, 1)
         Kernel radius.
-    version : int in {1, 2}
-        Depth kernel version; 1 corresponds to CODEm's location scale
-        factors and 2 corresponds to ST-GPR's location scale factors.
+    version : str in {'codem', 'stgpr'}
+        Depth kernel version corresponding to CODEm's location scale
+        factors or ST-GPR's location scale factors.
 
     Returns
     -------
@@ -169,7 +169,7 @@ def depth(distance: number, levels: int, radius: float, version: int) \
 
     Notes
     -----
-    When `version` = 1, the depth kernel is defined as
+    When `version` = 'codem', the depth kernel is defined as
 
     .. math:: k(d; r, s) = \\begin{cases} r & \\text{if } d = 0, \\\\
               r(1 - r)^{\\lceil d \\rceil} & \\text{if } 0 < d \\leq
@@ -184,7 +184,7 @@ def depth(distance: number, levels: int, radius: float, version: int) \
     'super_region', 'region', and 'country' would have :math:`s = 3`).
     If :math:`s = 1`, the possible weight values are 1 and 0.
 
-    When `version` = 2, the depth kernel function is defined as
+    When `version` = 'stgpr', the depth kernel function is defined as
 
     .. math:: k(d; r, s) = \\begin{cases} 1 & \\text{if } d = 0, \\\\
               r^{\\lceil d \\rceil} & \\text{if } 0 < d \\leq s - 1,
@@ -203,36 +203,36 @@ def depth(distance: number, levels: int, radius: float, version: int) \
 
     Examples
     --------
-    Get weight for a pair of points (version 1).
+    Get weight for a pair of points (CODEm version).
 
     >>> import numpy as np
     >>> from weave.kernels import depth
-    >>> depth(0, 3, 0.9, 1)
+    >>> depth(0, 3, 0.9, 'codem')
     0.9
-    >>> depth(1, 3, 0.9, 1)
+    >>> depth(1, 3, 0.9, 'codem')
     0.09
-    >>> depth(2, 3, 0.9, 1)
+    >>> depth(2, 3, 0.9, 'codem')
     0.01
-    >>> depth(3, 3, 0.9, 1)
+    >>> depth(3, 3, 0.9, 'codem')
     0.0
 
-    Get weight for a pair of points (version 2).
+    Get weight for a pair of points (ST-GPR version).
 
     >>> import numpy as np
     >>> from weave.kernels import depth
-    >>> depth(0, 3, 0.9, 2)
+    >>> depth(0, 3, 0.9, 'stgpr')
     1.0
-    >>> depth(1, 3, 0.9, 2)
+    >>> depth(1, 3, 0.9, 'stgpr')
     0.9
-    >>> depth(2, 3, 0.9, 2)
+    >>> depth(2, 3, 0.9, 'stgpr')
     0.81
-    >>> depth(3, 3, 0.9, 2)
+    >>> depth(3, 3, 0.9, 'stgpr')
     0.0
 
     """
     same_tree = distance <= levels - 1
-    if version == 1:
-        not_root = levels > 1 and distance <= levels - 2
-        weight = same_tree*radius**not_root*(1 - radius)**np.ceil(distance)
-        return np.float32(weight)
-    return np.float32(same_tree*radius**np.ceil(distance))
+    if version == 'stgpr':
+        return np.float32(same_tree*radius**np.ceil(distance))
+    not_root = levels > 1 and distance <= levels - 2
+    weight = same_tree*radius**not_root*(1 - radius)**np.ceil(distance)
+    return np.float32(weight)
