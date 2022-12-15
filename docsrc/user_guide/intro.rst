@@ -126,6 +126,6 @@ indices :math:`k \in \mathcal{D}` such that
 are given by
 
 .. math:: \tilde{w}_{i, j} = w_{i, j}^{m_n} \,
-          \frac{\prod_{\ell = 1, \dots, n - 1} w_{i, j}^{m_\ell}}
-          {\sum_{k \in \mathcal{D}_{i, j}} \prod_{\ell = 1, \dots, n - 1}
+          \frac{\prod_{\ell < n} w_{i, j}^{m_\ell}}
+          {\sum_{k \in \mathcal{D}_{i, j}} \prod_{\ell < n}
           w_{i, k}^{m_\ell}}.
