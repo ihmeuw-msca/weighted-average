@@ -146,7 +146,7 @@ def tricubic(distance: number, radius: number, exponent: number) -> np.float32:
     return np.float32(np.maximum(0, (1 - (distance/radius)**exponent)**3))
 
 
-def depth(distance: number, levels: int, radius: float, version: int) \
+def depth(distance: number, levels: int, radius: float, version: str) \
         -> np.float32:
     """Get depth smoothing weight.
 
@@ -158,7 +158,7 @@ def depth(distance: number, levels: int, radius: float, version: int) \
         Number of levels in `distance.tree`.
     radius : float in (0.5, 1)
         Kernel radius.
-    version : str in {'codem', 'stgpr'}
+    version : {'codem', 'stgpr'}
         Depth kernel version corresponding to CODEm's location scale
         factors or ST-GPR's location scale factors.
 
