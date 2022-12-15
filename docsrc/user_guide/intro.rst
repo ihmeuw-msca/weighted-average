@@ -46,24 +46,28 @@ across age, time, and location. The predicted or smoothed residual
 
 Weights are calculated based on similarity in age,
 
-.. math:: w_{a_{i, j}} = \frac{1}{\exp(\omega \, |a_i - a_j|)}
+.. math:: w_{i, j}^a = \frac{1}{\exp(\omega \, |a_i - a_j|)}
 
 similarity in year,
 
-.. math:: w_{t_{i, j}} = \left(1 - \left(\frac{|t_i - t_j|}
+.. math:: w_{i, j}^t = \left(1 - \left(\frac{|t_i - t_j|}
           {\max_{k \in \mathcal{D}}|t_i - t_k| + 1}\right)^\lambda\right)^3,
 
 and similarity in location,
 
-.. math:: w_{\ell_{i, j}} = \begin{cases} \zeta & \text{same country}, \\
+.. math:: w_{i, j}^\ell = \begin{cases} \zeta & \text{same country}, \\
           \zeta(1 - \zeta) & \text{same region}, \\ (1 - \zeta)^2 &
           \text{same super region}, \\ 0 & \text{otherwise}, \end{cases}
 
-and then combined into a single weight, 
+and then combined into a single weight. Specifically, let
+:math:`\mathcal{D}_{i, j}` be the set of all indices :math:`k \in \mathcal{D}`
+such that :math:`w_{i, k}^\ell = w_{i, j}^\ell` (e.g., if points :math:`i` and
+:math:`j` belong to the same country, then set :math:`\mathcal{D}_{i, j}` will
+include all points in said country, etc.). Then the combined weights are given
+by
 
-.. math:: \tilde{w}_{i, j} = w_{\ell_{i, j}} \, \frac{w_{a_{i, j}} \,
-          w_{t_{i, j}}}{\sum_{k \in \mathcal{D}} w_{a_{i, k}} \,
-          w_{t_{i, k}}}.
+.. math:: \tilde{w}_{i, j} = w_{i, j}^\ell \, \frac{w_{i, j}^a \,
+          w_{i, j}^t}{\sum_{k \in \mathcal{D}_{i, j}} w_{i, k}^a \, w_{i, k}^t}.
 
 Finally, weights are normalized so that all weights for each observation
 :math:`i` sum to one,
@@ -94,11 +98,10 @@ for observations :math:`i` in data set :math:`\mathcal{D}` with
 
 .. math:: \hat{y}_i = \sum_{j \in \mathcal{D}} w_{i, j} \, y_j,
 
-where weights are first calculated for dimensions :math:`a, b, c, \dots`, then
-multiplied,
+where weights are first calculated for dimensions :math:`m \in \mathcal{M}`,
+then multiplied,
 
-.. math:: \tilde{w}_{i, j} = w_{a_{i, j}} \, w_{b_{i, j}} \, w_{c_{i, j}}
-          \cdots,
+.. math:: \tilde{w}_{i, j} = \prod_{m \in \mathcal{M}} w_{i, j}^m,
 
 and finally normalized,
 
@@ -108,3 +111,21 @@ and finally normalized,
 For instructions on how to get started, see the :doc:`Quickstart <quickstart>`.
 For descriptions of the modules, objects, and functions included in `weave`,
 see the :doc:`API Reference <../api_reference/index>`.
+
+Depth Kernel Normalization
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Note that when the depth kernel is used, the preceding dimension weights are
+normalized in groups based on the values of the depth kernel weights. This
+corresponds to the CODEm framework where the product of age and time weights
+are normalized in groups based on the location hierarchy before being
+multiplied by the location weights. For example, if :math:`m_n` is a dimension
+that uses the depth kernel, we let :math:`\mathcal{D}_{i, j}` be the set of all
+indices :math:`k \in \mathcal{D}` such that
+:math:`w_{i, k}^{m_n} = w_{i, j}^{m_n}`. Then the intermediate combined weights
+are given by
+
+.. math:: \tilde{w}_{i, j} = w_{i, j}^{m_n} \,
+          \frac{\prod_{\ell = 1, \dots, n - 1} w_{i, j}^{m_\ell}}
+          {\sum_{k \in \mathcal{D}_{i, j}} \prod_{\ell = 1, \dots, n - 1}
+          w_{i, k}^{m_\ell}}.
