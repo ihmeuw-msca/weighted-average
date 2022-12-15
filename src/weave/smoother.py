@@ -46,18 +46,18 @@ class Smoother:
                 name='age_id',
                 coordinates='age_mean',
                 kernel='exponential',
-                kernel_pars={'radius': 1}
+                radius=1
             )
         >>> year = Dimension(
                 name='year_id',
                 kernel='tricubic',
-                kernel_pars={'exponent': 0.5}
+                exponent=0.5
             )
         >>> location = Dimension(
                 name='location_id',
                 coordinates=['super_region', 'region', 'country'],
                 kernel='depth',
-                kernel_pars={'radius': 0.9, 'levels': 3}
+                radius=0.9
             )
         >>> dimensions = [age, year, location]
         >>> smoother = Smoother(dimensions)
@@ -171,9 +171,9 @@ class Smoother:
         Create smoothed version of one column for all points using a
         subset of points.
 
-        >>> data['fit'] = [True, False, False, True, True]
-        >>> smoother(data, 'count', fit='fit')
-           age_id  ...  count  fraction    fit  count_smooth
+        >>> data['train'] = [True, False, False, True, True]
+        >>> smoother(data, 'count', fit='train')
+           age_id  ...  count  fraction train  count_smooth
         0      1  ...    1.0       0.1   True      1.032967
         1      2  ...    2.0       0.2  False      1.032967
         2      3  ...    3.0       0.3  False      1.300000
@@ -183,9 +183,9 @@ class Smoother:
         Create a smoothed version of one column for a subset of points
         using all points.
 
-        >>> data['predict'] = [False, True, True, False, False]
-        >>> smoother(data, 'fraction', predict='predict')
-           age_id  ...  count  fraction  predict  fraction_smooth
+        >>> data['test'] = [False, True, True, False, False]
+        >>> smoother(data, 'fraction', predict='test')
+           age_id  ...  count  fraction    test  fraction_smooth
         0      2  ...    2.0       0.2     True         0.208407
         1      3  ...    3.0       0.3     True         0.291998
 
