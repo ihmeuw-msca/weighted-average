@@ -19,10 +19,11 @@ WeightDict = Dict[Tuple[float, float], float]
 
 
 @jitclass([('name', unicode_type),
+           ('kernel', unicode_type),
            ('weight_dict', DictType(UniTuple(float32, 2), float32))])
 class TypedDimension:
     """Smoothing dimension specifications."""
-    def __init__(self, name: str, weight_dict: WeightDict) \
+    def __init__(self, name: str, kernel: str, weight_dict: WeightDict) \
             -> None:
         """Create smoothing dimension.
 
@@ -30,11 +31,14 @@ class TypedDimension:
         ----------
         name : unicode_type
             Dimension name.
+        kernel : unicode_type
+            Kernel function name.
         weight_dict : numba.typed.Dict of {(float32, float32): float32}
             Dictionary of dimension smoothing weights.
 
         """
         self.name = name
+        self.kernel = kernel
         self.weight_dict = weight_dict
 
 
@@ -197,13 +201,13 @@ class Dimension:
                 name='age_id',
                 coordinates='age_mean',
                 kernel='exponential',
-                kernel_pars={'radius': 0.5}
+                radius=0.5
             )
         >>> location = Dimension(
                 name='location_id',
                 coordinates=['lat', 'lon'],
                 kernel='exponential',
-                kernel_pars={'radius': 0.5}
+                radius=0.5
             )
 
         Dimension with tricubic kernel and default Euclidean distance.
@@ -212,7 +216,7 @@ class Dimension:
         >>> year = Dimension(
                 name='year_id',
                 kernel='tricubic',
-                kernel_pars={'exponent': 3}
+                exponent=3
             )
 
         Dimension with tricubic kernel and dictionary distance.
@@ -221,7 +225,7 @@ class Dimension:
         >>> location = Dimension(
                 name='location_id',
                 kernel='tricubic',
-                kernel_pars={'exponent': 3},
+                exponent=3,
                 distance='dictionary',
                 distance_dict={
                     (4, 4): 0,
@@ -238,7 +242,7 @@ class Dimension:
                 name='location_id',
                 coordinates=['super_region', 'region', 'country'],
                 kernel='depth',
-                kernel_pars={'radius': 0.9}
+                radius=0.9
             )
 
         Dimension with identity kernel and default Euclidean distance.
@@ -637,7 +641,7 @@ class Dimension:
 
         """
         weight_dict = self.get_weight_dict(data)
-        return TypedDimension(self._name, weight_dict)
+        return TypedDimension(self._name, self._kernel, weight_dict)
 
     def get_weight_dict(self, data: DataFrame) -> WeightDict:
         """Get dictionary of dimension smoothing weights.

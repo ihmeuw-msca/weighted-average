@@ -463,7 +463,7 @@ def smooth(dim_list: List[TypedDimension], points: np.ndarray,
                 dim_weights[ii, jj] = dim.weight_dict[(pred, fit)]
 
             # Optional normalize by subgroup
-            if dim.name == 'depth':
+            if dim.kernel == 'depth':
                 for weight in list(set(dim_weights[ii, :])):
                     cond = dim_weights[ii, :] == weight
                     scale = np.where(cond, weights[ii, :], 0).sum()
