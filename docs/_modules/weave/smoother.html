@@ -213,7 +213,7 @@
         </div>
         <article role="main">
           <h1>Source code for weave.smoother</h1><div class="highlight"><pre>
-<span></span><span class="c1"># pylint: disable=E0611, E1133, R0912, R0913, R0914</span>
+<span></span><span class="c1"># pylint: disable=C0103, E0611, E1133, R0912, R0913, R0914</span>
 <span class="sd">"""Smooth data across multiple dimensions using weighted averages."""</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
@@ -261,18 +261,18 @@
 <span class="sd">                name='age_id',</span>
 <span class="sd">                coordinates='age_mean',</span>
 <span class="sd">                kernel='exponential',</span>
-<span class="sd">                kernel_pars={'radius': 1}</span>
+<span class="sd">                radius=1</span>
 <span class="sd">            )</span>
 <span class="sd">        &gt;&gt;&gt; year = Dimension(</span>
 <span class="sd">                name='year_id',</span>
 <span class="sd">                kernel='tricubic',</span>
-<span class="sd">                kernel_pars={'exponent': 0.5}</span>
+<span class="sd">                exponent=0.5</span>
 <span class="sd">            )</span>
 <span class="sd">        &gt;&gt;&gt; location = Dimension(</span>
 <span class="sd">                name='location_id',</span>
 <span class="sd">                coordinates=['super_region', 'region', 'country'],</span>
 <span class="sd">                kernel='depth',</span>
-<span class="sd">                kernel_pars={'radius': 0.9, 'levels': 3}</span>
+<span class="sd">                radius=0.9</span>
 <span class="sd">            )</span>
 <span class="sd">        &gt;&gt;&gt; dimensions = [age, year, location]</span>
 <span class="sd">        &gt;&gt;&gt; smoother = Smoother(dimensions)</span>
@@ -329,8 +329,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span> <span class="o">=</span> <span class="n">dimensions</span>
 
 <div class="viewcode-block" id="Smoother.__call__"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
-                 <span class="n">fit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">predict</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">matrix</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                 <span class="n">parallel</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+                 <span class="n">fit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">predict</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
         <span class="sd">"""Smooth data across dimensions with weighted averages.</span>
 
 <span class="sd">        For each point in `predict`, calculate a smoothed value of each</span>
@@ -352,16 +351,6 @@
 <span class="sd">        predict : str, optional</span>
 <span class="sd">            Column name indicating points to predict smoothed values.</span>
 <span class="sd">            If None, predictions are made for all points in `data`.</span>
-<span class="sd">        matrix : bool, optional</span>
-<span class="sd">            If True, populate a matrix of weights for all points in</span>
-<span class="sd">            `predict` and smooth values using matrix--vector</span>
-<span class="sd">            multiplication. Requires more memory, but is faster.</span>
-<span class="sd">            Otherwise, populate a vector of weights for each point in</span>
-<span class="sd">            `predict` and smooth values using vector dot-products in a</span>
-<span class="sd">            loop. Requires less memory, but is slower. Default is True.</span>
-<span class="sd">        parallel : bool, optional</span>
-<span class="sd">            If True, parallelize function that computes weights.</span>
-<span class="sd">            Default is True.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -397,9 +386,9 @@
 <span class="sd">        Create smoothed version of one column for all points using a</span>
 <span class="sd">        subset of points.</span>
 
-<span class="sd">        &gt;&gt;&gt; data['fit'] = [True, False, False, True, True]</span>
-<span class="sd">        &gt;&gt;&gt; smoother(data, 'count', fit='fit')</span>
-<span class="sd">           age_id  ...  count  fraction    fit  count_smooth</span>
+<span class="sd">        &gt;&gt;&gt; data['train'] = [True, False, False, True, True]</span>
+<span class="sd">        &gt;&gt;&gt; smoother(data, 'count', fit='train')</span>
+<span class="sd">           age_id  ...  count  fraction train  count_smooth</span>
 <span class="sd">        0      1  ...    1.0       0.1   True      1.032967</span>
 <span class="sd">        1      2  ...    2.0       0.2  False      1.032967</span>
 <span class="sd">        2      3  ...    3.0       0.3  False      1.300000</span>
@@ -409,15 +398,15 @@
 <span class="sd">        Create a smoothed version of one column for a subset of points</span>
 <span class="sd">        using all points.</span>
 
-<span class="sd">        &gt;&gt;&gt; data['predict'] = [False, True, True, False, False]</span>
-<span class="sd">        &gt;&gt;&gt; smoother(data, 'fraction', predict='predict')</span>
-<span class="sd">           age_id  ...  count  fraction  predict  fraction_smooth</span>
+<span class="sd">        &gt;&gt;&gt; data['test'] = [False, True, True, False, False]</span>
+<span class="sd">        &gt;&gt;&gt; smoother(data, 'fraction', predict='test')</span>
+<span class="sd">           age_id  ...  count  fraction    test  fraction_smooth</span>
 <span class="sd">        0      2  ...    2.0       0.2     True         0.208407</span>
 <span class="sd">        1      3  ...    3.0       0.3     True         0.291998</span>
 
 <span class="sd">        """</span>
         <span class="c1"># Check input</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">check_args</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">predict</span><span class="p">,</span> <span class="n">matrix</span><span class="p">,</span> <span class="n">parallel</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_args</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">predict</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">predict</span><span class="p">)</span>
 
         <span class="c1"># Extract data</span>
@@ -428,12 +417,7 @@
         <span class="n">dim_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_typed_dimensions</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
         <span class="c1"># Calculate smoothed values</span>
-        <span class="k">if</span> <span class="n">parallel</span><span class="p">:</span>
-            <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">smooth_parallel</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">,</span>
-                                          <span class="n">idx_pred</span><span class="p">,</span> <span class="n">matrix</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">smooth</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">,</span>
-                                 <span class="n">matrix</span><span class="p">)</span>
+        <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">smooth</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">)</span>
 
         <span class="c1"># Construct smoothed data frame</span>
         <span class="n">data_smooth</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx_pred</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -444,8 +428,7 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">check_args</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
-                   <span class="n">fit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">predict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">matrix</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-                   <span class="n">parallel</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                   <span class="n">fit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">predict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">"""Check `smoother` argument types and values.</span>
 
 <span class="sd">        Parameters</span>
@@ -459,16 +442,6 @@
 <span class="sd">            averages.</span>
 <span class="sd">        predict : str or None</span>
 <span class="sd">            Column name indicating points to predict smoothed values.</span>
-<span class="sd">        matrix : bool, optional</span>
-<span class="sd">            If True, populate a matrix of weights for all points in</span>
-<span class="sd">            `predict` and smooth values using matrix--vector</span>
-<span class="sd">            multiplication. Requires more memory, but is faster.</span>
-<span class="sd">            Otherwise, populate a vector of weights for each point in</span>
-<span class="sd">            `predict` and smooth values using vector dot-products in a</span>
-<span class="sd">            loop. Requires less memory, but is slower. Default is True.</span>
-<span class="sd">        parallel : bool, optional</span>
-<span class="sd">            If True, parallelize function that computes weights.</span>
-<span class="sd">            Default is True.</span>
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
@@ -488,10 +461,6 @@
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`fit` is not a str.'</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">predict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">predict</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`predict` is not a str.'</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`matrix` is not a bool.'</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parallel</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`parallel` is not a bool.'</span><span class="p">)</span>
 
         <span class="c1"># Check values</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -521,7 +490,7 @@
 <span class="sd">            If `dimension.name`, `dimensions.coordinates`, `columns`,</span>
 <span class="sd">            `fit`, or `predict` not in `data`.</span>
 <span class="sd">            If `dimension.distance` is 'dictionary', but not all</span>
-<span class="sd">            `dimension.coordinates` in `dimension.distance_dict`.</span>
+<span class="sd">            `dimension.name` in `dimension.distance_dict`.</span>
 <span class="sd">        TypeError</span>
 <span class="sd">            If `dimension.name`, `dimensions.coordinates`, `columns`,</span>
 <span class="sd">            `fit`, or `predict` in `data` contain invalid types.</span>
@@ -551,10 +520,10 @@
         <span class="c1"># Check dictionary keys</span>
         <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">dim</span><span class="o">.</span><span class="n">distance</span> <span class="o">==</span> <span class="s1">'dictionary'</span><span class="p">:</span>
-                <span class="n">coordinates</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">dim</span><span class="o">.</span><span class="n">coordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
-                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="n">coordinates</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+                <span class="n">names</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">dim</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
                     <span class="k">if</span> <span class="n">key</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">key</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dim</span><span class="o">.</span><span class="n">distance_dict</span><span class="p">:</span>
-                        <span class="n">msg</span> <span class="o">=</span> <span class="s1">'Not all `dimension.coordinates` in '</span>
+                        <span class="n">msg</span> <span class="o">=</span> <span class="s1">'Not all `dimension.name` in '</span>
                         <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'`dimension.distance_dict`.'</span>
                         <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
@@ -669,66 +638,10 @@
                           <span class="k">for</span> <span class="n">dimension</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span><span class="p">])</span></div>
 
 
-<span class="nd">@njit</span>
-<span class="k">def</span> <span class="nf">smooth</span><span class="p">(</span><span class="n">dim_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TypedDimension</span><span class="p">],</span> <span class="n">points</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-           <span class="n">cols</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-           <span class="n">matrix</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">"""Smooth data across dimensions with weighted averages.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    dim_list : list of TypedDimension</span>
-<span class="sd">        Smoothing dimensions.</span>
-<span class="sd">    points : 2D numpy.ndarray of float</span>
-<span class="sd">        Point coordinates.</span>
-<span class="sd">    cols : 2D numpy.ndarray of float</span>
-<span class="sd">        Values to smooth.</span>
-<span class="sd">    idx_fit : 1D numpy.ndarray of int</span>
-<span class="sd">        Indices of points to include in weighted averages.</span>
-<span class="sd">    idx_pred: 1D numpy.ndarray of int</span>
-<span class="sd">        Indices of points to predict smoothed values.</span>
-<span class="sd">    matrix : bool, optional</span>
-<span class="sd">        If True, populate a matrix of weights for all points in</span>
-<span class="sd">        `predict` and smooth values using matrix--vector</span>
-<span class="sd">        multiplication. Requires more memory, but is faster.</span>
-<span class="sd">        Otherwise, populate a vector of weights for each point in</span>
-<span class="sd">        `predict` and smooth values using vector dot-products in a</span>
-<span class="sd">        loop. Requires less memory, but is slower. Default is True.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    2D numpy.ndarray of float32</span>
-<span class="sd">        Smoothed values.</span>
-
-<span class="sd">    """</span>
-    <span class="c1"># Initialize smoothed values</span>
-    <span class="n">n_cols</span> <span class="o">=</span> <span class="n">cols</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">n_fit</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_fit</span><span class="p">)</span>
-    <span class="n">n_pred</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_pred</span><span class="p">)</span>
-
-    <span class="c1"># Extract fit points</span>
-    <span class="n">fit_points</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">idx_fit</span><span class="p">,</span> <span class="p">:]</span>
-
-    <span class="k">if</span> <span class="n">matrix</span><span class="p">:</span>  <span class="c1"># Calculate matrix of weights</span>
-        <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">n_pred</span><span class="p">,</span> <span class="n">n_fit</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">idx_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_pred</span><span class="p">):</span>
-            <span class="n">pred_point</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">idx_pred</span><span class="p">[</span><span class="n">idx_x</span><span class="p">]]</span>
-            <span class="n">weights</span><span class="p">[</span><span class="n">idx_x</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">get_weights</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">fit_points</span><span class="p">,</span> <span class="n">pred_point</span><span class="p">)</span>
-        <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>  <span class="c1"># Calculate vector of weights one point at a time</span>
-        <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">n_pred</span><span class="p">,</span> <span class="n">n_cols</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">idx_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_pred</span><span class="p">):</span>
-            <span class="n">pred_point</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">idx_pred</span><span class="p">[</span><span class="n">idx_x</span><span class="p">],</span> <span class="p">:]</span>
-            <span class="n">weights</span> <span class="o">=</span> <span class="n">get_weights</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">fit_points</span><span class="p">,</span> <span class="n">pred_point</span><span class="p">)</span>
-            <span class="n">cols_smooth</span><span class="p">[</span><span class="n">idx_x</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">cols_smooth</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-
-
 <span class="nd">@njit</span><span class="p">(</span><span class="n">parallel</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">smooth_parallel</span><span class="p">(</span><span class="n">dim_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TypedDimension</span><span class="p">],</span> <span class="n">points</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                    <span class="n">cols</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                    <span class="n">idx_pred</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">matrix</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">smooth</span><span class="p">(</span><span class="n">dim_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TypedDimension</span><span class="p">],</span> <span class="n">points</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+           <span class="n">cols</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">"""Smooth data across dimensions with weighted averages.</span>
 
 <span class="sd">    Parameters</span>
@@ -743,13 +656,6 @@
 <span class="sd">        Indices of points to include in weighted averages.</span>
 <span class="sd">    idx_pred: 1D numpy.ndarray of int</span>
 <span class="sd">        Indices of points to predict smoothed values.</span>
-<span class="sd">    matrix : bool, optional</span>
-<span class="sd">        If True, populate a matrix of weights for all points in</span>
-<span class="sd">        `predict` and smooth values using matrix--vector</span>
-<span class="sd">        multiplication. Requires more memory, but is faster.</span>
-<span class="sd">        Otherwise, populate a vector of weights for each point in</span>
-<span class="sd">        `predict` and smooth values using vector dot-products in a</span>
-<span class="sd">        loop. Requires less memory, but is slower. Default is True.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -757,69 +663,35 @@
 <span class="sd">        Smoothed values.</span>
 
 <span class="sd">    """</span>
-    <span class="c1"># Initialize smoothed values</span>
-    <span class="n">n_cols</span> <span class="o">=</span> <span class="n">cols</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># Initialize weight matrix</span>
     <span class="n">n_fit</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_fit</span><span class="p">)</span>
     <span class="n">n_pred</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_pred</span><span class="p">)</span>
-
-    <span class="c1"># Extract fit points</span>
-    <span class="n">fit_points</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">idx_fit</span><span class="p">,</span> <span class="p">:]</span>
-
-    <span class="k">if</span> <span class="n">matrix</span><span class="p">:</span>  <span class="c1"># Calculate matrix of weights</span>
-        <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">n_pred</span><span class="p">,</span> <span class="n">n_fit</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">idx_x</span> <span class="ow">in</span> <span class="n">prange</span><span class="p">(</span><span class="n">n_pred</span><span class="p">):</span>
-            <span class="n">pred_point</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">idx_pred</span><span class="p">[</span><span class="n">idx_x</span><span class="p">]]</span>
-            <span class="n">weights</span><span class="p">[</span><span class="n">idx_x</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">get_weights</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">fit_points</span><span class="p">,</span> <span class="n">pred_point</span><span class="p">)</span>
-        <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>  <span class="c1"># Calculate vector of weights one point at a time</span>
-        <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">n_pred</span><span class="p">,</span> <span class="n">n_cols</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">idx_x</span> <span class="ow">in</span> <span class="n">prange</span><span class="p">(</span><span class="n">n_pred</span><span class="p">):</span>
-            <span class="n">pred_point</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">idx_pred</span><span class="p">[</span><span class="n">idx_x</span><span class="p">],</span> <span class="p">:]</span>
-            <span class="n">weights</span> <span class="o">=</span> <span class="n">get_weights</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">fit_points</span><span class="p">,</span> <span class="n">pred_point</span><span class="p">)</span>
-            <span class="n">cols_smooth</span><span class="p">[</span><span class="n">idx_x</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">cols_smooth</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-
-
-<span class="nd">@njit</span>
-<span class="k">def</span> <span class="nf">get_weights</span><span class="p">(</span><span class="n">dim_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TypedDimension</span><span class="p">],</span> <span class="n">fit_points</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                <span class="n">pred_point</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">"""Get smoothing weights for current point.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    dim_list : list of TypedDimension</span>
-<span class="sd">        Smoothing dimensions.</span>
-<span class="sd">    fit_points : 2D numpy.ndarray of float32</span>
-<span class="sd">        Fit point coordinates.</span>
-<span class="sd">    pred_point : 1D numpy.ndarray of float32</span>
-<span class="sd">        Predict point coordinates.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    1D numpy.ndarray of nonnegative float32</span>
-<span class="sd">        Smoothing weights for current point.</span>
-
-<span class="sd">    """</span>
-    <span class="c1"># Initialize weight vector</span>
-    <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fit_points</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n_pred</span><span class="p">,</span> <span class="n">n_fit</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
     <span class="c1"># Calculate weights one dimension at a time</span>
     <span class="k">for</span> <span class="n">idx_dim</span><span class="p">,</span> <span class="n">dim</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dim_list</span><span class="p">):</span>
-        <span class="n">dim_weights</span> <span class="o">=</span> <span class="p">[</span><span class="n">dim</span><span class="o">.</span><span class="n">weight_dict</span><span class="p">[(</span><span class="n">pred_point</span><span class="p">[</span><span class="n">idx_dim</span><span class="p">],</span> <span class="n">fit_point</span><span class="p">)]</span>
-                       <span class="k">for</span> <span class="n">fit_point</span> <span class="ow">in</span> <span class="n">fit_points</span><span class="p">[:,</span> <span class="n">idx_dim</span><span class="p">]]</span>
-        <span class="n">dim_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dim_weights</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">dim_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_pred</span><span class="p">,</span> <span class="n">n_fit</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">prange</span><span class="p">(</span><span class="n">n_pred</span><span class="p">):</span>
+            <span class="n">pred</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">idx_pred</span><span class="p">[</span><span class="n">ii</span><span class="p">],</span> <span class="n">idx_dim</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_fit</span><span class="p">):</span>
+                <span class="n">fit</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">idx_fit</span><span class="p">[</span><span class="n">jj</span><span class="p">],</span> <span class="n">idx_dim</span><span class="p">]</span>
+                <span class="n">dim_weights</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">weight_dict</span><span class="p">[(</span><span class="n">pred</span><span class="p">,</span> <span class="n">fit</span><span class="p">)]</span>
 
-        <span class="c1"># Optional normalize by subgroup</span>
-        <span class="k">if</span> <span class="n">dim</span><span class="o">.</span><span class="n">normalize</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dim_weights</span><span class="p">)):</span>
-                <span class="n">idx_weight</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dim_weights</span> <span class="o">==</span> <span class="n">weight</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="k">if</span> <span class="n">weights</span><span class="p">[</span><span class="n">idx_weight</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">weights</span><span class="p">[</span><span class="n">idx_weight</span><span class="p">]</span> <span class="o">*=</span> <span class="n">weight</span><span class="o">/</span><span class="n">weights</span><span class="p">[</span><span class="n">idx_weight</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">weights</span> <span class="o">*=</span> <span class="n">dim_weights</span>
+            <span class="c1"># Optional normalize by subgroup</span>
+            <span class="k">if</span> <span class="n">dim</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">'depth'</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dim_weights</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="p">:])):</span>
+                    <span class="n">cond</span> <span class="o">=</span> <span class="n">dim_weights</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="p">:]</span> <span class="o">==</span> <span class="n">weight</span>
+                    <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">weights</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="p">:],</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">scale</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">weights</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">weights</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="p">:]</span><span class="o">/</span><span class="n">scale</span><span class="p">,</span>
+                                                  <span class="n">weights</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="p">:])</span>
 
-    <span class="k">return</span> <span class="n">weights</span><span class="o">/</span><span class="n">weights</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="c1"># Update weight matrix</span>
+        <span class="n">weights</span> <span class="o">*=</span> <span class="n">dim_weights</span>
+
+    <span class="c1"># Normalize across rows and compute smoothed values</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">weights</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_fit</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">weights</span><span class="o">/</span><span class="n">scale</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
 </pre></div>
         </article>
       </div>

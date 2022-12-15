@@ -351,8 +351,8 @@ symmetric.</p>
 <li><p><strong>distance</strong> (<em>nonnegative int</em><em> or </em><em>float</em>) – Distance between points.</p></li>
 <li><p><strong>levels</strong> (<em>positive int</em>) – Number of levels in <cite>distance.tree</cite>.</p></li>
 <li><p><strong>radius</strong> (<em>float in</em><em> (</em><em>0.5</em><em>, </em><em>1</em><em>)</em>) – Kernel radius.</p></li>
-<li><p><strong>version</strong> (<em>int in {1</em><em>, </em><em>2}</em>) – Depth kernel version; 1 corresponds to CODEm’s location scale
-factors and 2 corresponds to ST-GPR’s location scale factors.</p></li>
+<li><p><strong>version</strong> (<em>{'codem'</em><em>, </em><em>'stgpr'}</em>) – Depth kernel version corresponding to CODEm’s location scale
+factors or ST-GPR’s location scale factors.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -363,7 +363,7 @@ factors and 2 corresponds to ST-GPR’s location scale factors.</p></li>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>When <cite>version</cite> = 1, the depth kernel is defined as</p>
+<p>When <cite>version</cite> = ‘codem’, the depth kernel is defined as</p>
 <div class="math-wrapper"><div class="math notranslate nohighlight">
 \[\begin{split}k(d; r, s) = \begin{cases} r &amp; \text{if } d = 0, \\
 r(1 - r)^{\lceil d \rceil} &amp; \text{if } 0 &lt; d \leq
@@ -376,7 +376,7 @@ s - 2 &lt; d \leq s - 1, \\ 0 &amp; \text{if } d &gt; s - 1,
 location hierarchy (e.g., locations with coordinates
 ‘super_region’, ‘region’, and ‘country’ would have <span class="math notranslate nohighlight">\(s = 3\)</span>).
 If <span class="math notranslate nohighlight">\(s = 1\)</span>, the possible weight values are 1 and 0.</p>
-<p>When <cite>version</cite> = 2, the depth kernel function is defined as</p>
+<p>When <cite>version</cite> = ‘stgpr’, the depth kernel function is defined as</p>
 <div class="math-wrapper"><div class="math notranslate nohighlight">
 \[\begin{split}k(d; r, s) = \begin{cases} 1 &amp; \text{if } d = 0, \\
 r^{\lceil d \rceil} &amp; \text{if } 0 &lt; d \leq s - 1,
@@ -391,29 +391,29 @@ If <span class="math notranslate nohighlight">\(s = 1\)</span>, the possible wei
 because it is automatically set to the length of
 <cite>dimension.coordinates</cite>.</p>
 <p class="rubric">Examples</p>
-<p>Get weight for a pair of points (version 1).</p>
+<p>Get weight for a pair of points (CODEm version).</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s1">'codem'</span><span class="p">)</span>
 <span class="go">0.9</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s1">'codem'</span><span class="p">)</span>
 <span class="go">0.09</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s1">'codem'</span><span class="p">)</span>
 <span class="go">0.01</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s1">'codem'</span><span class="p">)</span>
 <span class="go">0.0</span>
 </pre></div>
 </div>
-<p>Get weight for a pair of points (version 2).</p>
+<p>Get weight for a pair of points (ST-GPR version).</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">weave.kernels</span> <span class="kn">import</span> <span class="n">depth</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s1">'stgpr'</span><span class="p">)</span>
 <span class="go">1.0</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s1">'stgpr'</span><span class="p">)</span>
 <span class="go">0.9</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s1">'stgpr'</span><span class="p">)</span>
 <span class="go">0.81</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">depth</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s1">'stgpr'</span><span class="p">)</span>
 <span class="go">0.0</span>
 </pre></div>
 </div>
