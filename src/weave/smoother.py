@@ -275,7 +275,7 @@ class Smoother:
             If `dimension.name`, `dimensions.coordinates`, `columns`,
             `fit`, or `predict` not in `data`.
             If `dimension.distance` is 'dictionary', but not all
-            `dimension.coordinates` in `dimension.distance_dict`.
+            `dimension.name` in `dimension.distance_dict`.
         TypeError
             If `dimension.name`, `dimensions.coordinates`, `columns`,
             `fit`, or `predict` in `data` contain invalid types.
@@ -305,10 +305,10 @@ class Smoother:
         # Check dictionary keys
         for dim in self._dimensions:
             if dim.distance == 'dictionary':
-                coordinates = data[dim.coordinates[0]].unique()
-                for key in product(coordinates, repeat=2):
+                names = data[dim.name].unique()
+                for key in product(names, repeat=2):
                     if key[0] <= key[1] and key not in dim.distance_dict:
-                        msg = 'Not all `dimension.coordinates` in '
+                        msg = 'Not all `dimension.name` in '
                         msg += '`dimension.distance_dict`.'
                         raise KeyError(msg)
 
@@ -463,7 +463,7 @@ def smooth(dim_list: List[TypedDimension], points: np.ndarray,
                 dim_weights[ii, jj] = dim.weight_dict[(pred, fit)]
 
             # Optional normalize by subgroup
-            if dim.normalize:
+            if dim.name == 'depth':
                 for weight in list(set(dim_weights[ii, :])):
                     cond = dim_weights[ii, :] == weight
                     scale = np.where(cond, weights[ii, :], 0).sum()

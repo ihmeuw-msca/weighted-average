@@ -18,18 +18,18 @@ not_columns = not_str + [[value] for value in not_str]
 age = Dimension(
     name='age_id',
     kernel='exponential',
-    kernel_pars={'radius': 1}
+    radius=1
 )
 year = Dimension(
     name='year_id',
     kernel='tricubic',
-    kernel_pars={'exponent': 0.5}
+    exponent=0.5
 )
 location = Dimension(
     name='location_id',
     coordinates=['super_region', 'region', 'country'],
     kernel='depth',
-    kernel_pars={'radius': 0.9}
+    radius=0.9
 )
 smoother = Smoother([age, year, location])
 
@@ -166,8 +166,8 @@ def test_predict_in_data():
         smoother(data, 'residual', predict='dummy')
 
 
-def test_coordinates_in_distance_dict():
-    """Raise KeyError if not all `coordinates` in `distance_dict`."""
+def test_names_in_distance_dict():
+    """Raise KeyError if not all `names` in `distance_dict`."""
     with pytest.raises(KeyError):
         dummy = Dimension('age_id', distance='dictionary',
                           distance_dict={(1, 1): 0})
