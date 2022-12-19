@@ -146,7 +146,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -206,7 +206,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -214,7 +214,116 @@
         <article role="main">
           <div class="section" id="quickstart">
 <h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
-<p>Examples</p>
+<div class="section" id="the-basics">
+<h2>The Basics<a class="headerlink" href="#the-basics" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>weave</cite> package has four main components:</p>
+<ol class="arabic simple">
+<li><p>The <a class="reference internal" href="../api_reference/weave.smoother.html"><span class="doc">Smoother</span></a> class, which computes
+weighted averages across data.</p></li>
+<li><p>The <a class="reference internal" href="../api_reference/weave.smoother.html"><span class="doc">Dimension</span></a> class, where you
+specify how weights are computed for each dimension in your data.</p></li>
+<li><p>The <a class="reference internal" href="../api_reference/weave.kernels.html"><span class="doc">kernel</span></a> functions, which compute
+weights given the distances between points.</p></li>
+<li><p>The <a class="reference internal" href="../api_reference/weave.distance.html"><span class="doc">distance</span></a> functions, which
+compute the distances between points.</p></li>
+</ol>
+<p>In this tutorial, we will smooth noisy data across one dimension. We will start
+by importing all of the packages we will be using.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+
+<span class="kn">from</span> <span class="nn">weave.dimension</span> <span class="kn">import</span> <span class="n">Dimension</span>
+<span class="kn">from</span> <span class="nn">weave.smoother</span> <span class="kn">import</span> <span class="n">Smoother</span>
+</pre></div>
+</div>
+<div class="section" id="data">
+<h3>Data<a class="headerlink" href="#data" title="Permalink to this headline">¶</a></h3>
+<p>The <cite>weave</cite> package works with data in the form of
+<a class="reference external" href="https://pandas.pydata.org/">Pandas</a> data frames. The following code
+generates and plots our data set.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">n_obs</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">x_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">n_obs</span><span class="p">)</span>
+<span class="n">y_true</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x_val</span><span class="p">)</span>
+<span class="n">y_obs</span> <span class="o">=</span> <span class="n">y_true</span> <span class="o">+</span> <span class="mf">0.3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">n_obs</span><span class="p">)</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">'x_id'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_obs</span><span class="p">),</span>
+    <span class="s1">'x_val'</span><span class="p">:</span> <span class="n">x_val</span><span class="p">,</span>
+    <span class="s1">'y_true'</span><span class="p">:</span> <span class="n">y_true</span><span class="p">,</span>
+    <span class="s1">'y_obs'</span><span class="p">:</span> <span class="n">y_obs</span>
+<span class="p">})</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Truth'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_obs</span><span class="p">,</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Observed'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'y'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+<img alt="../_images/raw_data.png" class="align-center" src="../_images/raw_data.png"/>
+</div>
+<div class="section" id="dimension">
+<h3>Dimension<a class="headerlink" href="#dimension" title="Permalink to this headline">¶</a></h3>
+<p>To smooth data using <cite>weave</cite>, we first need to specify the dimensions in our
+data by creating an instance of the <code class="docutils literal notranslate"><span class="pre">Dimension</span></code> class. This object contains
+information about how weights are computed. Many dimension parameters have
+defaults, but at the minimum we need to include <code class="docutils literal notranslate"><span class="pre">name</span></code>. This corresponds to
+the column in our data frame containing unique point IDs.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">age</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span><span class="s1">'x_id'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This dimension object above will have the default identity kernel (i.e.,
+weights are equal to distances) and Euclidean distance. Weights are computed
+using data from the column of our data frame corresponding to the dimension
+attribute <code class="docutils literal notranslate"><span class="pre">coordinates</span></code>, which is automatically assigned to the <code class="docutils literal notranslate"><span class="pre">name</span></code>
+parameter if not specified.</p>
+<p>To compute weights based on a column other than ‘x_id’, we can include the
+<code class="docutils literal notranslate"><span class="pre">coordinates</span></code> parameter. Values in this column do not need to be unique,
+unlike those corresponding to <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">age</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span><span class="s1">'x_id'</span><span class="p">,</span> <span class="s1">'x_val'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>All kernels other than identity kernel have additional parameters. For this
+tutorial, we will use the exponential kernel which requires a kernel radius.
+The following code creates our smoothing dimension with default Euclidean
+distance.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dim</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'x_id'</span><span class="p">,</span>
+    <span class="n">coordinates</span><span class="o">=</span><span class="s1">'x_val'</span><span class="p">,</span>
+    <span class="n">kernel</span><span class="o">=</span><span class="s1">'exponential'</span><span class="p">,</span>
+    <span class="n">radius</span><span class="o">=</span><span class="mf">0.5</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="smoother">
+<h3>Smoother<a class="headerlink" href="#smoother" title="Permalink to this headline">¶</a></h3>
+<p>Our next step is to create an instance of the <code class="docutils literal notranslate"><span class="pre">Smoother</span></code> class using the
+dimension object we just defined. While this tutorial only uses one dimension,
+you can also input multiple dimensions in a list.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">smoother</span> <span class="o">=</span> <span class="n">Smoother</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To smooth our noisy data, we simply provide our data frame and the name of the
+column or columns we would like to smooth. The output is a copy of input data
+frame with appended column(s) containing the smoothed data. For <code class="docutils literal notranslate"><span class="pre">columns</span></code>
+‘col1’, ‘col2’, etc., these smoothed columns will be labeled ‘col1_smooth’,
+‘col2_smooth’, etc. The following code smooths our data and plots the results.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Truth'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_obs</span><span class="p">,</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Observed'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">'x_val'</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="s1">'y_obs_smooth'</span><span class="p">],</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Smoothed'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'y'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+<img alt="../_images/smooth_data.png" class="align-center" src="../_images/smooth_data.png"/>
+</div>
+</div>
 </div>
 
         </article>
@@ -256,8 +365,32 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            Contents
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Quickstart</a><ul>
+<li><a class="reference internal" href="#the-basics">The Basics</a><ul>
+<li><a class="reference internal" href="#data">Data</a></li>
+<li><a class="reference internal" href="#dimension">Dimension</a></li>
+<li><a class="reference internal" href="#smoother">Smoother</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
