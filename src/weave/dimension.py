@@ -295,11 +295,11 @@ class Dimension:
         """
         # Once set, `name` cannot be changed
         if hasattr(self, 'name'):
-            raise AttributeError('`name` cannot be changed.')
+            raise AttributeError('`name` cannot be changed')
 
         # Check type
         if not isinstance(name, str):
-            raise TypeError('`name` is not a str.')
+            raise TypeError('`name` is not a str')
 
         self._name = name
 
@@ -337,7 +337,7 @@ class Dimension:
         """
         # Once set, `coordinates` cannot be changed
         if hasattr(self, 'coordinates'):
-            raise AttributeError('`coordinates` cannot be changed.')
+            raise AttributeError('`coordinates` cannot be changed')
 
         # Set default
         if coordinates is None:
@@ -346,13 +346,13 @@ class Dimension:
         # Check types
         coordinates = as_list(coordinates)
         if not all(isinstance(coord, str) for coord in coordinates):
-            raise TypeError('`coordinates` contains invalid types.')
+            raise TypeError('`coordinates` contains invalid types')
 
         # Check values
         if len(coordinates) == 0:
-            raise ValueError('`coordinates` is an empty list.')
+            raise ValueError('`coordinates` is an empty list')
         if len(coordinates) > len(set(coordinates)):
-            raise ValueError('`coordinates` contains duplicates.')
+            raise ValueError('`coordinates` contains duplicates')
 
         self._coordinates = coordinates
 
@@ -389,15 +389,15 @@ class Dimension:
         """
         # Once set, `kernel` cannot be changed
         if hasattr(self, 'kernel'):
-            raise AttributeError('`kernel` cannot be changed.')
+            raise AttributeError('`kernel` cannot be changed')
 
         # Check type
         if not isinstance(kernel, str):
-            raise TypeError('`kernel` is not a str.')
+            raise TypeError('`kernel` is not a str')
 
         # Check value
         if kernel not in ('exponential', 'tricubic', 'depth', 'identity'):
-            raise ValueError('`kernel` is not a valid kernel function.')
+            raise ValueError('`kernel` is not a valid kernel function')
 
         self._kernel = kernel
 
@@ -434,7 +434,7 @@ class Dimension:
         """
         # Once set, `distance` cannot be changed
         if hasattr(self, 'distance'):
-            raise AttributeError('`distance` cannot be changed.')
+            raise AttributeError('`distance` cannot be changed')
 
         # Set default
         if distance is None:
@@ -445,11 +445,11 @@ class Dimension:
 
         # Check type
         if not isinstance(distance, str):
-            raise TypeError('`distance` is not a str.')
+            raise TypeError('`distance` is not a str')
 
         # Check value
         if distance not in ('euclidean', 'tree', 'dictionary'):
-            msg = '`distance` is not a valid distance function.'
+            msg = '`distance` is not a valid distance function'
             raise ValueError(msg)
 
         self._distance = distance
@@ -489,16 +489,16 @@ class Dimension:
         """
         if self._kernel in ('exponential', 'depth'):
             if radius is None:
-                msg = f"`radius` is required for '{self._kernel}' kernel."
+                msg = f"`radius` is required for '{self._kernel}' kernel"
                 raise AttributeError(msg)
             if self._kernel == 'exponential':
                 if not is_number(radius):
-                    raise TypeError('`radius` is not an int or float.')
+                    raise TypeError('`radius` is not an int or float')
                 if radius <= 0:
-                    raise ValueError('`radius` is not positive.')
+                    raise ValueError('`radius` is not positive')
             elif self._kernel == 'depth':
                 if not is_float(radius):
-                    raise TypeError('`radius` is not a float.')
+                    raise TypeError('`radius` is not a float')
                 if radius <= 0.5 or radius >= 1:
                     raise ValueError('`radius` is not in (0.5, 1)')
             self._radius = radius
@@ -536,12 +536,12 @@ class Dimension:
         """
         if self._kernel == 'tricubic':
             if exponent is None:
-                msg = "`exponent` is required for 'tricubic' kernel."
+                msg = "`exponent` is required for 'tricubic' kernel"
                 raise AttributeError(msg)
             if not is_number(exponent):
-                raise TypeError('`exponent` is not an int or float.')
+                raise TypeError('`exponent` is not an int or float')
             if exponent <= 0:
-                raise ValueError('`exponent` is not positive.')
+                raise ValueError('`exponent` is not positive')
             self._exponent = exponent
 
     @property
@@ -579,9 +579,9 @@ class Dimension:
                 self._version = 'codem'
             else:
                 if not isinstance(version, str):
-                    raise TypeError('`version` is not a str.')
+                    raise TypeError('`version` is not a str')
                 if version not in ('codem', 'stgpr'):
-                    raise ValueError("`version` not in {'codem', 'stgpr'}.")
+                    raise ValueError("`version` not in {'codem', 'stgpr'}")
                 self._version = version
 
     @property
@@ -615,13 +615,13 @@ class Dimension:
         """
         # Once set, `distance_dict` cannot be changed
         if hasattr(self, 'distance_dict'):
-            raise AttributeError('`distance_dict` cannot be changed.')
+            raise AttributeError('`distance_dict` cannot be changed')
 
         # Check values
         if self._distance == 'dictionary':
             if distance_dict is None:
                 msg = "`distance` is 'dictionary', "
-                msg += 'but `distance_dict` is None.'
+                msg += 'but `distance_dict` is None'
                 raise ValueError(msg)
             check_dict(distance_dict)
             self._distance_dict = distance_dict
@@ -753,18 +753,18 @@ def check_dict(distance_dict: Dict[Tuple[number, number], number]) -> None:
     """
     # Check types
     if not isinstance(distance_dict, dict):
-        raise TypeError('`distance_dict` is not a dict.')
+        raise TypeError('`distance_dict` is not a dict')
     if not all(isinstance(key, tuple) for key in distance_dict):
-        raise TypeError('`distance_dict` keys not all tuple.')
+        raise TypeError('`distance_dict` keys not all tuple')
     if not all(is_number(point) for key in distance_dict for point in key):
-        raise TypeError('`distance_dict` key entries not all int or float.')
+        raise TypeError('`distance_dict` key entries not all int or float')
     if not all(is_number(value) for value in distance_dict.values()):
-        raise TypeError('`distance_dict` values not all int or float.')
+        raise TypeError('`distance_dict` values not all int or float')
 
     # Check values
     if len(distance_dict) == 0:
-        raise ValueError('`distance_dict` is an empty dict.')
+        raise ValueError('`distance_dict` is an empty dict')
     if any(len(key) != 2 for key in distance_dict):
-        raise ValueError('`distance_dict` keys are not all length 2.')
+        raise ValueError('`distance_dict` keys are not all length 2')
     if any(value < 0.0 for value in distance_dict.values()):
-        raise ValueError('`distance_dict` contains negative values.')
+        raise ValueError('`distance_dict` contains negative values')

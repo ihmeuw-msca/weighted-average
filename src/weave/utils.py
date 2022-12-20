@@ -60,7 +60,7 @@ def flatten(values: List[Union[Any, List[Any]]]) -> List[Any]:
 
     """
     if not isinstance(values, (list, TypedList)):
-        raise TypeError('`values` is not a list.')
+        raise TypeError('`values` is not a list')
     if len(values) == 0:
         return list(values)
     if isinstance(values[0], (list, TypedList)):
