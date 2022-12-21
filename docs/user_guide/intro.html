@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Installation" href="installation.html" /><link rel="prev" title="User Guide" href="index.html" />
 
     <meta name="generator" content="sphinx-4.4.0, furo 2022.01.02"/>
-        <title>What is weave? - weave 0.1.0</title>
+        <title>What is WeAve? - weave 0.1.0</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=df49af52631e7917044a9c21a57f7b83170a6dd0" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=fade93df149f7c5fedb3ff897f799dc7d283b420" />
@@ -172,7 +172,7 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">User Guide</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">What is <cite>weave</cite>?</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">What is WeAve?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 </ul>
@@ -213,8 +213,8 @@
         </div>
         <article role="main">
           <div class="section" id="what-is-weave">
-<h1>What is <cite>weave</cite>?<a class="headerlink" href="#what-is-weave" title="Permalink to this headline">¶</a></h1>
-<p>The <cite>weave</cite> package smooths data across multiple dimensions using weighted
+<h1>What is WeAve?<a class="headerlink" href="#what-is-weave" title="Permalink to this headline">¶</a></h1>
+<p>The WeAve package smooths data across multiple dimensions using weighted
 averages with methods inspired by the spatial-temporal models developed in the
 following paper:</p>
 <p>Foreman, K.J., Lozano, R., Lopez, A.D., et al. “<a class="reference external" href="https://pophealthmetrics.biomedcentral.com/articles/10.1186/1478-7954-10-1">Modeling causes of death: an
@@ -232,7 +232,7 @@ logit of the cause fraction or the natural log of the death rate is modeled
 using a linear mixed effects model. Next, spatial-temporal smoothing is used to
 account for additional variations across age, time, and location. Finally,
 Gaussian process regression is applied to predict uncertainty. We describe the
-second stage, the inspiration for <cite>weave</cite>, in more detail.</p>
+second stage, the inspiration for WeAve, in more detail.</p>
 <div class="section" id="spatial-temporal-models">
 <h3>Spatial-Temporal Models<a class="headerlink" href="#spatial-temporal-models" title="Permalink to this headline">¶</a></h3>
 <p>After the first stage linear mixed effects models have been run, the residuals
@@ -277,8 +277,8 @@ w_{i, j}^t}{\sum_{k \in \mathcal{D}_{i, j}} w_{i, k}^a \, w_{i, k}^t}.\]</div></
 </div>
 </div>
 <div class="section" id="weighted-averages-with-weave">
-<h2>Weighted Averages with <cite>weave</cite><a class="headerlink" href="#weighted-averages-with-weave" title="Permalink to this headline">¶</a></h2>
-<p>The <cite>weave</cite> package generalizes the spatial-temporal models in CODEm to smooth
+<h2>Weighted Averages with WeAve<a class="headerlink" href="#weighted-averages-with-weave" title="Permalink to this headline">¶</a></h2>
+<p>The WeAve package generalizes the spatial-temporal models in CODEm to smooth
 data across mutliple dimensions using weighted averages. Users can specify
 dimensions using the <a class="reference internal" href="../api_reference/weave.dimension.html"><span class="doc">Dimension</span></a> class,
 where <a class="reference internal" href="../api_reference/weave.distance.html"><span class="doc">distance</span></a> and
@@ -288,8 +288,7 @@ weights are calculated.</p>
 <span class="math notranslate nohighlight">\(x_i\)</span> and <span class="math notranslate nohighlight">\(x_j\)</span>, and kernel functions
 <span class="math notranslate nohighlight">\(k(d_{i, j} \, ; p_1, p_2, \dots)\)</span> calculate smoothing weights given
 distance <span class="math notranslate nohighlight">\(d_{i, j}\)</span> and a set of parameters <span class="math notranslate nohighlight">\(p_1, p_2, \dots\)</span>. In
-<cite>weave</cite>, you can choose from three distance functions and four kernel
-functions.</p>
+WeAve, you can choose from three distance functions and four kernel functions.</p>
 <p>Weighted averages <span class="math notranslate nohighlight">\(\hat{y}\)</span> of dependent variables <span class="math notranslate nohighlight">\(y\)</span> are
 calculated using the <a class="reference internal" href="../api_reference/weave.smoother.html"><span class="doc">Smoother</span></a> class
 for observations <span class="math notranslate nohighlight">\(i\)</span> in data set <span class="math notranslate nohighlight">\(\mathcal{D}\)</span> with</p>
@@ -304,8 +303,8 @@ then multiplied,</p>
 \[w_{i, j} = \frac{\tilde{w}_{i, j}}{\sum_{k \in \mathcal{D}}
 \tilde{w}_{i, k}}.\]</div></div>
 <p>For instructions on how to get started, see the <a class="reference internal" href="quickstart.html"><span class="doc">Quickstart</span></a>.
-For descriptions of the modules, objects, and functions included in <cite>weave</cite>,
-see the <a class="reference internal" href="../api_reference/index.html"><span class="doc">API Reference</span></a>.</p>
+For descriptions of the modules, objects, and functions included in WeAve, see
+the <a class="reference internal" href="../api_reference/index.html"><span class="doc">API Reference</span></a>.</p>
 <div class="section" id="depth-kernel-normalization">
 <h3>Depth Kernel Normalization<a class="headerlink" href="#depth-kernel-normalization" title="Permalink to this headline">¶</a></h3>
 <p>Note that when the depth kernel is used, the preceding dimension weights are
@@ -377,12 +376,12 @@ w_{i, k}^{m_\ell}}.\]</div></div>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">What is <cite>weave</cite>?</a><ul>
+<li><a class="reference internal" href="#">What is WeAve?</a><ul>
 <li><a class="reference internal" href="#cause-of-death-ensemble-model">Cause of Death Ensemble Model</a><ul>
 <li><a class="reference internal" href="#spatial-temporal-models">Spatial-Temporal Models</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#weighted-averages-with-weave">Weighted Averages with <cite>weave</cite></a><ul>
+<li><a class="reference internal" href="#weighted-averages-with-weave">Weighted Averages with WeAve</a><ul>
 <li><a class="reference internal" href="#depth-kernel-normalization">Depth Kernel Normalization</a></li>
 </ul>
 </li>

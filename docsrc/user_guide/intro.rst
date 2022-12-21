@@ -1,7 +1,7 @@
-What is `weave`?
+What is WeAve?
 ================
 
-The `weave` package smooths data across multiple dimensions using weighted
+The WeAve package smooths data across multiple dimensions using weighted
 averages with methods inspired by the spatial-temporal models developed in the
 following paper:
 
@@ -24,7 +24,7 @@ logit of the cause fraction or the natural log of the death rate is modeled
 using a linear mixed effects model. Next, spatial-temporal smoothing is used to
 account for additional variations across age, time, and location. Finally,
 Gaussian process regression is applied to predict uncertainty. We describe the
-second stage, the inspiration for `weave`, in more detail.
+second stage, the inspiration for WeAve, in more detail.
 
 Spatial-Temporal Models
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -75,10 +75,10 @@ Finally, weights are normalized so that all weights for each observation
 .. math:: w_{i, j} = \frac{\tilde{w}_{i, j}}{\sum_{k \in \mathcal{D}}
           \tilde{w}_{i, k}}.
 
-Weighted Averages with `weave`
+Weighted Averages with WeAve
 ------------------------------
 
-The `weave` package generalizes the spatial-temporal models in CODEm to smooth
+The WeAve package generalizes the spatial-temporal models in CODEm to smooth
 data across mutliple dimensions using weighted averages. Users can specify
 dimensions using the :doc:`Dimension <../api_reference/weave.dimension>` class,
 where :doc:`distance <../api_reference/weave.distance>` and
@@ -89,8 +89,7 @@ Distance functions :math:`d(x_i, x_j)` calculate the distance between points
 :math:`x_i` and :math:`x_j`, and kernel functions
 :math:`k(d_{i, j} \, ; p_1, p_2, \dots)` calculate smoothing weights given
 distance :math:`d_{i, j}` and a set of parameters :math:`p_1, p_2, \dots`. In
-`weave`, you can choose from three distance functions and four kernel
-functions.
+WeAve, you can choose from three distance functions and four kernel functions.
 
 Weighted averages :math:`\hat{y}` of dependent variables :math:`y` are
 calculated using the :doc:`Smoother <../api_reference/weave.smoother>` class
@@ -109,8 +108,8 @@ and finally normalized,
           \tilde{w}_{i, k}}.
 
 For instructions on how to get started, see the :doc:`Quickstart <quickstart>`.
-For descriptions of the modules, objects, and functions included in `weave`,
-see the :doc:`API Reference <../api_reference/index>`.
+For descriptions of the modules, objects, and functions included in WeAve, see
+the :doc:`API Reference <../api_reference/index>`.
 
 Depth Kernel Normalization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

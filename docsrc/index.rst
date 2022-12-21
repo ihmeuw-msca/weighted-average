@@ -1,8 +1,8 @@
-WEighted-AVErage (`weave`)
+Weighted-Average (WeAve)
 ==========================
 
-The `weave` package smooths data across multiple dimensions using
-weighted averages with methods inspired by the spatial-temporal models
+The WeAve package (pronounced 'weave') smooths data across multiple dimensions
+using weighted averages with methods inspired by the spatial-temporal models
 developed in the following paper:
 
 Foreman, K.J., Lozano, R., Lopez, A.D., et al. "`Modeling causes of
