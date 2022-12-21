@@ -270,27 +270,28 @@ and location.</p>
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="weave.smoother.Smoother.__call__">
-<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.__call__" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smoothed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Smooth data across dimensions with weighted averages.</p>
-<p>For each point in <cite>predict</cite>, calculate a smoothed value of each
-column in <cite>columns</cite> using a weighted average of points in
+<p>For each column in <cite>observed</cite> and each point in <cite>predict</cite>,
+calculate smoothed values using a weighted average of points in
 <cite>fit</cite>, where weights are calculated based on proximity across
 <cite>dimensions</cite>. Return a data frame of points in <cite>predict</cite> with
-added columns ‘{column}_smooth’ containing smoothed values for
-each for each column in <cite>columns</cite>.</p>
+columns in <cite>smoothed</cite> containing smoothed values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<em>pandas.DataFrame</em>) – Input data structure.</p></li>
-<li><p><strong>columns</strong> (<em>str</em><em> or </em><em>list of str</em>) – Column names of values to smooth.</p></li>
+<li><p><strong>observed</strong> (<em>str</em><em> or </em><em>list of str</em>) – Column names of values to smooth.</p></li>
+<li><p><strong>smoothed</strong> (<em>str</em><em> or </em><em>list of str</em><em>, </em><em>optional</em>) – Column names of smoothed values. If None, append ‘_smooth’
+to all columns in <cite>observed</cite>.</p></li>
 <li><p><strong>fit</strong> (<em>str</em><em>, </em><em>optional</em>) – Column name indicating points to include in weighted
 averages. If None, all points in <cite>data</cite> are used.</p></li>
-<li><p><strong>predict</strong> (<em>str</em><em>, </em><em>optional</em>) – Column name indicating points to predict smoothed values.
+<li><p><strong>predict</strong> (<em>str</em><em>, </em><em>optional</em>) – Column name indicating where to predict smoothed values.
 If None, predictions are made for all points in <cite>data</cite>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Points in <cite>predict</cite> with smoothed <cite>columns</cite> values.</p>
+<dd class="field-even"><p>Points in <cite>predict</cite> with smoothed values.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>pandas.DataFrame</p>

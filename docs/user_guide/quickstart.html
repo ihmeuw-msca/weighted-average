@@ -216,7 +216,7 @@
 <h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="the-basics">
 <h2>The Basics<a class="headerlink" href="#the-basics" title="Permalink to this headline">¶</a></h2>
-<p>The <cite>weave</cite> package has four main components:</p>
+<p>The WeAve package has four main components:</p>
 <ol class="arabic simple">
 <li><p>The <a class="reference internal" href="../api_reference/weave.smoother.html"><span class="doc">Smoother</span></a> class, which computes
 weighted averages across data.</p></li>
@@ -240,9 +240,8 @@ by importing all of the packages we will be using.</p>
 </div>
 <div class="section" id="data">
 <h3>Data<a class="headerlink" href="#data" title="Permalink to this headline">¶</a></h3>
-<p>The <cite>weave</cite> package works with data in the form of
-<a class="reference external" href="https://pandas.pydata.org/">Pandas</a> data frames. The following code
-generates and plots our data set.</p>
+<p>WeAve works with data in the form of <a class="reference external" href="https://pandas.pydata.org/">Pandas</a>
+data frames. The following code generates and plots our data set.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">n_obs</span> <span class="o">=</span> <span class="mi">50</span>
 <span class="n">x_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">n_obs</span><span class="p">)</span>
 <span class="n">y_true</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x_val</span><span class="p">)</span>
@@ -266,26 +265,26 @@ generates and plots our data set.</p>
 </div>
 <div class="section" id="dimension">
 <h3>Dimension<a class="headerlink" href="#dimension" title="Permalink to this headline">¶</a></h3>
-<p>To smooth data using <cite>weave</cite>, we first need to specify the dimensions in our
-data by creating an instance of the <code class="docutils literal notranslate"><span class="pre">Dimension</span></code> class. This object contains
+<p>To smooth data using WeAve, we first need to specify the dimensions in our data
+by creating an instance of the <cite>Dimension</cite> class. This object contains
 information about how weights are computed. Many dimension parameters have
-defaults, but at the minimum we need to include <code class="docutils literal notranslate"><span class="pre">name</span></code>. This corresponds to
-the column in our data frame containing unique point IDs.</p>
+defaults, but at the minimum we need to include <cite>name</cite>. This corresponds to the
+column in our data frame containing unique point IDs.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">age</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span><span class="s1">'x_id'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>This dimension object above will have the default identity kernel (i.e.,
-weights are equal to distances) and Euclidean distance. Weights are computed
-using data from the column of our data frame corresponding to the dimension
-attribute <code class="docutils literal notranslate"><span class="pre">coordinates</span></code>, which is automatically assigned to the <code class="docutils literal notranslate"><span class="pre">name</span></code>
-parameter if not specified.</p>
+<p>The dimension object above will have the default identity kernel (i.e., weights
+are equal to distances) and Euclidean distance. Weights are computed using data
+from the column of our data frame corresponding to the dimension attribute
+<cite>coordinates</cite>, which is automatically assigned to the <cite>name</cite> parameter if not
+specified.</p>
 <p>To compute weights based on a column other than ‘x_id’, we can include the
-<code class="docutils literal notranslate"><span class="pre">coordinates</span></code> parameter. Values in this column do not need to be unique,
-unlike those corresponding to <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
+<cite>coordinates</cite> parameter. Values in this column do not need to be unique, unlike
+those corresponding to <cite>name</cite>.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">age</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span><span class="s1">'x_id'</span><span class="p">,</span> <span class="s1">'x_val'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>All kernels other than identity kernel have additional parameters. For this
+<p>All kernels other than the identity kernel have additional parameters. For this
 tutorial, we will use the exponential kernel which requires a kernel radius.
 The following code creates our smoothing dimension with default Euclidean
 distance.</p>
@@ -300,28 +299,136 @@ distance.</p>
 </div>
 <div class="section" id="smoother">
 <h3>Smoother<a class="headerlink" href="#smoother" title="Permalink to this headline">¶</a></h3>
-<p>Our next step is to create an instance of the <code class="docutils literal notranslate"><span class="pre">Smoother</span></code> class using the
-dimension object we just defined. While this tutorial only uses one dimension,
+<p>Our next step is to create an instance of the <cite>Smoother</cite> class using the
+dimension object defined above. While this tutorial only uses one dimension,
 you can also input multiple dimensions in a list.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">smoother</span> <span class="o">=</span> <span class="n">Smoother</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>To smooth our noisy data, we simply provide our data frame and the name of the
-column or columns we would like to smooth. The output is a copy of input data
-frame with appended column(s) containing the smoothed data. For <code class="docutils literal notranslate"><span class="pre">columns</span></code>
-‘col1’, ‘col2’, etc., these smoothed columns will be labeled ‘col1_smooth’,
-‘col2_smooth’, etc. The following code smooths our data and plots the results.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">)</span>
+column or columns we would like to smooth (parameter <cite>observed</cite>). The output is
+a copy of the input data frame with appended column(s) containing the smoothed
+data. You can specify the column names of the smoothed values with the
+parameter <cite>smoothed</cite>, otherwise ‘_smooth’ will be appended to the column names
+in <cite>observed</cite>. The following code smooths our data and plots the results.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="s1">'y_smooth'</span><span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Truth'</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_obs</span><span class="p">,</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Observed'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">'x_val'</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="s1">'y_obs_smooth'</span><span class="p">],</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Smoothed'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">'x_val'</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="s1">'y_smooth'</span><span class="p">],</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Smoothed'</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'y'</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 <img alt="../_images/smooth_data.png" class="align-center" src="../_images/smooth_data.png"/>
+</div>
+</div>
+<div class="section" id="choosing-parameters">
+<h2>Choosing Parameters<a class="headerlink" href="#choosing-parameters" title="Permalink to this headline">¶</a></h2>
+<p>The degree of smoothing is influenced by the choice of kernel parameters, so
+it’s important to find parameters that produce smooth results but don’t
+oversmooth. Below we see our example with values smoothed using radii between
+zero and one. Radius values near zero hardly smooth the data at all, while
+values near one smooth the data too much, moving points away from the true
+curve and towards the data average.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">radii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">radius</span> <span class="ow">in</span> <span class="n">radii</span><span class="p">:</span>
+    <span class="n">smoother</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="s1">'y_smooth'</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">]</span> <span class="o">=</span> <span class="n">radius</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">results</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'x_val'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">'y_smooth'</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="s1">'radius'</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_obs</span><span class="p">,</span> <span class="s1">'.'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'y'</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="../_images/radius_vals.png" class="align-center" src="../_images/radius_vals.png"/>
+<p>To explore the tradeoff between data fidelity (i.e., how closely the smoothed
+data follows the true curve) and smoothness, we can define functions that
+measure each of these properties and evaluate them for different radius values.</p>
+<div class="section" id="train-test-split">
+<h3>Train/Test Split<a class="headerlink" href="#train-test-split" title="Permalink to this headline">¶</a></h3>
+<p>We will use <a class="reference external" href="https://en.wikipedia.org/wiki/Cross-validation_(statistics)">cross-validation</a>
+to compare our model error for different radii. In this framework, we randomly
+split our data into two sets: 80% will go into the training set and 20% will go
+into the test set. For each point in the test set, we will compute smoothed
+values using weighted averages composed only of points in the training set. In
+this way, we can infer how our model would perform on new or missing data. The
+following code splits our data into the two sets and creates corresponding
+boolean columns in our data frame.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">'x_id'</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="n">n_obs</span><span class="o">//</span><span class="mi">5</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="s1">'train'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">data</span><span class="p">[</span><span class="s1">'test'</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]</span> <span class="o">==</span> <span class="kc">False</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Truth'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]][</span><span class="s1">'x_val'</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]][</span><span class="s1">'y_obs'</span><span class="p">],</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Train'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">'test'</span><span class="p">]][</span><span class="s1">'x_val'</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">'test'</span><span class="p">]][</span><span class="s1">'y_obs'</span><span class="p">],</span> <span class="s1">'x'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Test'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'y'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+<img alt="../_images/train_test.png" class="align-center" src="../_images/train_test.png"/>
+</div>
+<div class="section" id="metrics">
+<h3>Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">¶</a></h3>
+<p>Next we define functions that measure the error and smoothness of our model
+output. For error, we compute the mean absolute difference between the true
+curve and the smoothed values in the test set. For smoothenss, we compute the
+mean absolute difference between consecutive values in the entire data set.</p>
+<p>When calling the smoother object, the optional parameters <cite>fit</cite> and <cite>predict</cite>
+correspond to the columns in the data frame indicating which points to use in
+the weighted averages and which points to smooth, respectively. If not
+supplied, both default to the entire input data frame.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_error</span><span class="p">(</span><span class="n">radius</span><span class="p">):</span>
+    <span class="n">smoother</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="s1">'y_smooth'</span><span class="p">,</span> <span class="s1">'train'</span><span class="p">,</span> <span class="s1">'test'</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">'y_true'</span><span class="p">]</span> <span class="o">-</span> <span class="n">result</span><span class="p">[</span><span class="s1">'y_smooth'</span><span class="p">]))</span>
+
+<span class="k">def</span> <span class="nf">get_smoothness</span><span class="p">(</span><span class="n">radius</span><span class="p">):</span>
+    <span class="n">smoother</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="s1">'y_smooth'</span><span class="p">,</span> <span class="s1">'train'</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">'y_smooth'</span><span class="p">])))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="grid-search">
+<h3>Grid Search<a class="headerlink" href="#grid-search" title="Permalink to this headline">¶</a></h3>
+<p>To find the best radius value in terms of error and smoothness, we evaluate our
+performance functions for radius values between zero and one. This is known as
+a grid search. For problems with multiple dimensions and parameters, a grid
+search can be inefficient, but there are other <a class="reference external" href="https://en.wikipedia.org/wiki/Hyperparameter_optimization">hyperparameter optimization</a>
+methods that can be used instead.</p>
+<p>Because our error and smoothness metrics will have different optimal radii, we
+create a third metric that combines the two properties. For this example, we
+assume that error is twice as important as smoothness, so we use a convex
+combination of the two metrics with weights that reflect this assumption.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">get_error</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span> <span class="k">for</span> <span class="n">radius</span> <span class="ow">in</span> <span class="n">radii</span><span class="p">])</span>
+<span class="n">smoothnesss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">get_smoothness</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span> <span class="k">for</span> <span class="n">radius</span> <span class="ow">in</span> <span class="n">radii</span><span class="p">])</span>
+<span class="n">combined</span> <span class="o">=</span> <span class="mi">2</span><span class="o">/</span><span class="mi">3</span><span class="o">*</span><span class="n">error</span> <span class="o">+</span> <span class="mi">1</span><span class="o">/</span><span class="mi">3</span><span class="o">*</span><span class="n">smoothness</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Error'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">,</span> <span class="n">smoothness</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Smoothness'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">,</span> <span class="n">combined</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Combined'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">error</span><span class="p">)],</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="s1">'k*'</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">smoothness</span><span class="p">)],</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">smoothness</span><span class="p">),</span> <span class="s1">'k*'</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">combined</span><span class="p">)],</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">combined</span><span class="p">),</span> <span class="s1">'k*'</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Radius'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Performance'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="../_images/performance.png" class="align-center" src="../_images/performance.png"/>
+<p>For the exponential kernel, a larger radius produces smoother output, while the
+lowest test error occurs at 0.21. Our combined metric is minimized at a radius
+of 0.32, with smoothed data plotted below.</p>
+<img alt="../_images/opt_radius.png" class="align-center" src="../_images/opt_radius.png"/>
 </div>
 </div>
 </div>
@@ -382,6 +489,12 @@ frame with appended column(s) containing the smoothed data. For <code class="doc
 <li><a class="reference internal" href="#data">Data</a></li>
 <li><a class="reference internal" href="#dimension">Dimension</a></li>
 <li><a class="reference internal" href="#smoother">Smoother</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#choosing-parameters">Choosing Parameters</a><ul>
+<li><a class="reference internal" href="#train-test-split">Train/Test Split</a></li>
+<li><a class="reference internal" href="#metrics">Metrics</a></li>
+<li><a class="reference internal" href="#grid-search">Grid Search</a></li>
 </ul>
 </li>
 </ul>

@@ -217,6 +217,7 @@
 <span class="sd">"""Smooth data across multiple dimensions using weighted averages."""</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
 
 <span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">njit</span><span class="p">,</span> <span class="n">prange</span>  <span class="c1"># type: ignore</span>
 <span class="kn">from</span> <span class="nn">numba.typed</span> <span class="kn">import</span> <span class="n">List</span> <span class="k">as</span> <span class="n">TypedList</span>  <span class="c1"># type: ignore</span>
@@ -278,7 +279,7 @@
 <span class="sd">        &gt;&gt;&gt; smoother = Smoother(dimensions)</span>
 
 <span class="sd">        """</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="n">dimensions</span>  <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">]:</span>
@@ -293,8 +294,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span>
 
     <span class="nd">@dimensions</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dimension</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">]])</span> \
-            <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">"""Set smoothing dimensions.</span>
 
 <span class="sd">        Parameters</span>
@@ -304,58 +304,67 @@
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
+<span class="sd">        AttributeError</span>
+<span class="sd">            If `dimensions` has already been set.</span>
 <span class="sd">        TypeError</span>
 <span class="sd">            If `dimensions` is not a list of Dimension.</span>
 <span class="sd">        ValueError</span>
-<span class="sd">            If `dimensions` is an empty list, contains an empty list,</span>
-<span class="sd">            or contains duplicate names or columns.</span>
+<span class="sd">            If `dimensions` is an empty list, contains an empty list, or</span>
+<span class="sd">            contains duplicate names or columns.</span>
 
 <span class="sd">        """</span>
+        <span class="c1"># Once set, `name` cannot be changed</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'dimensions'</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`dimensions` cannot be changed'</span><span class="p">)</span>
+
         <span class="c1"># Check types</span>
-        <span class="n">dimensions</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">Dimension</span><span class="p">)</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`dimensions` contains invalid types.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`dimensions` contains invalid types'</span><span class="p">)</span>
 
         <span class="c1"># Check values</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`dimensions` is an empty list.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`dimensions` is an empty list'</span><span class="p">)</span>
         <span class="n">name_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">dim</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">name_list</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Duplicate names found in `dimensions`.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Duplicate names found in `dimensions`'</span><span class="p">)</span>
         <span class="n">coord_list</span> <span class="o">=</span> <span class="n">flatten</span><span class="p">([</span><span class="n">dim</span><span class="o">.</span><span class="n">coordinates</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">])</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coord_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">coord_list</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Duplicate coordinates found in `dimensions`.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Duplicate coordinates found in `dimensions`'</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span> <span class="o">=</span> <span class="n">dimensions</span>
 
-<div class="viewcode-block" id="Smoother.__call__"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
-                 <span class="n">fit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">predict</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<div class="viewcode-block" id="Smoother.__call__"><a class="viewcode-back" href="../../api_reference/weave.smoother.html#weave.smoother.Smoother.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">observed</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+                 <span class="n">smoothed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">fit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">predict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
         <span class="sd">"""Smooth data across dimensions with weighted averages.</span>
 
-<span class="sd">        For each point in `predict`, calculate a smoothed value of each</span>
-<span class="sd">        column in `columns` using a weighted average of points in</span>
+<span class="sd">        For each column in `observed` and each point in `predict`,</span>
+<span class="sd">        calculate smoothed values using a weighted average of points in</span>
 <span class="sd">        `fit`, where weights are calculated based on proximity across</span>
 <span class="sd">        `dimensions`. Return a data frame of points in `predict` with</span>
-<span class="sd">        added columns '{column}_smooth' containing smoothed values for</span>
-<span class="sd">        each for each column in `columns`.</span>
+<span class="sd">        columns in `smoothed` containing smoothed values.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        data : pandas.DataFrame</span>
 <span class="sd">            Input data structure.</span>
-<span class="sd">        columns : str or list of str</span>
+<span class="sd">        observed : str or list of str</span>
 <span class="sd">            Column names of values to smooth.</span>
+<span class="sd">        smoothed : str or list of str, optional</span>
+<span class="sd">            Column names of smoothed values. If None, append '_smooth'</span>
+<span class="sd">            to all columns in `observed`.</span>
 <span class="sd">        fit : str, optional</span>
 <span class="sd">            Column name indicating points to include in weighted</span>
 <span class="sd">            averages. If None, all points in `data` are used.</span>
 <span class="sd">        predict : str, optional</span>
-<span class="sd">            Column name indicating points to predict smoothed values.</span>
+<span class="sd">            Column name indicating where to predict smoothed values.</span>
 <span class="sd">            If None, predictions are made for all points in `data`.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        pandas.DataFrame</span>
-<span class="sd">            Points in `predict` with smoothed `columns` values.</span>
+<span class="sd">            Points in `predict` with smoothed values.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -406,116 +415,146 @@
 
 <span class="sd">        """</span>
         <span class="c1"># Check input</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">check_args</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">predict</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">check_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">predict</span><span class="p">)</span>
+        <span class="n">observed</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">observed</span><span class="p">)</span>
+        <span class="n">smoothed</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">smoothed</span><span class="p">)</span> <span class="k">if</span> <span class="n">smoothed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">smoothed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_args</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">observed</span><span class="p">,</span> <span class="n">smoothed</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">predict</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">smoothed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">smoothed</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_smooth"</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">observed</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">observed</span><span class="p">,</span> <span class="n">smoothed</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">predict</span><span class="p">)</span>
 
         <span class="c1"># Extract data</span>
         <span class="n">idx_fit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_indices</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">fit</span><span class="p">)</span>
         <span class="n">idx_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_indices</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">predict</span><span class="p">)</span>
-        <span class="n">cols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_columns</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">)</span>
+        <span class="n">cols_obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_observed</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">observed</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">)</span>
         <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_points</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
         <span class="n">dim_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_typed_dimensions</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
         <span class="c1"># Calculate smoothed values</span>
-        <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">smooth</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">)</span>
+        <span class="n">cols_smooth</span> <span class="o">=</span> <span class="n">smooth</span><span class="p">(</span><span class="n">dim_list</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">cols_obs</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">)</span>
 
         <span class="c1"># Construct smoothed data frame</span>
         <span class="n">data_smooth</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx_pred</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">idx_col</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)):</span>
-            <span class="n">data_smooth</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_smooth"</span><span class="p">]</span> <span class="o">=</span> <span class="n">cols_smooth</span><span class="p">[:,</span> <span class="n">idx_col</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">idx_col</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">smoothed</span><span class="p">):</span>
+            <span class="n">data_smooth</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">cols_smooth</span><span class="p">[:,</span> <span class="n">idx_col</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">data_smooth</span></div>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">check_args</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
-                   <span class="n">fit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">predict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">check_args</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">observed</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+                   <span class="n">smoothed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">fit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+                   <span class="n">predict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">"""Check `smoother` argument types and values.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        data : pandas.DataFrame</span>
 <span class="sd">            Input data structure.</span>
-<span class="sd">        columns : str or list of str</span>
+<span class="sd">        observed : list of str</span>
 <span class="sd">            Column names of values to smooth.</span>
-<span class="sd">        fit : str or None</span>
+<span class="sd">        smoothed : list of str, optional</span>
+<span class="sd">            Column names of smoothed values.</span>
+<span class="sd">        fit : str, optional</span>
 <span class="sd">            Column name indicating points to include in weighted</span>
 <span class="sd">            averages.</span>
-<span class="sd">        predict : str or None</span>
-<span class="sd">            Column name indicating points to predict smoothed values.</span>
+<span class="sd">        predict : str, optional</span>
+<span class="sd">            Column name indicating where to predict smoothed values.</span>
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        TypeError</span>
 <span class="sd">            If `smoother` arguments contain invalid types.</span>
 <span class="sd">        ValueError</span>
-<span class="sd">            If `columns` is an empty list or contains duplicates.</span>
+<span class="sd">            If either `observed` or `smoothed` is an empty list or</span>
+<span class="sd">            contain duplicates.</span>
 
 <span class="sd">        """</span>
         <span class="c1"># Check types</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`data` is not a DataFrame.'</span><span class="p">)</span>
-        <span class="n">columns</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`columns` contains invalid types.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`data` is not a DataFrame'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">observed</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`observed` contains invalid types'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">smoothed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">smoothed</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`smoothed` contains invalid types'</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">fit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fit</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`fit` is not a str.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`fit` is not a str'</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">predict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">predict</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`predict` is not a str.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`predict` is not a str'</span><span class="p">)</span>
 
         <span class="c1"># Check values</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`columns` is an empty list.'</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">columns</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`columns` contains duplicates.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">observed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`observed` is an empty list'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">observed</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">observed</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`observed` contains duplicates'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">smoothed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">smoothed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`smoothed` is an empty list'</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">smoothed</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">smoothed</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`smoothed` contains duplicates'</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">observed</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">smoothed</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s1">'Length of `observed` and `smoothed` do not match'</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">observed</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">smoothed</span><span class="p">)))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Duplicates in `observed` and `smoothed`'</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">check_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
-                   <span class="n">fit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">predict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">check_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">observed</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+                   <span class="n">smoothed</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">fit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+                   <span class="n">predict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">"""Check input data.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        data : pandas.DataFrame</span>
 <span class="sd">            Input data structure.</span>
-<span class="sd">        columns : str or list of str</span>
+<span class="sd">        observed : list of str</span>
 <span class="sd">            Column names of values to smooth.</span>
+<span class="sd">        smoothed : list of str</span>
+<span class="sd">            Column names of smoothed values.</span>
 <span class="sd">        fit : str or None</span>
 <span class="sd">            Column name indicating points to include in weighted</span>
 <span class="sd">            averages.</span>
 <span class="sd">        predict : str or None</span>
-<span class="sd">            Column name indicating points to predict smoothed values.</span>
+<span class="sd">            Column name indicating where to predict smoothed values.</span>
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        KeyError</span>
-<span class="sd">            If `dimension.name`, `dimensions.coordinates`, `columns`,</span>
-<span class="sd">            `fit`, or `predict` not in `data`.</span>
-<span class="sd">            If `dimension.distance` is 'dictionary', but not all</span>
+<span class="sd">            If columns `dimension.name`, `dimensions.coordinates`,</span>
+<span class="sd">            `observed`, `fit`, or `predict` not in `data`.</span>
+<span class="sd">            If `dimension.distance` is 'dictionary', but not all keys</span>
 <span class="sd">            `dimension.name` in `dimension.distance_dict`.</span>
 <span class="sd">        TypeError</span>
-<span class="sd">            If `dimension.name`, `dimensions.coordinates`, `columns`,</span>
-<span class="sd">            `fit`, or `predict` in `data` contain invalid types.</span>
+<span class="sd">            If columns `dimension.name`, `dimensions.coordinates`,</span>
+<span class="sd">            `observed`, `fit`, or `predict` in `data` contain invalid</span>
+<span class="sd">            types.</span>
 <span class="sd">        ValueError</span>
-<span class="sd">            If `dimension.name` and `dimension.coordinates` not</span>
+<span class="sd">            If columns `dimension.name` and `dimension.coordinates` not</span>
 <span class="sd">            one-to-one in `data`.</span>
 <span class="sd">            If `data` contains NaNs or Infs.</span>
+
+<span class="sd">        Warns</span>
+<span class="sd">        -----</span>
+<span class="sd">        If columns in `smoothed` in data.</span>
 
 <span class="sd">        """</span>
         <span class="c1"># Get column names</span>
         <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">dim</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span><span class="p">]</span>
         <span class="n">coords</span> <span class="o">=</span> <span class="n">flatten</span><span class="p">([</span><span class="n">dim</span><span class="o">.</span><span class="n">coordinates</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span><span class="p">])</span>
-        <span class="n">cols</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
 
-        <span class="c1"># Check keys</span>
+        <span class="c1"># Check data frame columns</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">name</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'Not all `dimension.name` in `data`.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'Not all `dimension.name` in `data`'</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">coord</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'Not all `dimension.coordinates` in `data`.'</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">col</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'Not all `columns` in `data`.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'Not all `dimension.coordinates` in `data`'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">col</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">observed</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'Not all `observed` in `data`'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">col</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">smoothed</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">'Columns in `smoothed` in `data` will be overwritten'</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">fit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fit</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'`fit` not in `data`.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'`fit` not in `data`'</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">predict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">predict</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'`predict` not in `data`.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">'`predict` not in `data`'</span><span class="p">)</span>
 
         <span class="c1"># Check dictionary keys</span>
         <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span><span class="p">:</span>
@@ -524,23 +563,23 @@
                 <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
                     <span class="k">if</span> <span class="n">key</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">key</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dim</span><span class="o">.</span><span class="n">distance_dict</span><span class="p">:</span>
                         <span class="n">msg</span> <span class="o">=</span> <span class="s1">'Not all `dimension.name` in '</span>
-                        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'`dimension.distance_dict`.'</span>
+                        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'`dimension.distance_dict`'</span>
                         <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
         <span class="c1"># Check types</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">])</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'Not all `dimension.name` data int or float.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'Not all `dimension.name` data int or float'</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">coord</span><span class="p">])</span> <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">):</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s1">'Not all `dimension.coordinates` data int or float.'</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">'Not all `dimension.coordinates` data int or float'</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">])</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'Not all `columns` data int or float.'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">])</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">observed</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'Not all `observed` data int or float'</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">fit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">is_bool_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">fit</span><span class="p">]):</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`fit` data is not bool.'</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`fit` data is not bool'</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">predict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">is_bool_dtype</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">predict</span><span class="p">]):</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`predict` data is not bool.'</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`predict` data is not bool'</span><span class="p">)</span>
 
         <span class="c1"># Check `name` and `coordinates` one-to-one</span>
         <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span><span class="p">:</span>
@@ -548,15 +587,15 @@
                 <span class="n">points</span> <span class="o">=</span> <span class="n">data</span><span class="p">[[</span><span class="n">dim</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">+</span> <span class="n">dim</span><span class="o">.</span><span class="n">coordinates</span><span class="p">]</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span>
                 <span class="n">points</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="o">~</span><span class="n">points</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">duplicated</span><span class="p">()]</span>
                 <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">points</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`name` maps to multiple `coordinates`.'</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`name` maps to multiple `coordinates`'</span><span class="p">)</span>
                 <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">points</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">coordinates</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`coordinates` maps to multiple `name`.'</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`coordinates` maps to multiple `name`'</span><span class="p">)</span>
 
         <span class="c1"># Check values</span>
         <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`data` contains NaNs.'</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">names</span> <span class="o">+</span> <span class="n">coords</span> <span class="o">+</span> <span class="n">cols</span><span class="p">])</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`data` contains Infs.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`data` contains NaNs'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">names</span> <span class="o">+</span> <span class="n">coords</span> <span class="o">+</span> <span class="n">observed</span><span class="p">])</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`data` contains Infs'</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_indices</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">indicator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
@@ -580,15 +619,15 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">indicator</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_columns</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
-                    <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">get_observed</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">observed</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+                     <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="sd">"""Get values to smooth.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        data : pandas.DataFrame</span>
 <span class="sd">            Input data structure.</span>
-<span class="sd">        columns : str or list of str</span>
+<span class="sd">        observed : str or list of str</span>
 <span class="sd">            Column names of values to smooth.</span>
 <span class="sd">        idx_fit : numpy.ndarray of int</span>
 <span class="sd">            Indices of `fit` points.</span>
@@ -600,10 +639,10 @@
 
 <span class="sd">        """</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">idx_fit</span><span class="p">]</span>
-                         <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+                         <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">observed</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
 
     <span class="k">def</span> <span class="nf">get_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="sd">"""Get point coordinates.</span>
+        <span class="sd">"""Get point IDs.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -613,7 +652,7 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        2D numpy.ndarray of float32</span>
-<span class="sd">            Point coordinates.</span>
+<span class="sd">            Point IDs.</span>
 
 <span class="sd">        """</span>
         <span class="n">points</span> <span class="o">=</span> <span class="p">[</span><span class="n">dim</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dimensions</span><span class="p">]</span>
@@ -640,7 +679,7 @@
 
 <span class="nd">@njit</span><span class="p">(</span><span class="n">parallel</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">smooth</span><span class="p">(</span><span class="n">dim_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TypedDimension</span><span class="p">],</span> <span class="n">points</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-           <span class="n">cols</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> \
+           <span class="n">cols_obs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_fit</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">idx_pred</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> \
         <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">"""Smooth data across dimensions with weighted averages.</span>
 
@@ -649,8 +688,8 @@
 <span class="sd">    dim_list : list of TypedDimension</span>
 <span class="sd">        Smoothing dimensions.</span>
 <span class="sd">    points : 2D numpy.ndarray of float</span>
-<span class="sd">        Point coordinates.</span>
-<span class="sd">    cols : 2D numpy.ndarray of float</span>
+<span class="sd">        Point IDs.</span>
+<span class="sd">    cols_obs : 2D numpy.ndarray of float</span>
 <span class="sd">        Values to smooth.</span>
 <span class="sd">    idx_fit : 1D numpy.ndarray of int</span>
 <span class="sd">        Indices of points to include in weighted averages.</span>
@@ -691,7 +730,7 @@
 
     <span class="c1"># Normalize across rows and compute smoothed values</span>
     <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">weights</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_fit</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">weights</span><span class="o">/</span><span class="n">scale</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">weights</span><span class="o">/</span><span class="n">scale</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">cols_obs</span><span class="p">)</span>
 </pre></div>
         </article>
       </div>

@@ -510,11 +510,11 @@
 <span class="sd">        """</span>
         <span class="c1"># Once set, `name` cannot be changed</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'name'</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`name` cannot be changed.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`name` cannot be changed'</span><span class="p">)</span>
 
         <span class="c1"># Check type</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`name` is not a str.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`name` is not a str'</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
 
@@ -552,7 +552,7 @@
 <span class="sd">        """</span>
         <span class="c1"># Once set, `coordinates` cannot be changed</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'coordinates'</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`coordinates` cannot be changed.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`coordinates` cannot be changed'</span><span class="p">)</span>
 
         <span class="c1"># Set default</span>
         <span class="k">if</span> <span class="n">coordinates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -561,13 +561,13 @@
         <span class="c1"># Check types</span>
         <span class="n">coordinates</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">coordinates</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">coordinates</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`coordinates` contains invalid types.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`coordinates` contains invalid types'</span><span class="p">)</span>
 
         <span class="c1"># Check values</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coordinates</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`coordinates` is an empty list.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`coordinates` is an empty list'</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">coordinates</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">coordinates</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`coordinates` contains duplicates.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`coordinates` contains duplicates'</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_coordinates</span> <span class="o">=</span> <span class="n">coordinates</span>
 
@@ -604,15 +604,15 @@
 <span class="sd">        """</span>
         <span class="c1"># Once set, `kernel` cannot be changed</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'kernel'</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`kernel` cannot be changed.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`kernel` cannot be changed'</span><span class="p">)</span>
 
         <span class="c1"># Check type</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`kernel` is not a str.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`kernel` is not a str'</span><span class="p">)</span>
 
         <span class="c1"># Check value</span>
         <span class="k">if</span> <span class="n">kernel</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'exponential'</span><span class="p">,</span> <span class="s1">'tricubic'</span><span class="p">,</span> <span class="s1">'depth'</span><span class="p">,</span> <span class="s1">'identity'</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`kernel` is not a valid kernel function.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`kernel` is not a valid kernel function'</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">=</span> <span class="n">kernel</span>
 
@@ -649,7 +649,7 @@
 <span class="sd">        """</span>
         <span class="c1"># Once set, `distance` cannot be changed</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'distance'</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`distance` cannot be changed.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`distance` cannot be changed'</span><span class="p">)</span>
 
         <span class="c1"># Set default</span>
         <span class="k">if</span> <span class="n">distance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -660,11 +660,11 @@
 
         <span class="c1"># Check type</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance` is not a str.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance` is not a str'</span><span class="p">)</span>
 
         <span class="c1"># Check value</span>
         <span class="k">if</span> <span class="n">distance</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'euclidean'</span><span class="p">,</span> <span class="s1">'tree'</span><span class="p">,</span> <span class="s1">'dictionary'</span><span class="p">):</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s1">'`distance` is not a valid distance function.'</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">'`distance` is not a valid distance function'</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_distance</span> <span class="o">=</span> <span class="n">distance</span>
@@ -704,16 +704,16 @@
 <span class="sd">        """</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'exponential'</span><span class="p">,</span> <span class="s1">'depth'</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">radius</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"`radius` is required for '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span><span class="si">}</span><span class="s2">' kernel."</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"`radius` is required for '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span><span class="si">}</span><span class="s2">' kernel"</span>
                 <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'exponential'</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">is_number</span><span class="p">(</span><span class="n">radius</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`radius` is not an int or float.'</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`radius` is not an int or float'</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">radius</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`radius` is not positive.'</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`radius` is not positive'</span><span class="p">)</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'depth'</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">is_float</span><span class="p">(</span><span class="n">radius</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`radius` is not a float.'</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`radius` is not a float'</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">radius</span> <span class="o">&lt;=</span> <span class="mf">0.5</span> <span class="ow">or</span> <span class="n">radius</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`radius` is not in (0.5, 1)'</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_radius</span> <span class="o">=</span> <span class="n">radius</span>
@@ -751,12 +751,12 @@
 <span class="sd">        """</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">==</span> <span class="s1">'tricubic'</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">exponent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="s2">"`exponent` is required for 'tricubic' kernel."</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s2">"`exponent` is required for 'tricubic' kernel"</span>
                 <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">is_number</span><span class="p">(</span><span class="n">exponent</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`exponent` is not an int or float.'</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`exponent` is not an int or float'</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">exponent</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`exponent` is not positive.'</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`exponent` is not positive'</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_exponent</span> <span class="o">=</span> <span class="n">exponent</span>
 
     <span class="nd">@property</span>
@@ -794,9 +794,9 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_version</span> <span class="o">=</span> <span class="s1">'codem'</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">version</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`version` is not a str.'</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`version` is not a str'</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">version</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'codem'</span><span class="p">,</span> <span class="s1">'stgpr'</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"`version` not in {'codem', 'stgpr'}."</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"`version` not in {'codem', 'stgpr'}"</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_version</span> <span class="o">=</span> <span class="n">version</span>
 
     <span class="nd">@property</span>
@@ -830,13 +830,13 @@
 <span class="sd">        """</span>
         <span class="c1"># Once set, `distance_dict` cannot be changed</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">'distance_dict'</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`distance_dict` cannot be changed.'</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">'`distance_dict` cannot be changed'</span><span class="p">)</span>
 
         <span class="c1"># Check values</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_distance</span> <span class="o">==</span> <span class="s1">'dictionary'</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">distance_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="s2">"`distance` is 'dictionary', "</span>
-                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'but `distance_dict` is None.'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'but `distance_dict` is None'</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
             <span class="n">check_dict</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_distance_dict</span> <span class="o">=</span> <span class="n">distance_dict</span>
@@ -968,21 +968,21 @@
 <span class="sd">    """</span>
     <span class="c1"># Check types</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance_dict` is not a dict.'</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance_dict` is not a dict'</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance_dict` keys not all tuple.'</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance_dict` keys not all tuple'</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_number</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">distance_dict</span> <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">key</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance_dict` key entries not all int or float.'</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance_dict` key entries not all int or float'</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_number</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance_dict` values not all int or float.'</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">'`distance_dict` values not all int or float'</span><span class="p">)</span>
 
     <span class="c1"># Check values</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">distance_dict</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`distance_dict` is an empty dict.'</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`distance_dict` is an empty dict'</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`distance_dict` keys are not all length 2.'</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`distance_dict` keys are not all length 2'</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">value</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">distance_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`distance_dict` contains negative values.'</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'`distance_dict` contains negative values'</span><span class="p">)</span>
 </pre></div>
         </article>
       </div>
