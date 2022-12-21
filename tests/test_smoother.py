@@ -5,7 +5,7 @@ import numpy as np
 from pandas import DataFrame
 
 from weave.dimension import Dimension
-from weave.smoother import Smoother
+from weave.smoother import Smoother, smooth
 
 # Lists of wrong types to test exceptions
 value_list = [1, 1.0, 'dummy', True, None, [], (), {}]
@@ -45,7 +45,8 @@ data = DataFrame({
     'fit': [True, False, False, True, True],
     'predict': [False, True, True, False, False],
     'count': [1.0, 2.0, 3.0, 4.0, 5.0],
-    'residual': [0.1, 0.2, 0.3, 0.4, 0.5],
+    'fraction': [0.1, 0.2, 0.3, 0.4, 0.5],
+    'residual': [0.2, 0.4, 0.6, 0.8, 1.0],
     'name': ['a', 'b', 'c', 'd', 'e']
 })
 
@@ -291,3 +292,88 @@ def test_data_infs(value):
         data2 = data.copy()
         data2['residual'] = 5*[value]
         smoother(data2, 'residual')
+
+
+# Test smoother output
+def test_idx_fit_len():
+    """`get_indices` returns array of correct length."""
+    idx_fit = smoother.get_indices(data, 'fit')
+    assert len(idx_fit) == data['fit'].sum()
+
+
+def test_idx_predict_len():
+    """`get_indices` returns array of correct length."""
+    idx_pred = smoother.get_indices(data, 'predict')
+    assert len(idx_pred) == data['predict'].sum()
+
+
+@pytest.mark.parametrize('observed', [['residual'], ['count', 'fraction']])
+@pytest.mark.parametrize('fit', ['fit', 'predict'])
+def test_obs_shape(observed, fit):
+    """`get_observed` returns array of correct shape."""
+    idx_fit = smoother.get_indices(data, fit)
+    cols_obs = smoother.get_observed(data, observed, idx_fit)
+    assert cols_obs.shape == (len(idx_fit), len(observed))
+
+
+def test_points_shape():
+    """`get_points` returns array of correct shape."""
+    points = smoother.get_points(data)
+    assert points.shape == (len(data), len(smoother.dimensions))
+
+
+def test_typed_dimensions_len():
+    """`get_typed_dimensions` returns dictionaries of correct length."""
+    dim_list = smoother.get_typed_dimensions(data)
+    assert len(dim_list) == len(smoother.dimensions)
+    for dimension in dim_list:
+        n_ids = len(data[dimension.name].unique())
+        assert len(dimension.weight_dict) == n_ids**2
+
+
+@pytest.mark.parametrize('observed', [['residual'], ['count', 'fraction']])
+@pytest.mark.parametrize('predict', [None, 'fit', 'predict'])
+def test_smooth_shape(observed, predict):
+    """`smooth` returns array of correct shape."""
+    idx_fit = smoother.get_indices(data, None)
+    idx_pred = smoother.get_indices(data, predict)
+    cols_obs = smoother.get_observed(data, observed, idx_fit)
+    points = smoother.get_points(data)
+    dim_list = smoother.get_typed_dimensions(data)
+    cols_smooth = smooth(dim_list, points, cols_obs, idx_fit, idx_pred)
+    if predict is None:
+        assert cols_smooth.shape == (len(data), len(observed))
+    else:
+        assert cols_smooth.shape == (data[predict].sum(), len(observed))
+
+
+@pytest.mark.parametrize('observed', [['residual'], ['count', 'fraction']])
+@pytest.mark.parametrize('predict', [None, 'fit', 'predict'])
+def test_smoother_shape(observed, predict):
+    """Return data frame with correct shape."""
+    result = smoother(data, observed, predict=predict)
+    if predict is None:
+        assert len(result) == len(data)
+    else:
+        assert len(result) == data[predict].sum()
+    assert len(result.columns) == len(data.columns) + len(observed)
+
+
+@pytest.mark.parametrize('smoothed', [None, 'dummy'])
+def test_smoother_columns(smoothed):
+    """Return data frame with correct column names."""
+    result = smoother(data, 'residual', smoothed)
+    if smoothed is None:
+        assert 'residual_smooth' in result.columns
+    else:
+        assert smoothed in result.columns
+
+
+def test_result():
+    """Check output values."""
+    result = smoother(data, 'residual', 'dummy')
+    vals = np.array([0.25019485, 0.41681382, 0.5839969, 0.79772836, 1.])
+    assert np.allclose(vals, result['dummy'].values)
+    result = smoother(data, 'residual', 'dummy', 'fit')
+    vals = np.array([0.20659341, 0.20659341, 0.26, 0.7934066, 1.])
+    assert np.allclose(vals, result['dummy'].values)
