@@ -2,7 +2,7 @@ API Reference
 =============
 
 This reference manual describes the modules, objects, and functions included in
-the `weave` package. For an overview of `weave` and instructions on how to get
+the WeAve package. For an overview of WeAve and instructions on how to get
 started, see the :doc:`User Guide <../user_guide/index>`.
 
 .. toctree::
