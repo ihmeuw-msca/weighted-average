@@ -87,27 +87,15 @@ class Dimension:
 
         Kernel radius if `kernel` is 'exponential' or 'depth'.
 
-        See Also
-        --------
-        weave.kernels.exponential, weave.kernels.depth
-
     exponent : positive number, optional
         Kernel exponent.
 
         Kernel exponent if `kernel` is 'tricubic'.
 
-        See Also
-        --------
-        weave.kernels.tricubic
-
     version : {'codem', 'stgpr'}, optional
         Kernel version.
 
         Kernel version if `kernel` is 'depth'.
-
-        See Also
-        --------
-        weave.kernels.depth
 
     distance_dict : dict of {(number, number): number}, optional
         Dictionary of distances between points.
