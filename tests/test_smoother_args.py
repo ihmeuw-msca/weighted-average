@@ -66,7 +66,7 @@ def test_dimensions_values():
         Smoother([])
 
 
-def test_duplicate_names():
+def test_duplicate_dimension_names():
     """Raise ValueError if duplicate names in `dimensions`."""
     with pytest.raises(ValueError):
         dim1 = Dimension('dummy', 'columns1')
@@ -76,12 +76,19 @@ def test_duplicate_names():
 
 @pytest.mark.parametrize('coords1', ['dummy1', ['dummy1', 'dummy2']])
 @pytest.mark.parametrize('coords2', ['dummy1', ['dummy1', 'dummy2']])
-def test_duplicate_columns(coords1, coords2):
+def test_duplicate_dimension_coords(coords1, coords2):
     """Raise ValueError if duplicate coordinates in `dimensions`."""
     with pytest.raises(ValueError):
         dim1 = Dimension('dummy1', coords1)
         dim2 = Dimension('dummy2', coords2)
         Smoother([dim1, dim2])
+
+
+def test_dimension_immutable():
+    """Raise AttributeError if attempt to reset `dimensions`."""
+    with pytest.raises(AttributeError):
+        dim = Dimension('dummy')
+        smoother.dimensions = dim
 
 
 # Test input types
@@ -92,12 +99,20 @@ def test_data_type(bad_data):
         smoother(bad_data, 'residual')
 
 
-@pytest.mark.parametrize('columns', not_columns)
-def test_columns_type(columns):
-    """Raise TypeError if `columns` is not a str or list of str."""
-    if columns != []:
+@pytest.mark.parametrize('observed', not_columns)
+def test_observed_type(observed):
+    """Raise TypeError if `observed` is not a str or list of str."""
+    if observed != []:
         with pytest.raises(TypeError):
-            smoother(data, columns)
+            smoother(data, observed)
+
+
+@pytest.mark.parametrize('smoothed', not_columns)
+def test_smoothed_type(smoothed):
+    """Raise TypeError if `smoothed` is not a str or list of str."""
+    if smoothed != []:
+        with pytest.raises(TypeError):
+            smoother(data, smoothed=smoothed)
 
 
 @pytest.mark.parametrize('fit', not_str)
@@ -105,7 +120,7 @@ def test_fit_type(fit):
     """Raise TypeError if `fit` is not a str."""
     if fit is not None:
         with pytest.raises(TypeError):
-            smoother(data, 'residual', fit)
+            smoother(data, 'residual', fit=fit)
 
 
 @pytest.mark.parametrize('predict', not_str)
@@ -117,16 +132,46 @@ def test_predict_type(predict):
 
 
 # Test input values
-def test_columns_values():
-    """Raise ValueError if `columns` is an empty list."""
+def test_observed_values():
+    """Raise ValueError if `observed` is an empty list."""
     with pytest.raises(ValueError):
         smoother(data, [])
 
 
-def test_columns_duplicates():
-    """Raise ValueError if duplicate names in `columns`."""
+def test_observed_duplicates():
+    """Raise ValueError if duplicate columns in `observed`."""
     with pytest.raises(ValueError):
         smoother(data, ['residual', 'residual'])
+
+
+def test_smoothed_values():
+    """Raise ValueError if `smoothed` is an empty list."""
+    with pytest.raises(ValueError):
+        smoother(data, 'residual', [])
+
+
+def test_smoothed_duplicates():
+    """Raise ValueError if duplicate columns in `smoothed`."""
+    with pytest.raises(ValueError):
+        smoother(data, ['count', 'fraction'], ['count_smooth', 'count_smooth'])
+
+
+def test_observed_smoothed_same_length():
+    """Raise ValueError if `observed`, `smoothed` have diff lengths."""
+    with pytest.raises(ValueError):
+        smoother(data, 'count', ['count_smooth', 'fraction_smooth'])
+
+
+def test_observed_smoothed_overlap():
+    """Raise ValueError if `observed`, `smoothed` have duplicates."""
+    with pytest.raises(ValueError):
+        smoother(data, ['count', 'residual'], ['fraction', 'residual'])
+
+
+def test_smoothed_warning():
+    """Trigger UserWarning if `smoothed` already in `data`."""
+    with pytest.warns(UserWarning):
+        smoother(data, 'count', 'residual')
 
 
 # Test data keys
@@ -157,7 +202,7 @@ def test_columns_in_data(columns):
 def test_fit_in_data():
     """Raise KeyError if `fit` not in `data`."""
     with pytest.raises(KeyError):
-        smoother(data, 'residual', 'dummy')
+        smoother(data, 'residual', fit='dummy')
 
 
 def test_predict_in_data():
@@ -204,7 +249,7 @@ def test_data_columns_type(columns):
 def test_data_fit_type(fit):
     """Raise TypeError if `fit` column is not bool."""
     with pytest.raises(TypeError):
-        smoother(data, 'residual', fit)
+        smoother(data, 'residual', fit=fit)
 
 
 @pytest.mark.parametrize('predict', ['age_id', 'count', 'name'])
