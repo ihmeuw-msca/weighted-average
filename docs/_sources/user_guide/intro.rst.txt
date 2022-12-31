@@ -9,6 +9,59 @@ Foreman, K.J., Lozano, R., Lopez, A.D., et al. "`Modeling causes of death: an
 integrated approach using CODEm <https://pophealthmetrics.biomedcentral.com/articles/10.1186/1478-7954-10-1>`_",
 Popul Health Metrics, vol. 10, no. 1, pp. 1-23, 2012.
 
+Weighted Averages with WeAve
+----------------------------
+
+The WeAve package generalizes the spatial-temporal models in CODEm to smooth
+data across mutliple dimensions using weighted averages. Users can specify
+dimensions using the :doc:`Dimension <../api_reference/weave.dimension>` class,
+where :doc:`distance <../api_reference/weave.distance>` and
+:doc:`kernel <../api_reference/weave.kernels>` functions determine how
+weights are calculated.
+
+Distance functions :math:`d(x_i, x_j)` calculate the distance between points
+:math:`x_i` and :math:`x_j`, and kernel functions
+:math:`k(d_{i, j} \, ; p_1, p_2, \dots)` calculate smoothing weights given
+distance :math:`d_{i, j}` and a set of parameters :math:`p_1, p_2, \dots`. In
+WeAve, you can choose from three distance functions and four kernel functions.
+
+Weighted averages :math:`\hat{y}` of dependent variables :math:`y` are
+calculated using the :doc:`Smoother <../api_reference/weave.smoother>` class
+for observations :math:`i` in data set :math:`\mathcal{D}` with
+
+.. math:: \hat{y}_i = \sum_{j \in \mathcal{D}} w_{i, j} \, y_j,
+
+where weights are first calculated for dimensions :math:`m \in \mathcal{M}`,
+then multiplied,
+
+.. math:: \tilde{w}_{i, j} = \prod_{m \in \mathcal{M}} w_{i, j}^m,
+
+and finally normalized,
+
+.. math:: w_{i, j} = \frac{\tilde{w}_{i, j}}{\sum_{k \in \mathcal{D}}
+          \tilde{w}_{i, k}}.
+
+For instructions on how to get started, see the :doc:`Quickstart <quickstart>`.
+For descriptions of the modules, objects, and functions included in WeAve, see
+the :doc:`API Reference <../api_reference/index>`.
+
+Depth Kernel Normalization
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Note that when the depth kernel is used, the preceding dimension weights are
+normalized in groups based on the values of the depth kernel weights. This
+corresponds to the CODEm framework where the product of age and time weights
+are normalized in groups based on the location hierarchy before being
+multiplied by the location weights. For example, if :math:`m_n` is a dimension
+that uses the depth kernel, we let :math:`\mathcal{D}_{i, j}` be the set of all
+indices :math:`k \in \mathcal{D}` such that
+:math:`w_{i, k}^{m_n} = w_{i, j}^{m_n}`. Then the intermediate combined weights
+are given by
+
+.. math:: \tilde{w}_{i, j} = w_{i, j}^{m_n} \,
+          \frac{\prod_{\ell < n} w_{i, j}^{m_\ell}}
+          {\sum_{k \in \mathcal{D}_{i, j}} \prod_{\ell < n}
+          w_{i, k}^{m_\ell}}.
 
 Cause of Death Ensemble Model
 -----------------------------
@@ -74,57 +127,3 @@ Finally, weights are normalized so that all weights for each observation
 
 .. math:: w_{i, j} = \frac{\tilde{w}_{i, j}}{\sum_{k \in \mathcal{D}}
           \tilde{w}_{i, k}}.
-
-Weighted Averages with WeAve
-------------------------------
-
-The WeAve package generalizes the spatial-temporal models in CODEm to smooth
-data across mutliple dimensions using weighted averages. Users can specify
-dimensions using the :doc:`Dimension <../api_reference/weave.dimension>` class,
-where :doc:`distance <../api_reference/weave.distance>` and
-:doc:`kernel <../api_reference/weave.kernels>` functions determine how
-weights are calculated.
-
-Distance functions :math:`d(x_i, x_j)` calculate the distance between points
-:math:`x_i` and :math:`x_j`, and kernel functions
-:math:`k(d_{i, j} \, ; p_1, p_2, \dots)` calculate smoothing weights given
-distance :math:`d_{i, j}` and a set of parameters :math:`p_1, p_2, \dots`. In
-WeAve, you can choose from three distance functions and four kernel functions.
-
-Weighted averages :math:`\hat{y}` of dependent variables :math:`y` are
-calculated using the :doc:`Smoother <../api_reference/weave.smoother>` class
-for observations :math:`i` in data set :math:`\mathcal{D}` with
-
-.. math:: \hat{y}_i = \sum_{j \in \mathcal{D}} w_{i, j} \, y_j,
-
-where weights are first calculated for dimensions :math:`m \in \mathcal{M}`,
-then multiplied,
-
-.. math:: \tilde{w}_{i, j} = \prod_{m \in \mathcal{M}} w_{i, j}^m,
-
-and finally normalized,
-
-.. math:: w_{i, j} = \frac{\tilde{w}_{i, j}}{\sum_{k \in \mathcal{D}}
-          \tilde{w}_{i, k}}.
-
-For instructions on how to get started, see the :doc:`Quickstart <quickstart>`.
-For descriptions of the modules, objects, and functions included in WeAve, see
-the :doc:`API Reference <../api_reference/index>`.
-
-Depth Kernel Normalization
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Note that when the depth kernel is used, the preceding dimension weights are
-normalized in groups based on the values of the depth kernel weights. This
-corresponds to the CODEm framework where the product of age and time weights
-are normalized in groups based on the location hierarchy before being
-multiplied by the location weights. For example, if :math:`m_n` is a dimension
-that uses the depth kernel, we let :math:`\mathcal{D}_{i, j}` be the set of all
-indices :math:`k \in \mathcal{D}` such that
-:math:`w_{i, k}^{m_n} = w_{i, j}^{m_n}`. Then the intermediate combined weights
-are given by
-
-.. math:: \tilde{w}_{i, j} = w_{i, j}^{m_n} \,
-          \frac{\prod_{\ell < n} w_{i, j}^{m_\ell}}
-          {\sum_{k \in \mathcal{D}_{i, j}} \prod_{\ell < n}
-          w_{i, k}^{m_\ell}}.
