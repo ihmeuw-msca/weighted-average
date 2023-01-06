@@ -1,6 +1,9 @@
 <!--- README template from https://github.com/scottydocs/README-template.md -->
 
-![ci](https://github.com/ihmeuw-msca/weighted-average/actions/workflows/ci.yml/badge.svg)
+[![PyPI](https://img.shields.io/pypi/v/weighted-average)](https://pypi.org/project/weighted-average/)
+![Python](https://img.shields.io/badge/python-3.8,_3.9-blue.svg)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/ihmeuw-msca/weighted-average/ci.yml)
+[![GitHub](https://img.shields.io/github/license/ihmeuw-msca/weighted-average)](./LICENSE)
 
 # Weighted-Average (WeAve)
 
