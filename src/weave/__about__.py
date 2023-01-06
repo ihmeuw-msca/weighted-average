@@ -3,7 +3,7 @@ __all__ = [
     '__author__', '__email__', '__license__', '__copyright__',
 ]
 
-__title__ = 'WeAve'
+__title__ = 'weighted-average'
 __summary__ = 'Smooth data across multiple dimensions using weighted averages'
 __url__ = 'https://github.com/ihmeuw-msca/weighted-average'
 
