@@ -8,4 +8,4 @@ To install WeAve, follow these steps:
 
 .. code::
 
-   pip install git+https://github.com/ihmeuw-msca/weighted-average.git
+   pip install weighted-average
