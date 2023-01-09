@@ -514,5 +514,5 @@ def smooth(dim_list: List[TypedDimension], points: np.ndarray,
         weights *= dim_weights
 
     # Normalize across rows and compute smoothed values
-    scale = np.outer(weights.sum(axis=1), np.ones(n_fit, dtype=np.float32))
+    scale = weights.sum(axis=1).reshape((n_fit, 1))
     return (weights/scale).dot(cols_obs)
