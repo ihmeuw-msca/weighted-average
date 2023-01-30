@@ -270,20 +270,21 @@ and location.</p>
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="weave.smoother.Smoother.__call__">
-<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smoothed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.__call__" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stdev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smoothed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/weave/smoother.html#Smoother.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#weave.smoother.Smoother.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Smooth data across dimensions with weighted averages.</p>
-<p>For each column in <cite>observed</cite> and each point in <cite>predict</cite>,
-calculate smoothed values using a weighted average of points in
-<cite>fit</cite>, where weights are calculated based on proximity across
-<cite>dimensions</cite>. Return a data frame of points in <cite>predict</cite> with
-columns in <cite>smoothed</cite> containing smoothed values.</p>
+<p>For each point in <cite>predict</cite>, smooth values in <cite>observed</cite> using
+a weighted average of points in <cite>fit</cite>, where weights are
+calculated based on proximity across <cite>dimensions</cite>. Return a
+data frame of points in <cite>predict</cite> with column <cite>smoothed</cite>
+containing smoothed values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<em>pandas.DataFrame</em>) – Input data structure.</p></li>
-<li><p><strong>observed</strong> (<em>str</em><em> or </em><em>list of str</em>) – Column names of values to smooth.</p></li>
-<li><p><strong>smoothed</strong> (<em>str</em><em> or </em><em>list of str</em><em>, </em><em>optional</em>) – Column names of smoothed values. If None, append ‘_smooth’
-to all columns in <cite>observed</cite>.</p></li>
+<li><p><strong>observed</strong> (<em>str</em>) – Column name of values to smooth.</p></li>
+<li><p><strong>stdev</strong> (<em>str</em><em>, </em><em>optional</em>) – Column name of standard deviations.</p></li>
+<li><p><strong>smoothed</strong> (<em>str</em><em>, </em><em>optional</em>) – Column name of smoothed values. If None, append ‘_smooth’
+to  <cite>observed</cite>.</p></li>
 <li><p><strong>fit</strong> (<em>str</em><em>, </em><em>optional</em>) – Column name indicating points to include in weighted
 averages. If None, all points in <cite>data</cite> are used.</p></li>
 <li><p><strong>predict</strong> (<em>str</em><em>, </em><em>optional</em>) – Column name indicating where to predict smoothed values.
@@ -291,7 +292,7 @@ If None, predictions are made for all points in <cite>data</cite>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Points in <cite>predict</cite> with smoothed values.</p>
+<dd class="field-even"><p>Points in <cite>predict</cite> with smoothed values <cite>smoothed</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>pandas.DataFrame</p>
@@ -300,7 +301,7 @@ If None, predictions are made for all points in <cite>data</cite>.</p></li>
 <p class="rubric">Examples</p>
 <p>Using the smoother created in the previous example, smooth data
 across age, year, and location. Create smoothed version of
-multiple columns for all points using all points.</p>
+column <cite>count</cite> for all points using all points.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">({</span>
 <span class="go">        'age_id': [1, 2, 3, 4, 4],</span>
@@ -310,37 +311,36 @@ multiple columns for all points using all points.</p>
 <span class="go">        'super_region': [1, 1, 1, 1, 2],</span>
 <span class="go">        'region': [3, 3, 3, 4, 8],</span>
 <span class="go">        'country': [5, 5, 6, 7, 9],</span>
-<span class="go">        'count': [1.0, 2.0, 3.0, 4.0, 5.0],</span>
-<span class="go">        'fraction': [0.1, 0.2, 0.3, 0.4, 0.5]</span>
+<span class="go">        'count': [1.0, 2.0, 3.0, 4.0, 5.0]</span>
 <span class="go">    })</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="s1">'count'</span><span class="p">,</span> <span class="s1">'fraction'</span><span class="p">])</span>
-<span class="go">   age_id  ...  count  fraction  count_smooth  fraction_smooth</span>
-<span class="go">0      1  ...    1.0       0.1      1.250974         0.125097</span>
-<span class="go">1      2  ...    2.0       0.2      2.084069         0.208407</span>
-<span class="go">2      3  ...    3.0       0.3      2.919984         0.291998</span>
-<span class="go">3      4  ...    4.0       0.4      3.988642         0.398864</span>
-<span class="go">4      4  ...    5.0       0.5      5.000000         0.500000</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'count'</span><span class="p">)</span>
+<span class="go">   age_id  ...  count  count_smooth</span>
+<span class="go">0       1  ...    1.0      1.250974</span>
+<span class="go">1       2  ...    2.0      2.084069</span>
+<span class="go">2       3  ...    3.0      2.919984</span>
+<span class="go">3       4  ...    4.0      3.988642</span>
+<span class="go">4       4  ...    5.0      5.000000</span>
 </pre></div>
 </div>
 <p>Create smoothed version of one column for all points using a
 subset of points.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'count'</span><span class="p">,</span> <span class="n">fit</span><span class="o">=</span><span class="s1">'train'</span><span class="p">)</span>
-<span class="go">   age_id  ...  count  fraction train  count_smooth</span>
-<span class="go">0      1  ...    1.0       0.1   True      1.032967</span>
-<span class="go">1      2  ...    2.0       0.2  False      1.032967</span>
-<span class="go">2      3  ...    3.0       0.3  False      1.300000</span>
-<span class="go">3      4  ...    4.0       0.4   True      3.967033</span>
-<span class="go">4      4  ...    5.0       0.5   True      5.000000</span>
+<span class="go">   age_id  ...  count  train  count_smooth</span>
+<span class="go">0       1  ...    1.0   True      1.032967</span>
+<span class="go">1       2  ...    2.0  False      1.032967</span>
+<span class="go">2       3  ...    3.0  False      1.300000</span>
+<span class="go">3       4  ...    4.0   True      3.967033</span>
+<span class="go">4       4  ...    5.0   True      5.000000</span>
 </pre></div>
 </div>
 <p>Create a smoothed version of one column for a subset of points
 using all points.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="p">[</span><span class="s1">'test'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'fraction'</span><span class="p">,</span> <span class="n">predict</span><span class="o">=</span><span class="s1">'test'</span><span class="p">)</span>
-<span class="go">   age_id  ...  count  fraction    test  fraction_smooth</span>
-<span class="go">0      2  ...    2.0       0.2     True         0.208407</span>
-<span class="go">1      3  ...    3.0       0.3     True         0.291998</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'count'</span><span class="p">,</span> <span class="n">predict</span><span class="o">=</span><span class="s1">'test'</span><span class="p">)</span>
+<span class="go">   age_id  ...  count  test  count_smooth</span>
+<span class="go">0       2  ...    2.0  True      2.084069</span>
+<span class="go">1       3  ...    3.0  True      2.919984</span>
 </pre></div>
 </div>
 </dd></dl>

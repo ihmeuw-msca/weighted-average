@@ -91,7 +91,7 @@ distance.
 
 .. code-block::
 
-    dim = Dimension(
+    dimension = Dimension(
         name='x_id',
         coordinates='x_val',
         kernel='exponential',
@@ -107,7 +107,7 @@ you can also input multiple dimensions in a list.
 
 .. code-block::
 
-    smoother = Smoother(dim)
+    smoother = Smoother(dimension)
 
 To smooth our noisy data, we simply provide our data frame and the name of the
 column or columns we would like to smooth (parameter `observed`). The output is
@@ -118,7 +118,7 @@ in `observed`. The following code smooths our data and plots the results.
 
 .. code-block::
 
-    result = smoother(data, 'y_obs', 'y_smooth')
+    result = smoother(data, 'y_obs', smoothed='y_smooth')
 
     plt.plot(x_val, y_true, label='Truth')
     plt.plot(x_val, y_obs, '.', label='Observed')
@@ -146,7 +146,7 @@ curve and towards the data average.
     radii = np.arange(0.01, 1., 0.01)
     for radius in radii:
         smoother.dimensions[0].radius = radius
-        result = smoother(data, 'y_obs', 'y_smooth')
+        result = smoother(data, 'y_obs', smoothed='y_smooth')
         result['radius'] = radius
         results.append(result)
     results = pd.concat(results)
@@ -209,12 +209,12 @@ supplied, both default to the entire input data frame.
 
     def get_error(radius):
         smoother.dimensions[0].radius = radius
-        result = smoother(data, 'y_obs', 'y_smooth', 'train', 'test')
+        result = smoother(data, 'y_obs', smoothed='y_smooth', fit='train', predict='test')
         return np.mean(np.abs(result['y_true'] - result['y_smooth']))
 
     def get_smoothness(radius):
         smoother.dimensions[0].radius = radius
-        result = smoother(data, 'y_obs', 'y_smooth', 'train')
+        result = smoother(data, 'y_obs', smoothed='y_smooth', fit='train')
         return np.mean(np.abs(np.diff(result['y_smooth'])))
 
 Grid Search

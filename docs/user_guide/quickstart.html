@@ -288,7 +288,7 @@ those corresponding to <cite>name</cite>.</p>
 tutorial, we will use the exponential kernel which requires a kernel radius.
 The following code creates our smoothing dimension with default Euclidean
 distance.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dim</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dimension</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s1">'x_id'</span><span class="p">,</span>
     <span class="n">coordinates</span><span class="o">=</span><span class="s1">'x_val'</span><span class="p">,</span>
     <span class="n">kernel</span><span class="o">=</span><span class="s1">'exponential'</span><span class="p">,</span>
@@ -302,7 +302,7 @@ distance.</p>
 <p>Our next step is to create an instance of the <cite>Smoother</cite> class using the
 dimension object defined above. While this tutorial only uses one dimension,
 you can also input multiple dimensions in a list.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">smoother</span> <span class="o">=</span> <span class="n">Smoother</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">smoother</span> <span class="o">=</span> <span class="n">Smoother</span><span class="p">(</span><span class="n">dimension</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>To smooth our noisy data, we simply provide our data frame and the name of the
@@ -311,7 +311,7 @@ a copy of the input data frame with appended column(s) containing the smoothed
 data. You can specify the column names of the smoothed values with the
 parameter <cite>smoothed</cite>, otherwise ‘_smooth’ will be appended to the column names
 in <cite>observed</cite>. The following code smooths our data and plots the results.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="s1">'y_smooth'</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="n">smoothed</span><span class="o">=</span><span class="s1">'y_smooth'</span><span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Truth'</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_obs</span><span class="p">,</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Observed'</span><span class="p">)</span>
@@ -336,7 +336,7 @@ curve and towards the data average.</p>
 <span class="n">radii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">radius</span> <span class="ow">in</span> <span class="n">radii</span><span class="p">:</span>
     <span class="n">smoother</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="s1">'y_smooth'</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="n">smoothed</span><span class="o">=</span><span class="s1">'y_smooth'</span><span class="p">)</span>
     <span class="n">result</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">]</span> <span class="o">=</span> <span class="n">radius</span>
     <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
@@ -388,12 +388,12 @@ the weighted averages and which points to smooth, respectively. If not
 supplied, both default to the entire input data frame.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_error</span><span class="p">(</span><span class="n">radius</span><span class="p">):</span>
     <span class="n">smoother</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="s1">'y_smooth'</span><span class="p">,</span> <span class="s1">'train'</span><span class="p">,</span> <span class="s1">'test'</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="n">smoothed</span><span class="o">=</span><span class="s1">'y_smooth'</span><span class="p">,</span> <span class="n">fit</span><span class="o">=</span><span class="s1">'train'</span><span class="p">,</span> <span class="n">predict</span><span class="o">=</span><span class="s1">'test'</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">'y_true'</span><span class="p">]</span> <span class="o">-</span> <span class="n">result</span><span class="p">[</span><span class="s1">'y_smooth'</span><span class="p">]))</span>
 
 <span class="k">def</span> <span class="nf">get_smoothness</span><span class="p">(</span><span class="n">radius</span><span class="p">):</span>
     <span class="n">smoother</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="s1">'y_smooth'</span><span class="p">,</span> <span class="s1">'train'</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="n">smoothed</span><span class="o">=</span><span class="s1">'y_smooth'</span><span class="p">,</span> <span class="n">fit</span><span class="o">=</span><span class="s1">'train'</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">'y_smooth'</span><span class="p">])))</span>
 </pre></div>
 </div>
