@@ -249,6 +249,8 @@ class Smoother:
         ------
         TypeError
             If `smoother` arguments contain invalid types.
+        ValueError
+            If `observed`, `stdev`, or `smoothed` overlap.
 
         """
         # Check types
@@ -264,6 +266,15 @@ class Smoother:
             raise TypeError('`fit` is not a str')
         if predict is not None and not isinstance(predict, str):
             raise TypeError('`predict` is not a str')
+
+        # Check values
+        if stdev is not None:
+            if observed == stdev:
+                raise ValueError('`observed` == `stdev`')
+            if smoothed is not None and stdev == smoothed:
+                raise ValueError('`stdev` == `smoothed`')
+        if smoothed is not None and observed == smoothed:
+            raise ValueError('`observed` == `smoothed`')
 
     def check_data(self, data: DataFrame, observed: str, stdev: Optional[str],
                    smoothed: Optional[str], fit: Optional[str],
