@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added optional argument `stdev` to `Smoother.__call__`
 
+### Removed
+
+- Removed option to smooth multiple columns at once (i.e., `Smoother.__call__`
+  arguments `observed` and `smoothed` are now str and no longer str or
+  list[str])
+
 ## [1.0.0] - 2023-01-06
 
 ### Added
