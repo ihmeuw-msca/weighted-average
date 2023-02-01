@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Changed
 
+- Moved setup info from setup.py to setup.cfg
 - Moved source code from weave/ to src/weave/
 - Moved tests from weave/tests/ to tests/
 
