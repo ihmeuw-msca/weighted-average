@@ -15,10 +15,10 @@ __classifiers__ = [
     'Programming Language :: Python :: 3',
 ]
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 __author__ = 'IHME Math Sciences'
 __email__ = 'ihme.math.sciences@gmail.com'
 
 __license__ = 'BSD 2-Clause'
-__copyright__ = f"Copyright 2022 {__author__}"
+__copyright__ = f"Copyright 2023 {__author__}"
