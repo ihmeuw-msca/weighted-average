@@ -246,6 +246,11 @@ then multiplied,</p>
 <div class="math-wrapper"><div class="math notranslate nohighlight">
 \[w_{i, j} = \frac{\tilde{w}_{i, j}}{\sum_{k \in \mathcal{D}}
 \tilde{w}_{i, k}}.\]</div></div>
+<p>If the standard deviation of each observation is known, then the final weights
+are defined as</p>
+<div class="math-wrapper"><div class="math notranslate nohighlight">
+\[w_{i, j} = \frac{\tilde{w}_{i, j} / \sigma_j^2}
+{\sum_{k \in \mathcal{D}} \tilde{w}_{i, k} / \sigma_k^2}.\]</div></div>
 <p>For instructions on how to get started, see the <a class="reference internal" href="quickstart.html"><span class="doc">Quickstart</span></a>.
 For descriptions of the modules, objects, and functions included in WeAve, see
 the <a class="reference internal" href="../api_reference/index.html"><span class="doc">API Reference</span></a>.</p>
