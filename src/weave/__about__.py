@@ -1,6 +1,6 @@
 __all__ = [
     '__title__', '__summary__', '__url__', '__classifiers__', '__version__',
-    '__author__', '__email__', '__license__', '__copyright__',
+    '__year__', '__author__', '__email__', '__license__', '__copyright__',
 ]
 
 __title__ = 'weighted-average'
@@ -16,9 +16,9 @@ __classifiers__ = [
 ]
 
 __version__ = '1.1.0'
-
+__year__ = '2023'
 __author__ = 'IHME Math Sciences'
 __email__ = 'ihme.math.sciences@gmail.com'
 
 __license__ = 'BSD 2-Clause'
-__copyright__ = f"Copyright 2023 {__author__}"
+__copyright__ = f"Copyright {__year__} {__author__}"

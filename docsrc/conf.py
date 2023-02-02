@@ -31,7 +31,7 @@ sys.path.insert(0, Path("..").absolute())
 # -- Project information -----------------------------------------------------
 
 project = about["__title__"]
-copyright = f"2021, {about['__author__']}"
+copyright = f"{about['__year__']}, {about['__author__']}"
 author = about["__author__"]
 
 # The full version, including alpha/beta/rc tags
