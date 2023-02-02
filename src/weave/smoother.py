@@ -268,13 +268,9 @@ class Smoother:
             raise TypeError('`predict` is not a str')
 
         # Check values
-        if stdev is not None:
-            if observed == stdev:
-                raise ValueError('`observed` == `stdev`')
-            if smoothed is not None and stdev == smoothed:
-                raise ValueError('`stdev` == `smoothed`')
-        if smoothed is not None and observed == smoothed:
-            raise ValueError('`observed` == `smoothed`')
+        col_set = set([observed, stdev, smoothed])
+        if not (stdev is None and smoothed is None) and len(col_set) < 3:
+            raise ValueError('Duplicates in `observed`, `stdev`, `smoothed`')
 
     def check_data(self, data: DataFrame, observed: str, stdev: Optional[str],
                    smoothed: Optional[str], fit: Optional[str],
