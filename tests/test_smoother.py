@@ -47,6 +47,7 @@ data = DataFrame({
     'count': [1.0, 2.0, 3.0, 4.0, 5.0],
     'fraction': [0.1, 0.2, 0.3, 0.4, 0.5],
     'residual': [0.2, 0.4, 0.6, 0.8, 1.0],
+    'residual_sd': [0.01, 0.02, 0.03, 0.04, 0.05],
     'name': ['a', 'b', 'c', 'd', 'e']
 })
 
@@ -100,20 +101,27 @@ def test_data_type(bad_data):
         smoother(bad_data, 'residual')
 
 
-@pytest.mark.parametrize('observed', not_columns)
+@pytest.mark.parametrize('observed', not_str)
 def test_observed_type(observed):
-    """Raise TypeError if `observed` is not a str or list of str."""
-    if observed != []:
+    """Raise TypeError if `observed` is not a str."""
+    with pytest.raises(TypeError):
+        smoother(data, observed)
+
+
+@pytest.mark.parametrize('stdev', not_str)
+def test_stdev_type(stdev):
+    """Raise TypeError if `stdev` is not a str."""
+    if stdev is not None:
         with pytest.raises(TypeError):
-            smoother(data, observed)
+            smoother(data, 'residual', stdev)
 
 
-@pytest.mark.parametrize('smoothed', not_columns)
+@pytest.mark.parametrize('smoothed', not_str)
 def test_smoothed_type(smoothed):
-    """Raise TypeError if `smoothed` is not a str or list of str."""
-    if smoothed != []:
+    """Raise TypeError if `smoothed` is not a str."""
+    if smoothed is not None:
         with pytest.raises(TypeError):
-            smoother(data, smoothed=smoothed)
+            smoother(data, 'residual', smoothed=smoothed)
 
 
 @pytest.mark.parametrize('fit', not_str)
@@ -133,46 +141,28 @@ def test_predict_type(predict):
 
 
 # Test input values
-def test_observed_values():
-    """Raise ValueError if `observed` is an empty list."""
+def test_observed_stdev_overlap():
+    """Raise ValueError if `observed` == `stdev`."""
     with pytest.raises(ValueError):
-        smoother(data, [])
-
-
-def test_observed_duplicates():
-    """Raise ValueError if duplicate columns in `observed`."""
-    with pytest.raises(ValueError):
-        smoother(data, ['residual', 'residual'])
-
-
-def test_smoothed_values():
-    """Raise ValueError if `smoothed` is an empty list."""
-    with pytest.raises(ValueError):
-        smoother(data, 'residual', [])
-
-
-def test_smoothed_duplicates():
-    """Raise ValueError if duplicate columns in `smoothed`."""
-    with pytest.raises(ValueError):
-        smoother(data, ['count', 'fraction'], ['count_smooth', 'count_smooth'])
-
-
-def test_observed_smoothed_same_length():
-    """Raise ValueError if `observed`, `smoothed` have diff lengths."""
-    with pytest.raises(ValueError):
-        smoother(data, 'count', ['count_smooth', 'fraction_smooth'])
+        smoother(data, 'residual', 'residual')
 
 
 def test_observed_smoothed_overlap():
-    """Raise ValueError if `observed`, `smoothed` have duplicates."""
+    """Raise ValueError if `observed` == `smoothed`."""
     with pytest.raises(ValueError):
-        smoother(data, ['count', 'residual'], ['fraction', 'residual'])
+        smoother(data, 'residual', smoothed='residual')
+
+
+def test_stdev_smoothed_overlap():
+    """Raise ValueError if `stdev` == `smoothed`."""
+    with pytest.raises(ValueError):
+        smoother(data, 'residual', stdev='residual_sd', smoothed='residual_sd')
 
 
 def test_smoothed_warning():
     """Trigger UserWarning if `smoothed` already in `data`."""
     with pytest.warns(UserWarning):
-        smoother(data, 'count', 'residual')
+        smoother(data, 'count', smoothed='residual')
 
 
 # Test data keys
@@ -193,11 +183,16 @@ def test_coordinates_in_data(coords):
         smoother2(data, 'residual')
 
 
-@pytest.mark.parametrize('columns', ['dummy', ['residual', 'dummy']])
-def test_columns_in_data(columns):
-    """Raise KeyError if `columns` not in `data`."""
+def test_observed_in_data():
+    """Raise KeyError if `observed` not in `data`."""
     with pytest.raises(KeyError):
-        smoother(data, columns)
+        smoother(data, 'dummy')
+
+
+def test_stdev_in_data():
+    """Raise KeyError if `stdev` not in `data`."""
+    with pytest.raises(KeyError):
+        smoother(data, 'residual', 'dummy')
 
 
 def test_fit_in_data():
@@ -239,11 +234,16 @@ def test_data_coordinates_type(coords):
         smoother2(data, 'residual')
 
 
-@pytest.mark.parametrize('columns', ['name', ['residual', 'name']])
-def test_data_columns_type(columns):
-    """Raise TypeError if `columns` are not int or float."""
+def test_data_observed_type():
+    """Raise TypeError if `observed` not int or float."""
     with pytest.raises(TypeError):
-        smoother(data, columns)
+        smoother(data, 'name')
+
+
+def test_data_stdev_type():
+    """Raise TypeError if `stdev` not int or float."""
+    with pytest.raises(TypeError):
+        smoother(data, 'residual', 'name')
 
 
 @pytest.mark.parametrize('fit', ['age_id', 'count', 'name'])
@@ -307,13 +307,12 @@ def test_idx_predict_len():
     assert len(idx_pred) == data['predict'].sum()
 
 
-@pytest.mark.parametrize('observed', [['residual'], ['count', 'fraction']])
 @pytest.mark.parametrize('fit', ['fit', 'predict'])
-def test_obs_shape(observed, fit):
+def test_obs_shape(fit):
     """`get_observed` returns array of correct shape."""
     idx_fit = smoother.get_indices(data, fit)
-    cols_obs = smoother.get_observed(data, observed, idx_fit)
-    assert cols_obs.shape == (len(idx_fit), len(observed))
+    cols_obs = smoother.get_values(data, 'residual', idx_fit)
+    assert cols_obs.shape == (len(idx_fit),)
 
 
 def test_points_shape():
@@ -331,38 +330,37 @@ def test_typed_dimensions_len():
         assert len(dimension.weight_dict) == n_ids**2
 
 
-@pytest.mark.parametrize('observed', [['residual'], ['count', 'fraction']])
 @pytest.mark.parametrize('predict', [None, 'fit', 'predict'])
-def test_smooth_shape(observed, predict):
+def test_smooth_shape(predict):
     """`smooth` returns array of correct shape."""
     idx_fit = smoother.get_indices(data, None)
     idx_pred = smoother.get_indices(data, predict)
-    cols_obs = smoother.get_observed(data, observed, idx_fit)
+    col_obs = smoother.get_values(data, 'residual', idx_fit)
+    col_sd = smoother.get_values(data, None, idx_fit)
     points = smoother.get_points(data)
     dim_list = smoother.get_typed_dimensions(data)
-    cols_smooth = smooth(dim_list, points, cols_obs, idx_fit, idx_pred)
+    cols_smooth = smooth(dim_list, points, col_obs, col_sd, idx_fit, idx_pred)
     if predict is None:
-        assert cols_smooth.shape == (len(data), len(observed))
+        assert cols_smooth.shape == (len(data),)
     else:
-        assert cols_smooth.shape == (data[predict].sum(), len(observed))
+        assert cols_smooth.shape == (data[predict].sum(),)
 
 
-@pytest.mark.parametrize('observed', [['residual'], ['count', 'fraction']])
 @pytest.mark.parametrize('predict', [None, 'fit', 'predict'])
-def test_smoother_shape(observed, predict):
+def test_smoother_shape(predict):
     """Return data frame with correct shape."""
-    result = smoother(data, observed, predict=predict)
+    result = smoother(data, 'residual', predict=predict)
     if predict is None:
         assert len(result) == len(data)
     else:
         assert len(result) == data[predict].sum()
-    assert len(result.columns) == len(data.columns) + len(observed)
+    assert len(result.columns) == len(data.columns) + 1
 
 
 @pytest.mark.parametrize('smoothed', [None, 'dummy'])
 def test_smoother_columns(smoothed):
     """Return data frame with correct column names."""
-    result = smoother(data, 'residual', smoothed)
+    result = smoother(data, 'residual', smoothed=smoothed)
     if smoothed is None:
         assert 'residual_smooth' in result.columns
     else:
@@ -371,9 +369,12 @@ def test_smoother_columns(smoothed):
 
 def test_result():
     """Check output values."""
-    result = smoother(data, 'residual', 'dummy')
+    result = smoother(data, 'residual')
     vals = np.array([0.25019485, 0.41681382, 0.5839969, 0.79772836, 1.])
-    assert np.allclose(vals, result['dummy'].values)
-    result = smoother(data, 'residual', 'dummy', 'fit')
+    assert np.allclose(vals, result['residual_smooth'].values)
+    result = smoother(data, 'residual', 'residual_sd')
+    vals = np.array([0.20730056, 0.38848886, 0.5644261, 0.79567325, 1.])
+    assert np.allclose(vals, result['residual_smooth'].values)
+    result = smoother(data, 'residual', fit='fit')
     vals = np.array([0.20659341, 0.20659341, 0.26, 0.7934066, 1.])
-    assert np.allclose(vals, result['dummy'].values)
+    assert np.allclose(vals, result['residual_smooth'].values)

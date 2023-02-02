@@ -41,6 +41,12 @@ and finally normalized,
 .. math:: w_{i, j} = \frac{\tilde{w}_{i, j}}{\sum_{k \in \mathcal{D}}
           \tilde{w}_{i, k}}.
 
+If the standard deviation of each observation is known, then the final weights
+are defined as
+
+.. math:: w_{i, j} = \frac{\tilde{w}_{i, j} / \sigma_j^2}
+         {\sum_{k \in \mathcal{D}} \tilde{w}_{i, k} / \sigma_k^2}.
+
 For instructions on how to get started, see the :doc:`Quickstart <quickstart>`.
 For descriptions of the modules, objects, and functions included in WeAve, see
 the :doc:`API Reference <../api_reference/index>`.

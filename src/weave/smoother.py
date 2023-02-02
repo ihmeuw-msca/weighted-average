@@ -118,27 +118,29 @@ class Smoother:
 
         self._dimensions = dimensions
 
-    def __call__(self, data: DataFrame, observed: Union[str, List[str]],
-                 smoothed: Optional[Union[str, List[str]]] = None,
+    def __call__(self, data: DataFrame, observed: str,
+                 stdev: Optional[str] = None, smoothed: Optional[str] = None,
                  fit: Optional[str] = None, predict: Optional[str] = None) \
             -> DataFrame:
         """Smooth data across dimensions with weighted averages.
 
-        For each column in `observed` and each point in `predict`,
-        calculate smoothed values using a weighted average of points in
-        `fit`, where weights are calculated based on proximity across
-        `dimensions`. Return a data frame of points in `predict` with
-        columns in `smoothed` containing smoothed values.
+        For each point in `predict`, smooth values in `observed` using
+        a weighted average of points in `fit`, where weights are
+        calculated based on proximity across `dimensions`. Return a
+        data frame of points in `predict` with column `smoothed`
+        containing smoothed values.
 
         Parameters
         ----------
         data : pandas.DataFrame
             Input data structure.
-        observed : str or list of str
-            Column names of values to smooth.
-        smoothed : str or list of str, optional
-            Column names of smoothed values. If None, append '_smooth'
-            to all columns in `observed`.
+        observed : str
+            Column name of values to smooth.
+        stdev: str, optional
+            Column name of standard deviations.
+        smoothed : str, optional
+            Column name of smoothed values. If None, append '_smooth'
+            to  `observed`.
         fit : str, optional
             Column name indicating points to include in weighted
             averages. If None, all points in `data` are used.
@@ -149,13 +151,13 @@ class Smoother:
         Returns
         -------
         pandas.DataFrame
-            Points in `predict` with smoothed values.
+            Points in `predict` with smoothed values `smoothed`.
 
         Examples
         --------
         Using the smoother created in the previous example, smooth data
         across age, year, and location. Create smoothed version of
-        multiple columns for all points using all points.
+        column `count` for all points using all points.
 
         >>> from pandas import DataFrame
         >>> data = DataFrame({
@@ -166,67 +168,64 @@ class Smoother:
                 'super_region': [1, 1, 1, 1, 2],
                 'region': [3, 3, 3, 4, 8],
                 'country': [5, 5, 6, 7, 9],
-                'count': [1.0, 2.0, 3.0, 4.0, 5.0],
-                'fraction': [0.1, 0.2, 0.3, 0.4, 0.5]
+                'count': [1.0, 2.0, 3.0, 4.0, 5.0]
             })
-        >>> smoother(data, ['count', 'fraction'])
-           age_id  ...  count  fraction  count_smooth  fraction_smooth
-        0      1  ...    1.0       0.1      1.250974         0.125097
-        1      2  ...    2.0       0.2      2.084069         0.208407
-        2      3  ...    3.0       0.3      2.919984         0.291998
-        3      4  ...    4.0       0.4      3.988642         0.398864
-        4      4  ...    5.0       0.5      5.000000         0.500000
+        >>> smoother(data, 'count')
+           age_id  ...  count  count_smooth
+        0       1  ...    1.0      1.250974
+        1       2  ...    2.0      2.084069
+        2       3  ...    3.0      2.919984
+        3       4  ...    4.0      3.988642
+        4       4  ...    5.0      5.000000
 
         Create smoothed version of one column for all points using a
         subset of points.
 
         >>> data['train'] = [True, False, False, True, True]
         >>> smoother(data, 'count', fit='train')
-           age_id  ...  count  fraction train  count_smooth
-        0      1  ...    1.0       0.1   True      1.032967
-        1      2  ...    2.0       0.2  False      1.032967
-        2      3  ...    3.0       0.3  False      1.300000
-        3      4  ...    4.0       0.4   True      3.967033
-        4      4  ...    5.0       0.5   True      5.000000
+           age_id  ...  count  train  count_smooth
+        0       1  ...    1.0   True      1.032967
+        1       2  ...    2.0  False      1.032967
+        2       3  ...    3.0  False      1.300000
+        3       4  ...    4.0   True      3.967033
+        4       4  ...    5.0   True      5.000000
 
         Create a smoothed version of one column for a subset of points
         using all points.
 
         >>> data['test'] = [False, True, True, False, False]
-        >>> smoother(data, 'fraction', predict='test')
-           age_id  ...  count  fraction    test  fraction_smooth
-        0      2  ...    2.0       0.2     True         0.208407
-        1      3  ...    3.0       0.3     True         0.291998
+        >>> smoother(data, 'count', predict='test')
+           age_id  ...  count  test  count_smooth
+        0       2  ...    2.0  True      2.084069
+        1       3  ...    3.0  True      2.919984
 
         """
         # Check input
-        observed = as_list(observed)
-        smoothed = as_list(smoothed) if smoothed is not None else smoothed
-        self.check_args(data, observed, smoothed, fit, predict)
-        if smoothed is None:
-            smoothed = [f"{col}_smooth" for col in observed]
-        self.check_data(data, observed, smoothed, fit, predict)
+        self.check_args(data, observed, stdev, smoothed, fit, predict)
+        self.check_data(data, observed, stdev, smoothed, fit, predict)
+        smoothed = f"{observed}_smooth" if smoothed is None else smoothed
 
         # Extract data
         idx_fit = self.get_indices(data, fit)
         idx_pred = self.get_indices(data, predict)
-        cols_obs = self.get_observed(data, observed, idx_fit)
+        col_obs = self.get_values(data, observed, idx_fit)
+        col_sd = self.get_values(data, stdev, idx_fit)
         points = self.get_points(data)
         dim_list = self.get_typed_dimensions(data)
 
         # Calculate smoothed values
-        cols_smooth = smooth(dim_list, points, cols_obs, idx_fit, idx_pred)
+        col_smooth = smooth(dim_list, points, col_obs, col_sd, idx_fit,
+                            idx_pred)
 
         # Construct smoothed data frame
         data_smooth = data.iloc[idx_pred].reset_index(drop=True)
-        for idx_col, col in enumerate(smoothed):
-            data_smooth[col] = cols_smooth[:, idx_col]
+        data_smooth[smoothed] = col_smooth
 
         return data_smooth
 
     @staticmethod
-    def check_args(data: DataFrame, observed: List[str],
-                   smoothed: Optional[List[str]], fit: Optional[str],
+    def check_args(data: DataFrame, observed: str, stdev: Optional[str],
+                   smoothed: Optional[str], fit: Optional[str],
                    predict: Optional[str]) -> None:
         """Check `smoother` argument types and values.
 
@@ -234,10 +233,12 @@ class Smoother:
         ----------
         data : pandas.DataFrame
             Input data structure.
-        observed : list of str
-            Column names of values to smooth.
-        smoothed : list of str, optional
-            Column names of smoothed values.
+        observed : str
+            Column name of values to smooth.
+        stdev : str, optional
+            Column name of standard deviations.
+        smoothed : str, optional
+            Column name of smoothed values.
         fit : str, optional
             Column name indicating points to include in weighted
             averages.
@@ -249,41 +250,30 @@ class Smoother:
         TypeError
             If `smoother` arguments contain invalid types.
         ValueError
-            If either `observed` or `smoothed` is an empty list or
-            contain duplicates.
+            If `observed`, `stdev`, or `smoothed` overlap.
 
         """
         # Check types
         if not isinstance(data, DataFrame):
             raise TypeError('`data` is not a DataFrame')
-        if not all(isinstance(col, str) for col in observed):
-            raise TypeError('`observed` contains invalid types')
-        if smoothed is not None:
-            if not all(isinstance(col, str) for col in smoothed):
-                raise TypeError('`smoothed` contains invalid types')
+        if not isinstance(observed, str):
+            raise TypeError('`observed` is not a str')
+        if stdev is not None and not isinstance(stdev, str):
+            raise TypeError('`stdev` is not a str')
+        if smoothed is not None and not isinstance(smoothed, str):
+            raise TypeError('`smoothed` is not a str')
         if fit is not None and not isinstance(fit, str):
             raise TypeError('`fit` is not a str')
         if predict is not None and not isinstance(predict, str):
             raise TypeError('`predict` is not a str')
 
         # Check values
-        if len(observed) == 0:
-            raise ValueError('`observed` is an empty list')
-        if len(observed) > len(set(observed)):
-            raise ValueError('`observed` contains duplicates')
-        if smoothed is not None:
-            if len(smoothed) == 0:
-                raise ValueError('`smoothed` is an empty list')
-            if len(smoothed) > len(set(smoothed)):
-                raise ValueError('`smoothed` contains duplicates')
-            if len(observed) != len(smoothed):
-                msg = 'Length of `observed` and `smoothed` do not match'
-                raise ValueError(msg)
-            if len(set(observed).intersection(set(smoothed))) > 0:
-                raise ValueError('Duplicates in `observed` and `smoothed`')
+        col_set = set([observed, stdev, smoothed])
+        if not (stdev is None and smoothed is None) and len(col_set) < 3:
+            raise ValueError('Duplicates in `observed`, `stdev`, `smoothed`')
 
-    def check_data(self, data: DataFrame, observed: List[str],
-                   smoothed: List[str], fit: Optional[str],
+    def check_data(self, data: DataFrame, observed: str, stdev: Optional[str],
+                   smoothed: Optional[str], fit: Optional[str],
                    predict: Optional[str]) -> None:
         """Check input data.
 
@@ -291,27 +281,29 @@ class Smoother:
         ----------
         data : pandas.DataFrame
             Input data structure.
-        observed : list of str
-            Column names of values to smooth.
-        smoothed : list of str
-            Column names of smoothed values.
-        fit : str or None
+        observed : str
+            Column name of values to smooth.
+        stdev : str, optional
+            Column name of standard deviations.
+        smoothed : str, optional
+            Column name of smoothed values.
+        fit : str, optional
             Column name indicating points to include in weighted
             averages.
-        predict : str or None
+        predict : str, optional
             Column name indicating where to predict smoothed values.
 
         Raises
         ------
         KeyError
             If columns `dimension.name`, `dimensions.coordinates`,
-            `observed`, `fit`, or `predict` not in `data`.
+            `observed`, `stdev`, `fit`, or `predict` not in `data`.
             If `dimension.distance` is 'dictionary', but not all keys
             `dimension.name` in `dimension.distance_dict`.
         TypeError
             If columns `dimension.name`, `dimensions.coordinates`,
-            `observed`, `fit`, or `predict` in `data` contain invalid
-            types.
+            `observed`, `stdev`, `fit`, or `predict` in `data` contain
+            invalid types.
         ValueError
             If columns `dimension.name` and `dimension.coordinates` not
             one-to-one in `data`.
@@ -319,7 +311,7 @@ class Smoother:
 
         Warns
         -----
-        If columns in `smoothed` in data.
+        If columns in `smoothed` in `data`.
 
         """
         # Get column names
@@ -328,18 +320,20 @@ class Smoother:
 
         # Check data frame columns
         if not all(name in data for name in names):
-            raise KeyError('Not all `dimension.name` in `data`')
+            raise KeyError('Not all `dimension.name` in data')
         if not all(coord in data for coord in coords):
-            raise KeyError('Not all `dimension.coordinates` in `data`')
-        if not all(col in data for col in observed):
-            raise KeyError('Not all `observed` in `data`')
-        if any(col in data for col in smoothed):
-            msg = 'Columns in `smoothed` in `data` will be overwritten'
+            raise KeyError('Not all `dimension.coordinates` in data')
+        if observed not in data:
+            raise KeyError(f"`observed` column {observed} not in data")
+        if stdev is not None and stdev not in data:
+            raise KeyError(f"`stdev` column {stdev} not in data")
+        if smoothed in data:
+            msg = f"`smoothed` column {smoothed} will be overwritten"
             warnings.warn(msg)
         if fit is not None and fit not in data:
-            raise KeyError('`fit` not in `data`')
+            raise KeyError(f"`fit` column {fit} not in data")
         if predict is not None and predict not in data:
-            raise KeyError('`predict` not in `data`')
+            raise KeyError(f"`predict` column {predict} not in data")
 
         # Check dictionary keys
         for dim in self._dimensions:
@@ -357,14 +351,17 @@ class Smoother:
         if not all(is_numeric_dtype(data[coord]) for coord in coords):
             msg = 'Not all `dimension.coordinates` data int or float'
             raise TypeError(msg)
-        if not all(is_numeric_dtype(data[col]) for col in observed):
-            raise TypeError('Not all `observed` data int or float')
+        if not is_numeric_dtype(data[observed]):
+            raise TypeError(f"`observed` data {observed} not int or float")
+        if stdev is not None:
+            if not is_numeric_dtype(data[stdev]):
+                raise TypeError(f"`stdev` data {stdev} is not int or float")
         if fit is not None:
             if not is_bool_dtype(data[fit]):
-                raise TypeError('`fit` data is not bool')
+                raise TypeError(f"`fit` data {fit} is not bool")
         if predict is not None:
             if not is_bool_dtype(data[predict]):
-                raise TypeError('`predict` data is not bool')
+                raise TypeError(f"`predict` data {predict} is not bool")
 
         # Check `name` and `coordinates` one-to-one
         for dim in self._dimensions:
@@ -379,7 +376,8 @@ class Smoother:
         # Check values
         if data.isna().any(None):
             raise ValueError('`data` contains NaNs')
-        if np.isinf(data[names + coords + observed]).any(None):
+        cols_in = [observed] if stdev is None else [observed, stdev]
+        if np.isinf(data[names + coords + cols_in]).any(None):
             raise ValueError('`data` contains Infs')
 
     @staticmethod
@@ -404,27 +402,28 @@ class Smoother:
         return np.where(data[indicator])[0].astype(np.int32)
 
     @staticmethod
-    def get_observed(data: DataFrame, observed: List[str],
-                     idx_fit: np.ndarray) -> np.ndarray:
-        """Get values to smooth.
+    def get_values(data: DataFrame, values: Optional[str],
+                   idx_fit: np.ndarray) -> np.ndarray:
+        """Get input values.
 
         Parameters
         ----------
         data : pandas.DataFrame
             Input data structure.
-        observed : str or list of str
-            Column names of values to smooth.
+        values : str, optional
+            Column names of values.
         idx_fit : numpy.ndarray of int
             Indices of `fit` points.
 
         Returns
         -------
-        2D numpy.ndarray of float32
-            Values to smooth.
+        numpy.ndarray of float32
+            Input values.
 
         """
-        return np.array([data[col].values[idx_fit]
-                         for col in observed], dtype=np.float32).T
+        if values is None:
+            return np.nan*np.ones(len(idx_fit)).astype(np.float32)
+        return np.array(data[values].values[idx_fit], dtype=np.float32)
 
     def get_points(self, data: DataFrame) -> np.ndarray:
         """Get point IDs.
@@ -464,8 +463,8 @@ class Smoother:
 
 @njit(parallel=True)
 def smooth(dim_list: List[TypedDimension], points: np.ndarray,
-           cols_obs: np.ndarray, idx_fit: np.ndarray, idx_pred: np.ndarray) \
-        -> np.ndarray:
+           col_obs: np.ndarray, col_sd: np.ndarray, idx_fit: np.ndarray,
+           idx_pred: np.ndarray) -> np.ndarray:
     """Smooth data across dimensions with weighted averages.
 
     Parameters
@@ -474,8 +473,10 @@ def smooth(dim_list: List[TypedDimension], points: np.ndarray,
         Smoothing dimensions.
     points : 2D numpy.ndarray of float
         Point IDs.
-    cols_obs : 2D numpy.ndarray of float
+    col_obs : 1D numpy.ndarray of float
         Values to smooth.
+    col_sd: 1D numpy.ndarray of float
+        Standard deviations.
     idx_fit : 1D numpy.ndarray of int
         Indices of points to include in weighted averages.
     idx_pred: 1D numpy.ndarray of int
@@ -483,7 +484,7 @@ def smooth(dim_list: List[TypedDimension], points: np.ndarray,
 
     Returns
     -------
-    2D numpy.ndarray of float32
+    1D numpy.ndarray of float32
         Smoothed values.
 
     """
@@ -501,7 +502,7 @@ def smooth(dim_list: List[TypedDimension], points: np.ndarray,
                 fit = points[idx_fit[jj], idx_dim]
                 dim_weights[ii, jj] = dim.weight_dict[(pred, fit)]
 
-            # Optional normalize by subgroup
+            # Normalize by depth subgroup
             if dim.kernel == 'depth':
                 for weight in list(set(dim_weights[ii, :])):
                     cond = dim_weights[ii, :] == weight
@@ -513,6 +514,9 @@ def smooth(dim_list: List[TypedDimension], points: np.ndarray,
         # Update weight matrix
         weights *= dim_weights
 
-    # Normalize across rows and compute smoothed values
-    scale = np.outer(weights.sum(axis=1), np.ones(n_fit, dtype=np.float32))
-    return (weights/scale).dot(cols_obs)
+    # Scale by standard deviation
+    if not np.isnan(col_sd).any():
+        weights = weights/(col_sd**2)
+
+    # Compute smoothed values
+    return weights.dot(col_obs)/weights.sum(axis=1)
