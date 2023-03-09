@@ -338,8 +338,8 @@ class Smoother:
         # Check dictionary keys
         for dim in self._dimensions:
             if dim.distance == 'dictionary':
-                names = data[dim.name].unique()
-                for key in product(names, repeat=2):
+                dim_names = data[dim.name].unique()
+                for key in product(dim_names, repeat=2):
                     if key[0] <= key[1] and key not in dim.distance_dict:
                         msg = 'Not all `dimension.name` in '
                         msg += '`dimension.distance_dict`'
