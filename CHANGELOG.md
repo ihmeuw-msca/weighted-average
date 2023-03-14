@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [1.1.1] - 2023-13-14
 
+### Removed
+
+- Removed requirement that `key[0] <= key[1]` in `distance_dict` and updated documentation.
+
 ### Fixed
 
 - Fixed problem in `Smoother.check_data` where dimension names were being overwritten by `distance_dict` keys.
