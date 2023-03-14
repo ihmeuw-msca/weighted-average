@@ -340,7 +340,7 @@ class Smoother:
             if dim.distance == 'dictionary':
                 dim_names = data[dim.name].unique()
                 for key in product(dim_names, repeat=2):
-                    if key[0] <= key[1] and key not in dim.distance_dict:
+                    if key not in dim.distance_dict:
                         msg = 'Not all `dimension.name` in '
                         msg += '`dimension.distance_dict`'
                         raise KeyError(msg)
