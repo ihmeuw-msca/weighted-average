@@ -32,32 +32,29 @@ bibliography: paper.bib
 
 # Summary
 
-Interpolation and prediction are a big challenge for big-data applications driven by sparse high dimensional datasets. 
-For example, datasets used for the Global Burden of Disease study vary by year, age, sex, and location. Interpolation 
-is required to estimate missing data, such as mortality or disease prevalence, when it is not available 
-for particular year/age/sex/location groups. These datasets are also sparse, with non-random missing values: 
-decades of data and/or entire age groups may be missing in multiple countries.
+Interpolation and prediction are a significant challenge for big-data applications driven by sparse high dimensional datasets. 
+For example, quanitities (e.g. mortality rates and disease prevalence) used within the Global Burden of Disease study vary by year, age, sex, and location. These datasets are sparse with non-random missing values; in extreme cases, decades of data or information for entire age groups may be missing in multiple countries based on standards and practices in data collection. As a result, interpolation is required to estimate missing data for many year/age/sex/location combinations. 
 
-While there are many well-developed methods and packages for interpolation, including splines [https://pypi.org/project/ndsplines/] [@lyons2019ndsplines],  Loess [https://pypi.org/project/loess/] [@cappellari2013atlas3d], and 
-general interpolation [https://pypi.org/project/pyinterp/], it is difficult to apply these methods to sparse high-dimensional datasets. 
-First, support for Loess is limited to two dimensions, while support for pyinterp is limited to four. More importantly, when working with sparse datasets, sophisticated methods may not have enough information to find the `interpolated' solution, 
-or may require a large number of decisions made by users, making them impractical. 
+While there are many methods and packages for interpolation, including splines [https://pypi.org/project/ndsplines/] [@lyons2019ndsplines],  Loess [https://pypi.org/project/loess/] [@cappellari2013atlas3d], and 
+geo-reference data [https://pypi.org/project/pyinterp/], it is difficult to apply these methods to sparse high-dimensional datasets. 
+Support for Loess is limited to two dimensional data, while support for pyinterp is limited to four-dimensional data.  
+When working with sparse datasets and high dimensions, sophisticated methods do not have enough information to find the interpolated solution, 
+and the solutions may be unstable, particularly for datapoints close to the boundary.  
 
-In practice, weighted averages of the data are a key approach for sparse high-dimensional datasets. Weighted average can be viewed 
-as a simple case of Loess (taking a zeroth order local regression approach). Nevertheless, there are no packages that implement 
-high-dimensional weighted averaging with customizable strategies for weighting. 
+Simpler interpolation techniques, particularly weighted averages of the data, are a key  approach for sparse high-dimensional datasets. Weighted average can be viewed as a simple case of Loess (taking a zeroth order local regression approach). Nevertheless, there are no packages that implement 
+high-dimensional weighted averaging with customizable weighting strategies. 
 
-We fill this gap by implementing N-dimensinoal Weig hted Averaging (WeAve). WeAve provides a flexible interface to specify an 
-arbitrary number of dimensions, distance functions to measure distances across these dimensions, and kernel functions used to 
+We fill this gap by implementing N-dimensinoal Weighted Averaging (WeAve). WeAve provides a flexible interface to specify an 
+arbitrary number of dimensions, distance functions to measure distances across  dimensions, and kernel functions used to 
 smooth data across the dimensions. The package implements and generalizes methods that support widely published 
 Global Burden of Disease studies, [cite GBD 2019], and detailed in [@foreman2012modeling]. 
 
 
 # Statement of Need
 
-Weighted averaging is a simple technique that allows working with challenging high-dimensional sparse datasets. 
-Practitioners who work with such data have deep understanding of each dimension, and need a simple and clear way
-to incorporate this understanding into the weighted averaging process. 
+Weighted averaging is a simple technique that allows interpolation for high-dimensional sparse datasets. 
+Practitioners who work with such data may have scientific insight into how related the data is across different dimensions, 
+and need a simple and clear way to incorporate this understanding into the weighted averaging process. 
 
 The `WeAve' package is designed to support any number of dimensions, allow practitioners to design their own distance functions, 
 and to specify parametrized kernels that are used to smooth the data. Default settings implement distance functions
@@ -66,9 +63,11 @@ used for the Global Burden of Disease. However, the specification of all key ele
 easy to adapt to any use case.  
 
 
-# Core idea and structure of `WeAve`
+# Core idea and structure of `WeAve'
 
-Distance functions $d(x_i, x_j)$ calculate the distance between points $x_i$ and $x_j$, and kernel functions $k(d_{i, j} \, ; p_1, p_2, \dots)$ calculate smoothing weights given distance $d_{i, j}$ and a set of parameters $p_1$, $p_2, \dots$. In WeAve, you can choose from three distance functions and four kernel functions.
+
+WeAve provides an interface to specify how the weighted average is computed using distance functions, kernel functions, and their parameters. 
+Distance functions $d(x_i, x_j)$ calculate the distance between points $x_i$ and $x_j$, and kernel functions $k(d_{i, j} \, ; p_1, p_2, \dots)$ calculate smoothing weights given distance $d_{i, j}$ and a set of parameters $p_1$, $p_2, \dots$. WeAve provides currently provides three distance functions and four kernel functions, and the user can specify additional functions as necessary. 
 
 Weighted averages $\hat{y}$ of dependent variables y are calculated using the :doc:`Smoother <../api_reference/weave.smoother>` class for observations $i$ in data set $\mathcal{D}$ with
 
@@ -83,14 +82,12 @@ $w_{i, j} = \frac{\tilde{w}_{i, j}}{\sum_{k \in \mathcal{D}}
 
 ## Reproducing Space-Time Smoothing in CODEm
 
-A detailed example shows how to use `WeAve' to reproduce core functinality of 
-space-time smoothing in Cause of Death modeling for the Global Burden of Disease.  
+A detailed example shows how to use `WeAve' to reproduce core functinality of space-time smoothing in Cause of Death modeling (CODEm) for the Global Burden of Disease. 
 
 For each observation $i$ in the data set $\mathcal{D}$, weights are assigned to the remaining observations $j$ based on their similarity across age, time, and location. The predicted or smoothed residual $\hat{r}$ is then the weighted average of the residuals $r$,
 $\hat{r}_i = \sum_{j \in \mathcal{D}} w_{i, j} \, r_j$.
 
-CODEm uses an exponential kernel for age:
-
+CODEm uses an exponential kernel for age: 
 $w_{i, j}^a = \frac{1}{\exp(\omega \, |a_i - a_j|)}$ tricubic kernel for year:
 
 $w_{i, j}^t = \left(1 - \left(\frac{|t_i - t_j|}
@@ -102,7 +99,7 @@ $w_{i, j}^\ell = \begin{cases} \zeta & \text{same country}, \\
 \zeta(1 - \zeta) & \text{same region}, \\ (1 - \zeta)^2 &
 \text{same super region}, \\ 0 & \text{otherwise}, \end{cases}$
 
-Weights are then combined and normalized to sum to $1$. 
+Weights are then combined and normalized to sum to $1$ as described above. 
 
 
 
