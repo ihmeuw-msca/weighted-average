@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [1.1.1] - 2023-13-14
+## [1.1.2] - 2024-02-06
+
+### Fixed
+
+- Added keyword to `df.any()` commands in `Smoother.check_data` for new pandas versions.
+
+## [1.1.1] - 2023-03-14
 
 ### Removed
 
