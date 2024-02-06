@@ -374,10 +374,10 @@ class Smoother:
                     raise ValueError('`coordinates` maps to multiple `name`')
 
         # Check values
-        if data.isna().any(None):
+        if data.isna().any(axis=None):
             raise ValueError('`data` contains NaNs')
         cols_in = [observed] if stdev is None else [observed, stdev]
-        if np.isinf(data[names + coords + cols_in]).any(None):
+        if np.isinf(data[names + coords + cols_in]).any(axis=None):
             raise ValueError('`data` contains Infs')
 
     @staticmethod
