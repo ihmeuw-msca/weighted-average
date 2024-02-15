@@ -40,6 +40,7 @@ References
        <https://en.wikipedia.org/wiki/Kernel_(statistics)#Kernel_functions_in_common_use>`_
 
 """
+# TODO: add note about variance kernel to kernel module documentation
 from typing import Union
 
 import numpy as np
@@ -89,7 +90,7 @@ def exponential(distance: number, radius: number) -> np.float32:
     0.01831564
 
     """
-    return np.float32(1/np.exp(distance/radius))
+    return np.float32(1 / np.exp(distance / radius))
 
 
 def tricubic(distance: number, radius: number, exponent: number) -> np.float32:
@@ -143,11 +144,10 @@ def tricubic(distance: number, radius: number, exponent: number) -> np.float32:
     0.0
 
     """
-    return np.float32(np.maximum(0, (1 - (distance/radius)**exponent)**3))
+    return np.float32(np.maximum(0, (1 - (distance / radius) ** exponent) ** 3))
 
 
-def depth(distance: number, levels: int, radius: float, version: str) \
-        -> np.float32:
+def depth(distance: number, levels: int, radius: float, version: str) -> np.float32:
     """Get depth smoothing weight.
 
     Parameters
@@ -231,8 +231,28 @@ def depth(distance: number, levels: int, radius: float, version: str) \
 
     """
     same_tree = distance <= levels - 1
-    if version == 'stgpr':
-        return np.float32(same_tree*radius**np.ceil(distance))
+    if version == "stgpr":
+        return np.float32(same_tree * radius ** np.ceil(distance))
     not_root = levels > 1 and distance <= levels - 2
-    weight = same_tree*radius**not_root*(1 - radius)**np.ceil(distance)
+    weight = same_tree * radius**not_root * (1 - radius) ** np.ceil(distance)
     return np.float32(weight)
+
+
+def variance(distance: number, radius: float) -> np.float32:
+    """Get variance smoothing weight.
+
+    Parameters
+    ----------
+    distance : nonnegative int or float
+        Distance between points.
+    radius : positive int or float
+        Kernel radius.
+
+    Returns
+    -------
+    nonnegative numpy.float32
+        Depth smoothing weight.
+
+    """
+    # TODO: add notes and examples to documentation
+    return np.float32(distance / radius)
