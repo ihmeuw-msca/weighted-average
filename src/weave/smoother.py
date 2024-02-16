@@ -68,7 +68,9 @@ class Smoother:
         """
         # TODO: add variance kernel to __init__ examples
         self.dimensions = as_list(dimensions)
-        self.variance_weights = [dim.kernel for dim in self._dimensions]
+        self.variance_weights = all(
+            dim.kernel == "variance" for dim in self._dimensions
+        )
 
     @property
     def dimensions(self) -> List[Dimension]:
@@ -124,24 +126,24 @@ class Smoother:
 
     @property
     def variance_weights(self) -> bool:
-        """Get variance weights flag.
+        """Get inverse variance weights flag.
 
         Returns
         -------
         bool
-            Whether or not to use variance weights.
+            Whether or not to use inverse variance weights.
 
         """
-        return self._dimensions
+        return self._variance_weights
 
     @variance_weights.setter
-    def variance_weights(self, kernel_list: List[str]) -> None:
+    def variance_weights(self, variance_weights: bool) -> None:
         """Set inverse variance weights flag.
 
         Parameters
         ----------
-        kernel_list : list of str
-            Dimension kernels.
+        variance_weights : bool
+            Whether or not to use inverse variance weights.
 
         Raises
         ------
@@ -156,11 +158,11 @@ class Smoother:
             raise AttributeError("`variance_weights` cannot be changed")
 
         # Check values
-        if "variance" in kernel_list:
-            if any(kernel != "variance" for kernel in kernel_list):
-                raise ValueError("Cannot mix variance and non-variance kernels")
+        if variance_weights:
             self._variance_weights = True
         else:
+            if any(dim.kernel == "variance" for dim in self._dimensions):
+                raise ValueError("Cannot mix variance and non-variance kernels")
             self._variance_weights = False
 
     def __call__(
@@ -784,7 +786,7 @@ def smooth_variance(
     # Initialize variance matrix
     n_fit = len(idx_fit)
     n_pred = len(idx_pred)
-    variance = np.tile(col_sd**2, (n_pred, 1))
+    variance = np.ones((n_pred, 1), dtype=np.float32).dot((col_sd**2).reshape(1, n_fit))
 
     # Calculate variance weights one dimension at a time
     for idx_dim, dim in enumerate(dim_list):
