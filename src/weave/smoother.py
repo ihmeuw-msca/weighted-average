@@ -170,6 +170,7 @@ class Smoother:
         data: DataFrame,
         observed: str,
         stdev: Optional[str] = None,
+        weights: Optional[str] = None,
         smoothed: Optional[str] = None,
         fit: Optional[str] = None,
         predict: Optional[str] = None,
@@ -190,6 +191,8 @@ class Smoother:
             Column name of values to smooth.
         stdev: str, optional
             Column name of standard deviations.
+        weights: str, optional
+            DESCRIPTION.
         smoothed : str, optional
             Column name of smoothed values. If None, append '_smooth'
             to  `observed`.
@@ -253,6 +256,7 @@ class Smoother:
 
         """
         # TODO: add variance kernel to __call__ and documentation
+        # TODO: col_weights description
         # Check input
         self.check_input(data, observed, stdev, smoothed, fit, predict)
         smoothed = f"{observed}_smooth" if smoothed is None else smoothed
@@ -262,16 +266,19 @@ class Smoother:
         idx_pred = self.get_indices(data, predict)
         col_obs = self.get_values(data, observed, idx_fit)
         col_sd = self.get_values(data, stdev, idx_fit)
+        col_weights = self.get_values(data, weights, idx_fit)
         points = self.get_points(data)
         dim_list = self.get_typed_dimensions(data)
 
         # Calculate smoothed values
         if self.variance_weights:
             col_smooth = smooth_variance(
-                dim_list, points, col_obs, col_sd, idx_fit, idx_pred
+                dim_list, points, col_obs, col_sd, col_weights, idx_fit, idx_pred
             )
         else:
-            col_smooth = smooth(dim_list, points, col_obs, col_sd, idx_fit, idx_pred)
+            col_smooth = smooth(
+                dim_list, points, col_obs, col_sd, col_weights, idx_fit, idx_pred
+            )
 
         # Construct smoothed data frame
         data_smooth = data.iloc[idx_pred].reset_index(drop=True)
@@ -690,6 +697,7 @@ def smooth(
     points: np.ndarray,
     col_obs: np.ndarray,
     col_sd: np.ndarray,
+    col_weights: np.ndarray,
     idx_fit: np.ndarray,
     idx_pred: np.ndarray,
 ) -> np.ndarray:
@@ -705,6 +713,8 @@ def smooth(
         Values to smooth.
     col_sd: 1D numpy.ndarray of float
         Standard deviations.
+    col_weights: 1D numpy.ndarray of float
+        DESCRIPTION.
     idx_fit : 1D numpy.ndarray of int
         Indices of points to include in weighted averages.
     idx_pred: 1D numpy.ndarray of int
@@ -716,6 +726,7 @@ def smooth(
         Smoothed values.
 
     """
+    # TODO: col_weights documentation
     # Initialize weight matrix
     n_fit = len(idx_fit)
     n_pred = len(idx_pred)
@@ -747,6 +758,10 @@ def smooth(
     if not np.isnan(col_sd).any():
         weights = weights / (col_sd**2)
 
+    # Scale by DESCRIPTION
+    if not np.isnan(col_weights).any():
+        weights = weights * col_weights
+
     # Compute smoothed values
     return weights.dot(col_obs) / weights.sum(axis=1)
 
@@ -757,6 +772,7 @@ def smooth_variance(
     points: np.ndarray,
     col_obs: np.ndarray,
     col_sd: np.ndarray,
+    col_weights: np.ndarray,
     idx_fit: np.ndarray,
     idx_pred: np.ndarray,
 ) -> np.ndarray:
@@ -772,6 +788,8 @@ def smooth_variance(
         Values to smooth.
     col_sd: 1D numpy.ndarray of float
         Standard deviations.
+    col_weights: 1D numpy.ndarray of float
+        DESCRIPTION.
     idx_fit : 1D numpy.ndarray of int
         Indices of points to include in weighted averages.
     idx_pred: 1D numpy.ndarray of int
@@ -783,6 +801,7 @@ def smooth_variance(
         Smoothed values.
 
     """
+    # TODO: col_weights documentation
     # Initialize variance matrix
     n_fit = len(idx_fit)
     n_pred = len(idx_pred)
@@ -800,6 +819,12 @@ def smooth_variance(
         # Update variance matrix
         variance += dim_variance
 
-    # Compute smoothed values with inverse variance weights
-    variance = 1 / variance
-    return variance.dot(col_obs) / variance.sum(axis=1)
+    # Create inverse variance weights
+    weights = 1 / variance
+
+    # Scale by DESCRIPTION
+    if not np.isnan(col_weights).any():
+        weights = weights * col_weights
+
+    # Compute smoothed values
+    return weights.dot(col_obs) / weights.sum(axis=1)
