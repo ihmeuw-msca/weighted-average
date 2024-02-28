@@ -751,7 +751,7 @@ def smooth(
     return weights.dot(col_obs) / weights.sum(axis=1)
 
 
-@njit(parallel=True)
+@njit(parallel=False)
 def smooth_variance(
     dim_list: List[TypedDimension],
     points: np.ndarray,
@@ -786,20 +786,24 @@ def smooth_variance(
     # Initialize variance matrix
     n_fit = len(idx_fit)
     n_pred = len(idx_pred)
-    variance = np.ones((n_pred, 1), dtype=np.float32).dot((col_sd**2).reshape(1, n_fit))
+    variance = np.zeros((n_pred, n_fit), dtype=np.float32)
 
-    # Calculate variance weights one dimension at a time
-    for idx_dim, dim in enumerate(dim_list):
-        dim_variance = np.zeros((n_pred, n_fit), dtype=np.float32)
-        for ii in prange(n_pred):
+    # Calculate variance weights one prediction at a time
+    for ii in range(n_pred):
+        for idx_dim, dim in enumerate(dim_list):
             pred = points[idx_pred[ii], idx_dim]
+            dim_variance = np.zeros(n_fit, dtype=np.float32)
             for jj in range(n_fit):
                 fit = points[idx_fit[jj], idx_dim]
-                dim_variance[ii, jj] = dim.weight_dict[(pred, fit)]
-
-        # Update variance matrix
-        variance += dim_variance
+                dim_variance[jj] = dim.weight_dict[(pred, fit)]
+            if idx_dim == len(dim_list) - 1:
+                cond = variance[ii] > 0
+                scale = np.float32(0.25 * cond.sum())
+            variance[ii] += dim_variance
+        variance[ii] += col_sd**2
+        if scale > 0:
+            variance[ii] = np.where(cond, variance[ii] * scale, variance[ii])
 
     # Compute smoothed values with inverse variance weights
-    variance = 1 / variance
-    return variance.dot(col_obs) / variance.sum(axis=1)
+    weights = 1 / variance
+    return weights.dot(col_obs) / weights.sum(axis=1)
