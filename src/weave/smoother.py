@@ -260,7 +260,7 @@ class Smoother:
 
         """
         # TODO: add variance kernel to __call__ and documentation
-        # TODO: add down_weight to documentation
+        # TODO: add down_weight to documentation and add tests
         # Check input
         self.check_input(data, observed, stdev, smoothed, fit, predict, down_weight)
         smoothed = f"{observed}_smooth" if smoothed is None else smoothed
@@ -280,7 +280,9 @@ class Smoother:
                 dim_list, points, col_obs, col_sd, idx_fit, idx_pred, down_weight
             )
         else:
-            col_smooth = smooth(dim_list, points, col_obs, col_sd, idx_fit, idx_pred)
+            col_smooth = smooth(
+                dim_list, points, col_obs, col_sd, idx_fit, idx_pred, down_weight
+            )
 
         # Construct smoothed data frame
         data_smooth = data.iloc[idx_pred].reset_index(drop=True)
@@ -721,6 +723,7 @@ def smooth(
     col_sd: np.ndarray,
     idx_fit: np.ndarray,
     idx_pred: np.ndarray,
+    down_weight: float,
 ) -> np.ndarray:
     """Smooth data across dimensions with weighted averages.
 
@@ -738,6 +741,8 @@ def smooth(
         Indices of points to include in weighted averages.
     idx_pred: 1D numpy.ndarray of int
         Indices of points to predict smoothed values.
+    down_weight: float in [0, 1]
+        Down-weight neighbors for in-sample points.
 
     Returns
     -------
@@ -751,27 +756,30 @@ def smooth(
     n_pred = len(idx_pred)
     weights = np.ones((n_pred, n_fit), dtype=np.float32)
 
-    # Calculate weights one dimension at a time
-    for idx_dim, dim in enumerate(dim_list):
-        dim_weights = np.zeros((n_pred, n_fit), dtype=np.float32)
-        for ii in prange(n_pred):
+    # Calculate weights one prediction at a time
+    for ii in prange(n_pred):
+        for idx_dim, dim in enumerate(dim_list):
             pred = points[idx_pred[ii], idx_dim]
+            dim_weights = np.zeros(n_fit, dtype=np.float32)
             for jj in range(n_fit):
                 fit = points[idx_fit[jj], idx_dim]
-                dim_weights[ii, jj] = dim.weight_dict[(pred, fit)]
+                dim_weights[jj] = dim.weight_dict[(pred, fit)]
 
             # Normalize by depth subgroup
             if dim.kernel == "depth":
-                for weight in list(set(dim_weights[ii, :])):
-                    cond = dim_weights[ii, :] == weight
-                    scale = np.where(cond, weights[ii, :], 0).sum()
+                for weight in list(set(dim_weights)):
+                    cond = dim_weights == weight
+                    scale = np.where(cond, weights[ii], 0).sum()
                     if scale != 0:
-                        weights[ii, :] = np.where(
-                            cond, weights[ii, :] / scale, weights[ii, :]
-                        )
+                        weights[ii] = np.where(cond, weights[ii] / scale, weights[ii])
 
-        # Update weight matrix
-        weights *= dim_weights
+            # Update weight matrix
+            weights[ii] *= dim_weights
+
+        # Down-weight neighbors for in-sample points
+        if idx_pred[ii] in idx_fit and down_weight < 1:
+            neighbors = idx_pred[ii] != idx_fit
+            weights[ii] = np.where(neighbors, weights[ii] * down_weight, weights[ii])
 
     # Scale by standard deviation
     if not np.isnan(col_sd).any():
@@ -823,7 +831,7 @@ def smooth_variance(
 
     # Calculate variance weights one prediction at a time
     for ii in range(n_pred):
-        variance = np.pow(col_sd, 2, dtype=np.float32)
+        variance = col_sd**2
         for idx_dim, dim in enumerate(dim_list):
             pred = points[idx_pred[ii], idx_dim]
             dim_variance = np.zeros(n_fit, dtype=np.float32)
