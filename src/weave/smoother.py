@@ -567,13 +567,18 @@ class Smoother:
         ------
         ValueError
             If `data` contains NaNs or Infs.
+            If `stdev` contains zeros or negative values.
 
         """
+        # TODO: write test for stdev check
         if data.isna().any(axis=None):
             raise ValueError("`data` contains NaNs")
         cols_in = [observed] if stdev is None else [observed, stdev]
         if np.isinf(data[names + coords + cols_in]).any(axis=None):
             raise ValueError("`data` contains Infs")
+        if stdev is not None:
+            if np.any(data[stdev] >= 0):
+                raise ValueError("`stdev` values must be positive")
 
     def check_dim_values(
         self,
