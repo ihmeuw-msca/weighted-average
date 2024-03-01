@@ -4,14 +4,16 @@ from itertools import product
 from typing import List, Optional, Union
 import warnings
 
-from numba import njit, prange  # type: ignore
+from numba import njit  # type: ignore
 from numba.typed import List as TypedList  # type: ignore
 import numpy as np
 from pandas import DataFrame  # type: ignore
 from pandas.api.types import is_bool_dtype, is_numeric_dtype  # type: ignore
 
 from weave.dimension import Dimension, TypedDimension
-from weave.utils import as_list, flatten
+from weave.utils import as_list, flatten, is_number
+
+number = Union[int, float]
 
 
 class Smoother:
@@ -22,7 +24,7 @@ class Smoother:
     dimensions : list of Dimension
         Smoothing dimensions.
     variance_weights: bool
-        Whether or not to use inverse variance weights.
+        Whether or not to use inverse-variance weights.
 
     See Also
     --------
@@ -126,24 +128,24 @@ class Smoother:
 
     @property
     def variance_weights(self) -> bool:
-        """Get inverse variance weights flag.
+        """Get inverse-variance weights flag.
 
         Returns
         -------
         bool
-            Whether or not to use inverse variance weights.
+            Whether or not to use inverse-variance weights.
 
         """
         return self._variance_weights
 
     @variance_weights.setter
     def variance_weights(self, variance_weights: bool) -> None:
-        """Set inverse variance weights flag.
+        """Set inverse-variance weights flag.
 
         Parameters
         ----------
         variance_weights : bool
-            Whether or not to use inverse variance weights.
+            Whether or not to use inverse-variance weights.
 
         Raises
         ------
@@ -170,10 +172,10 @@ class Smoother:
         data: DataFrame,
         observed: str,
         stdev: Optional[str] = None,
-        weights: Optional[str] = None,
         smoothed: Optional[str] = None,
         fit: Optional[str] = None,
         predict: Optional[str] = None,
+        down_weight: Optional[number] = 1,
     ) -> DataFrame:
         """Smooth data across dimensions with weighted averages.
 
@@ -191,8 +193,6 @@ class Smoother:
             Column name of values to smooth.
         stdev: str, optional
             Column name of standard deviations.
-        weights: str, optional
-            DESCRIPTION.
         smoothed : str, optional
             Column name of smoothed values. If None, append '_smooth'
             to  `observed`.
@@ -202,6 +202,10 @@ class Smoother:
         predict : str, optional
             Column name indicating where to predict smoothed values.
             If None, predictions are made for all points in `data`.
+        down_weight : int or float in [0, 1], optional
+            Down-weight neighbors for in-sample points. Default is 1,
+            which corresponds to no down-weighting. If 0, in-sample
+            points are not smoothed.
 
         Returns
         -------
@@ -256,28 +260,28 @@ class Smoother:
 
         """
         # TODO: add variance kernel to __call__ and documentation
-        # TODO: col_weights description
+        # TODO: add down_weight to documentation and add tests
         # Check input
-        self.check_input(data, observed, stdev, smoothed, fit, predict)
+        self.check_input(data, observed, stdev, smoothed, fit, predict, down_weight)
         smoothed = f"{observed}_smooth" if smoothed is None else smoothed
+        down_weight = np.float32(down_weight)
 
         # Extract data
         idx_fit = self.get_indices(data, fit)
         idx_pred = self.get_indices(data, predict)
         col_obs = self.get_values(data, observed, idx_fit)
         col_sd = self.get_values(data, stdev, idx_fit)
-        col_weights = self.get_values(data, weights, idx_fit)
         points = self.get_points(data)
         dim_list = self.get_typed_dimensions(data)
 
         # Calculate smoothed values
         if self.variance_weights:
             col_smooth = smooth_variance(
-                dim_list, points, col_obs, col_sd, col_weights, idx_fit, idx_pred
+                dim_list, points, col_obs, col_sd, idx_fit, idx_pred, down_weight
             )
         else:
             col_smooth = smooth(
-                dim_list, points, col_obs, col_sd, col_weights, idx_fit, idx_pred
+                dim_list, points, col_obs, col_sd, idx_fit, idx_pred, down_weight
             )
 
         # Construct smoothed data frame
@@ -294,6 +298,7 @@ class Smoother:
         smoothed: Optional[str],
         fit: Optional[str],
         predict: Optional[str],
+        down_weight: float,
     ) -> None:
         """Check `smoother` arguments and data.
 
@@ -312,11 +317,13 @@ class Smoother:
             averages.
         predict : str, optional
             Column name indicating where to predict smoothed values.
+        down_weight : float in [0, 1]
+            Down-weight neighbors for in-sample points.
 
         """
         # Check argument types and values
-        self.check_arg_types(data, observed, stdev, smoothed, fit, predict)
-        self.check_arg_values(observed, stdev, smoothed)
+        self.check_arg_types(data, observed, stdev, smoothed, fit, predict, down_weight)
+        self.check_arg_values(observed, stdev, smoothed, down_weight)
 
         # Check data and dictionary keys
         names = [dim.name for dim in self._dimensions]
@@ -341,6 +348,7 @@ class Smoother:
         smoothed: Optional[str],
         fit: Optional[str],
         predict: Optional[str],
+        down_weight: float,
     ) -> None:
         """Check `smoother` argument types.
 
@@ -359,6 +367,8 @@ class Smoother:
             averages.
         predict : str, optional
             Column name indicating where to predict smoothed values.
+        down_weight : float in [0, 1], optional
+            Down-weight neighbors for in-sample points.
 
         Raises
         ------
@@ -378,12 +388,15 @@ class Smoother:
             raise TypeError("`fit` is not a str")
         if predict is not None and not isinstance(predict, str):
             raise TypeError("`predict` is not a str")
+        if not is_number(down_weight):
+            raise TypeError("`down_weight` is not an int or float")
 
     def check_arg_values(
         self,
         observed: str,
         stdev: Optional[str],
         smoothed: Optional[str],
+        down_weight: float,
     ) -> None:
         """Check `smoother` argument values.
 
@@ -395,19 +408,25 @@ class Smoother:
             Column name of standard deviations.
         smoothed : str, optional
             Column name of smoothed values.
+        down_weight : float in [0, 1], optional
+            Down-weight neighbors for in-sample points.
 
         Raises
         ------
         ValueError
             If `observed`, `stdev`, or `smoothed` overlap.
             If `stdev` not passed when `self.variance_weights` is True.
+            If `down_weight` is not in [0, 1].
 
         """
+        # TODO: add test down_weight checks
         col_set = set([observed, stdev, smoothed])
         if not (stdev is None and smoothed is None) and len(col_set) < 3:
             raise ValueError("Duplicates in `observed`, `stdev`, `smoothed`")
         if self.variance_weights and stdev is None:
-            raise ValueError("`stdev` required for inverse variance weighting")
+            raise ValueError("`stdev` required for inverse-variance weighting")
+        if not 0 <= down_weight <= 1:
+            raise ValueError("`down_weight` must be in [0, 1]")
 
     @staticmethod
     def check_data_columns(
@@ -574,13 +593,18 @@ class Smoother:
         ------
         ValueError
             If `data` contains NaNs or Infs.
+            If `stdev` contains zeros or negative values.
 
         """
+        # TODO: write test for stdev check
         if data.isna().any(axis=None):
             raise ValueError("`data` contains NaNs")
         cols_in = [observed] if stdev is None else [observed, stdev]
         if np.isinf(data[names + coords + cols_in]).any(axis=None):
             raise ValueError("`data` contains Infs")
+        if stdev is not None:
+            if np.any(data[stdev] <= 0):
+                raise ValueError("`stdev` values must be positive")
 
     def check_dim_values(
         self,
@@ -691,15 +715,15 @@ class Smoother:
         )
 
 
-@njit(parallel=True)
+@njit
 def smooth(
     dim_list: List[TypedDimension],
     points: np.ndarray,
     col_obs: np.ndarray,
     col_sd: np.ndarray,
-    col_weights: np.ndarray,
     idx_fit: np.ndarray,
     idx_pred: np.ndarray,
+    down_weight: float,
 ) -> np.ndarray:
     """Smooth data across dimensions with weighted averages.
 
@@ -713,12 +737,12 @@ def smooth(
         Values to smooth.
     col_sd: 1D numpy.ndarray of float
         Standard deviations.
-    col_weights: 1D numpy.ndarray of float
-        DESCRIPTION.
     idx_fit : 1D numpy.ndarray of int
         Indices of points to include in weighted averages.
     idx_pred: 1D numpy.ndarray of int
         Indices of points to predict smoothed values.
+    down_weight: float in [0, 1]
+        Down-weight neighbors for in-sample points.
 
     Returns
     -------
@@ -726,57 +750,55 @@ def smooth(
         Smoothed values.
 
     """
-    # TODO: col_weights documentation
     # Initialize weight matrix
     n_fit = len(idx_fit)
     n_pred = len(idx_pred)
     weights = np.ones((n_pred, n_fit), dtype=np.float32)
 
-    # Calculate weights one dimension at a time
-    for idx_dim, dim in enumerate(dim_list):
-        dim_weights = np.zeros((n_pred, n_fit), dtype=np.float32)
-        for ii in prange(n_pred):
+    # Calculate weights one prediction at a time
+    for ii in range(n_pred):
+        for idx_dim, dim in enumerate(dim_list):
             pred = points[idx_pred[ii], idx_dim]
+            dim_weights = np.zeros(n_fit, dtype=np.float32)
             for jj in range(n_fit):
                 fit = points[idx_fit[jj], idx_dim]
-                dim_weights[ii, jj] = dim.weight_dict[(pred, fit)]
+                dim_weights[jj] = dim.weight_dict[(pred, fit)]
 
             # Normalize by depth subgroup
             if dim.kernel == "depth":
-                for weight in list(set(dim_weights[ii, :])):
-                    cond = dim_weights[ii, :] == weight
-                    scale = np.where(cond, weights[ii, :], 0).sum()
+                for weight in list(set(dim_weights)):
+                    cond = dim_weights == weight
+                    scale = np.where(cond, weights[ii], 0).sum()
                     if scale != 0:
-                        weights[ii, :] = np.where(
-                            cond, weights[ii, :] / scale, weights[ii, :]
-                        )
+                        weights[ii] = np.where(cond, weights[ii] / scale, weights[ii])
 
-        # Update weight matrix
-        weights *= dim_weights
+            # Update weight matrix
+            weights[ii] *= dim_weights
+
+        # Down-weight neighbors for in-sample points
+        if idx_pred[ii] in idx_fit and down_weight < 1:
+            neighbors = idx_pred[ii] != idx_fit
+            weights[ii] = np.where(neighbors, weights[ii] * down_weight, weights[ii])
 
     # Scale by standard deviation
     if not np.isnan(col_sd).any():
         weights = weights / (col_sd**2)
 
-    # Scale by DESCRIPTION
-    if not np.isnan(col_weights).any():
-        weights = weights * col_weights
-
     # Compute smoothed values
     return weights.dot(col_obs) / weights.sum(axis=1)
 
 
-@njit(parallel=True)
+@njit
 def smooth_variance(
     dim_list: List[TypedDimension],
     points: np.ndarray,
     col_obs: np.ndarray,
     col_sd: np.ndarray,
-    col_weights: np.ndarray,
     idx_fit: np.ndarray,
     idx_pred: np.ndarray,
+    down_weight: float,
 ) -> np.ndarray:
-    """Smooth data across dimensions with inverse variance weighted averages.
+    """Smooth data across dimensions with inverse-variance weighted averages.
 
     Parameters
     ----------
@@ -788,12 +810,12 @@ def smooth_variance(
         Values to smooth.
     col_sd: 1D numpy.ndarray of float
         Standard deviations.
-    col_weights: 1D numpy.ndarray of float
-        DESCRIPTION.
     idx_fit : 1D numpy.ndarray of int
         Indices of points to include in weighted averages.
     idx_pred: 1D numpy.ndarray of int
         Indices of points to predict smoothed values.
+    down_weight: float in [0, 1]
+        Down-weight neighbors for in-sample points.
 
     Returns
     -------
@@ -801,30 +823,25 @@ def smooth_variance(
         Smoothed values.
 
     """
-    # TODO: col_weights documentation
     # Initialize variance matrix
     n_fit = len(idx_fit)
     n_pred = len(idx_pred)
-    variance = np.ones((n_pred, 1), dtype=np.float32).dot((col_sd**2).reshape(1, n_fit))
+    weights = np.zeros((n_pred, n_fit), dtype=np.float32)
 
-    # Calculate variance weights one dimension at a time
-    for idx_dim, dim in enumerate(dim_list):
-        dim_variance = np.zeros((n_pred, n_fit), dtype=np.float32)
-        for ii in prange(n_pred):
+    # Calculate variance weights one prediction at a time
+    for ii in range(n_pred):
+        variance = col_sd**2
+        for idx_dim, dim in enumerate(dim_list):
             pred = points[idx_pred[ii], idx_dim]
+            dim_variance = np.zeros(n_fit, dtype=np.float32)
             for jj in range(n_fit):
                 fit = points[idx_fit[jj], idx_dim]
-                dim_variance[ii, jj] = dim.weight_dict[(pred, fit)]
+                dim_variance[jj] = dim.weight_dict[(pred, fit)]
+            variance += dim_variance
+        weights[ii] = 1 / variance
+        if idx_pred[ii] in idx_fit and down_weight < 1:
+            neighbors = idx_pred[ii] != idx_fit
+            weights[ii] = np.where(neighbors, weights[ii] * down_weight, weights[ii])
 
-        # Update variance matrix
-        variance += dim_variance
-
-    # Create inverse variance weights
-    weights = 1 / variance
-
-    # Scale by DESCRIPTION
-    if not np.isnan(col_weights).any():
-        weights = weights * col_weights
-
-    # Compute smoothed values
+    # Compute smoothed values with inverse-variance weights
     return weights.dot(col_obs) / weights.sum(axis=1)
