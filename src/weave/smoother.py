@@ -276,17 +276,18 @@ class Smoother:
 
         # Calculate smoothed values
         if self.variance_weights:
-            col_smooth = smooth_variance(
+            col_smooth,col_variance = smooth_variance(
                 dim_list, points, col_obs, col_sd, idx_fit, idx_pred, down_weight
             )
         else:
-            col_smooth = smooth(
+            col_smooth,col_variance = smooth(
                 dim_list, points, col_obs, col_sd, idx_fit, idx_pred, down_weight
             )
 
         # Construct smoothed data frame
         data_smooth = data.iloc[idx_pred].reset_index(drop=True)
         data_smooth[smoothed] = col_smooth
+        data_smooth['weave_result_variance']=col_variance
 
         return data_smooth
 
@@ -785,7 +786,10 @@ def smooth(
         weights = weights / (col_sd**2)
 
     # Compute smoothed values
-    return weights.dot(col_obs) / weights.sum(axis=1)
+    smoothed_values = weights.dot(col_obs) / weights.sum(axis=1)
+    variance_vals = (weights**2).dot(col_sd**2) / weights.sum(axis=1)
+    return smoothed_values,variance_vals
+
 
 
 @njit
@@ -844,4 +848,6 @@ def smooth_variance(
             weights[ii] = np.where(neighbors, weights[ii] * down_weight, weights[ii])
 
     # Compute smoothed values with inverse-variance weights
-    return weights.dot(col_obs) / weights.sum(axis=1)
+    smoothed_values = weights.dot(col_obs) / weights.sum(axis=1)
+    variance_vals = (weights**2).dot(col_sd**2) / weights.sum(axis=1)
+    return smoothed_values,variance_vals
