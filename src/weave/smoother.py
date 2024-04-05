@@ -787,7 +787,7 @@ def smooth(
 
     # Compute smoothed values
     smoothed_values = weights.dot(col_obs) / weights.sum(axis=1)
-    variance_vals = (weights**2).dot(col_sd**2) / weights.sum(axis=1)
+    variance_vals = (weights**2).dot(col_sd**2) / (weights.sum(axis=1)**2)
     return smoothed_values,variance_vals
 
 
@@ -849,5 +849,5 @@ def smooth_variance(
 
     # Compute smoothed values with inverse-variance weights
     smoothed_values = weights.dot(col_obs) / weights.sum(axis=1)
-    variance_vals = (weights**2).dot(col_sd**2) / weights.sum(axis=1)
+    variance_vals = (weights**2).dot(col_sd**2) / (weights.sum(axis=1)**2)
     return smoothed_values,variance_vals
