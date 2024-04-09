@@ -67,10 +67,18 @@ def test_depth_radius_type(radius):
 
 @pytest.mark.parametrize('version', not_str)
 def test_depth_version_type(version):
-    """Raise TypeError if `version` not a str."""
+    """Raise TypeError if `version` is not a str."""
     if version is not None:
         with pytest.raises(TypeError):
             Dimension('dummy', kernel='depth', radius=0.6, version=version)
+
+
+@pytest.mark.parametrize('radius', not_numeric)
+def test_variance_radius_type(radius):
+    """Raise TypeError if `radius` is not an int or float."""
+    if radius is not None:
+        with pytest.raises(TypeError):
+            Dimension('dummy', kernel='variance', radius=radius)
 
 
 @pytest.mark.parametrize('distance', not_str)
@@ -150,7 +158,7 @@ def test_kernel_default():
 
 
 def test_exponential_radius_exist():
-    """Raise KeyError if `radius` is not passed."""
+    """Raise AttributeError if `radius` is not passed."""
     with pytest.raises(AttributeError):
         Dimension('dummy', kernel='exponential')
 
@@ -163,7 +171,7 @@ def test_exponential_radius_value(radius):
 
 
 def test_tricubic_exponent_exist():
-    """Raise KeyError if `exponent` is not passed."""
+    """Raise AttributeError if `exponent` is not passed."""
     with pytest.raises(AttributeError):
         Dimension('dummy', kernel='tricubic')
 
@@ -176,7 +184,7 @@ def test_tricubic_exponent_value(exponent):
 
 
 def test_depth_radius_exist():
-    """Raise KeyError if `radius` is not passed."""
+    """Raise AttributeError if `radius` is not passed."""
     with pytest.raises(AttributeError):
         Dimension('dummy', kernel='depth')
 
@@ -198,6 +206,19 @@ def test_depth_version_default():
     """`version` set to 'codem' if not passed."""
     dim = Dimension('dummy', kernel='depth', radius=0.6)
     assert dim.version == 'codem'
+
+
+def test_variance_radius_exists():
+    """Raise AttributeError if `radius` is not passed."""
+    with pytest.raises(AttributeError):
+        Dimension('dummy', kernel='variance')
+
+
+@pytest.mark.parametrize('radius', [-1, -1.0, 0, 0.0])
+def test_variance_radius_value(radius):
+    """Raise ValueError if `radius` not valid."""
+    with pytest.raises(ValueError):
+        Dimension('dummy', kernel='variance', radius=radius)
 
 
 def test_distance_value():
@@ -323,6 +344,15 @@ def test_depth_reset_version_type(version):
             dim.version = version
 
 
+@pytest.mark.parametrize('radius', not_numeric)
+def test_variance_reset_radius_type(radius):
+    """Raise TypeError if `radius` is not an int or float."""
+    dim = Dimension('dummy', kernel='variance', radius=0.6)
+    if radius is not None:
+        with pytest.raises(TypeError):
+            dim.radius = radius
+
+
 @pytest.mark.parametrize('radius', [-1, -1.0, 0, 0.0])
 def test_exponential_reset_radius_value(radius):
     """Raise ValueError if `radius` is not valid."""
@@ -352,3 +382,11 @@ def test_depth_reset_version_value():
     dim = Dimension('dummy', kernel='depth', radius=0.6)
     with pytest.raises(ValueError):
         dim.version = 'dummy'
+
+
+@pytest.mark.parametrize('radius', [-1, -1.0, 0, 0.0])
+def test_variance_reset_radius_value(radius):
+    """Raise ValueError if `radius` is not valid."""
+    dim = Dimension('dummy', kernel='variance', radius=0.6)
+    with pytest.raises(ValueError):
+        dim.radius = radius
