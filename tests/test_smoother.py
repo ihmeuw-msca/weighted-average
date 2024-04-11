@@ -5,7 +5,7 @@ import numpy as np
 from pandas import DataFrame
 
 from weave.dimension import Dimension
-from weave.smoother import Smoother, smooth
+from weave.smoother import Smoother, smooth, smooth_variance
 
 # Lists of wrong types to test exceptions
 value_list = [1, 1.0, 'dummy', True, None, [], (), {}]
@@ -13,25 +13,46 @@ not_str = [1, 1.0, True, None, [], (), {}]
 not_bool = [1, 1.0, None, [], (), {}]
 not_dimensions = value_list + [[value] for value in value_list]
 not_columns = not_str + [[value] for value in not_str]
+not_number = ['dummy', True, None, [], (), {}]
 
 # Example smoother
 age = Dimension(
     name='age_id',
     kernel='exponential',
-    radius=1
+    radius=1,
 )
 year = Dimension(
     name='year_id',
     kernel='tricubic',
-    exponent=0.5
+    exponent=0.5,
 )
 location = Dimension(
     name='location_id',
     coordinates=['super_region', 'region', 'country'],
     kernel='depth',
-    radius=0.9
+    radius=0.9,
 )
 smoother = Smoother([age, year, location])
+
+# Example variance smoother
+age_variance = Dimension(
+    name='age_id',
+    kernel='variance',
+    radius=0.5,
+)
+year_variance = Dimension(
+    name='year_id',
+    kernel='variance',
+    radius=0.5,
+)
+location_variance = Dimension(
+    name='location_id',
+    coordinates=['super_region', 'region', 'country'],
+    kernel='variance',
+    radius=0.5,
+)
+smoother_variance = Smoother([age_variance, year_variance, location_variance])
+
 
 # Example data
 data = DataFrame({
@@ -48,6 +69,8 @@ data = DataFrame({
     'fraction': [0.1, 0.2, 0.3, 0.4, 0.5],
     'residual': [0.2, 0.4, 0.6, 0.8, 1.0],
     'residual_sd': [0.01, 0.02, 0.03, 0.04, 0.05],
+    'sd_zero': [0.0, 0.02, 0.03, 0.04, 0.05],
+    'sd_negative': [-0.01, 0.02, 0.03, 0.04, 0.05],
     'name': ['a', 'b', 'c', 'd', 'e']
 })
 
@@ -91,6 +114,24 @@ def test_dimension_immutable():
     with pytest.raises(AttributeError):
         dim = Dimension('dummy')
         smoother.dimensions = dim
+
+
+def test_variance_weights_value():
+    """`variance_weights` set to correct values."""
+    assert smoother.variance_weights is False
+    assert smoother_variance.variance_weights is True
+
+
+def test_variance_weights_error():
+    """Raise ValueError if dimensions have variance and non-variance kernels."""
+    with pytest.raises(ValueError):
+        Smoother([age, year_variance])
+
+
+def test_variance_weights_immutable():
+    """Raise AttributeError if attempt to reset `variance_weights`."""
+    with pytest.raises(AttributeError):
+        smoother.variance_weights = False
 
 
 # Test input types
@@ -140,6 +181,13 @@ def test_predict_type(predict):
             smoother(data, 'residual', predict=predict)
 
 
+@pytest.mark.parametrize('down_weight', not_number)
+def test_down_weight_type(down_weight):
+    """Raise TypeError if `down_weight` is not an int or float."""
+    with pytest.raises(TypeError):
+        smoother(data, 'residual', down_weight=down_weight)
+
+
 # Test input values
 def test_observed_stdev_overlap():
     """Raise ValueError if `observed` == `stdev`."""
@@ -159,10 +207,25 @@ def test_stdev_smoothed_overlap():
         smoother(data, 'residual', stdev='residual_sd', smoothed='residual_sd')
 
 
+def test_stdev_passed_with_variance_weights():
+    """Raise ValueError if `stdev` not passed when `variance_weights` is True."""
+    with pytest.raises(ValueError):
+        smoother_variance(data, 'residual')
+
+
 def test_smoothed_warning():
     """Trigger UserWarning if `smoothed` already in `data`."""
     with pytest.warns(UserWarning):
         smoother(data, 'count', smoothed='residual')
+
+
+@pytest.mark.parametrize('down_weight', [-1, 2])
+def test_down_weight_value(down_weight):
+    """Raise ValueError if `down_weight` not in [0, 1]."""
+    with pytest.raises(ValueError):
+        smoother(
+            data, 'residual', stdev='residual_sd', down_weight=down_weight
+        )
 
 
 # Test data keys
@@ -294,6 +357,13 @@ def test_data_infs(value):
         smoother(data2, 'residual')
 
 
+@pytest.mark.parametrize('stdev', ['sd_zero', 'sd_negative'])
+def test_stdev_values(stdev):
+    """Raise ValueError if `stdev` column contains zeros or negative values."""
+    with pytest.raises(ValueError):
+        smoother(data, 'residual', stdev)
+
+
 # Test smoother output
 def test_idx_fit_len():
     """`get_indices` returns array of correct length."""
@@ -339,7 +409,27 @@ def test_smooth_shape(predict):
     col_sd = smoother.get_values(data, None, idx_fit)
     points = smoother.get_points(data)
     dim_list = smoother.get_typed_dimensions(data)
-    cols_smooth = smooth(dim_list, points, col_obs, col_sd, idx_fit, idx_pred)
+    cols_smooth = smooth(
+        dim_list, points, col_obs, col_sd, idx_fit, idx_pred, 1.0
+    )
+    if predict is None:
+        assert cols_smooth.shape == (len(data),)
+    else:
+        assert cols_smooth.shape == (data[predict].sum(),)
+
+
+@pytest.mark.parametrize('predict', [None, 'fit', 'predict'])
+def test_smooth_variance_shape(predict):
+    """`smooth_variance` returns array of correct shape."""
+    idx_fit = smoother.get_indices(data, None)
+    idx_pred = smoother.get_indices(data, predict)
+    col_obs = smoother.get_values(data, 'residual', idx_fit)
+    col_sd = smoother.get_values(data, None, idx_fit)
+    points = smoother.get_points(data)
+    dim_list = smoother.get_typed_dimensions(data)
+    cols_smooth = smooth_variance(
+        dim_list, points, col_obs, col_sd, idx_fit, idx_pred, 1.0
+    )
     if predict is None:
         assert cols_smooth.shape == (len(data),)
     else:
@@ -367,6 +457,18 @@ def test_smoother_columns(smoothed):
         assert smoothed in result.columns
 
 
+@pytest.mark.parametrize('smoothed', [None, 'dummy'])
+def test_smoother_variance_columns(smoothed):
+    """Return data frame with correct column names."""
+    result = smoother_variance(
+        data, 'residual', 'residual_sd', smoothed=smoothed
+    )
+    if smoothed is None:
+        assert 'residual_smooth' in result.columns
+    else:
+        assert smoothed in result.columns
+
+
 def test_result():
     """Check output values."""
     result = smoother(data, 'residual')
@@ -377,4 +479,18 @@ def test_result():
     assert np.allclose(vals, result['residual_smooth'].values)
     result = smoother(data, 'residual', fit='fit')
     vals = np.array([0.20659341, 0.20659341, 0.26, 0.7934066, 1.])
+    assert np.allclose(vals, result['residual_smooth'].values)
+
+
+def test_variance_result():
+    """Check output values."""
+    result = smoother_variance(data, 'residual', 'residual_sd')
+    vals = np.array(
+        [0.20000343, 0.40000615, 0.59999865, 0.7999712, 0.99992466]
+    )
+    assert np.allclose(vals, result['residual_smooth'].values)
+    result = smoother_variance(data, 'residual', 'residual_sd', fit='fit')
+    vals = np.array(
+        [0.20000166, 0.4879758, 0.6842466, 0.7999973, 0.9999626]
+    )
     assert np.allclose(vals, result['residual_smooth'].values)
