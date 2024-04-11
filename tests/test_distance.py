@@ -21,8 +21,15 @@ from weave.distance import euclidean, tree
 @composite
 def my_floats(draw):
     """Return float32 rounded to 5 decimals."""
-    my_float = draw(floats(min_value=-1e-5, max_value=1e5, allow_nan=False,
-                           allow_infinity=False, allow_subnormal=False))
+    my_float = draw(
+        floats(
+            min_value=-1e-5,
+            max_value=1e5,
+            allow_nan=False,
+            allow_infinity=False,
+            allow_subnormal=False,
+        )
+    )
     return np.float32(np.around(my_float, decimals=5))
 
 
@@ -30,8 +37,7 @@ def my_floats(draw):
 def my_arrays(draw, n=2):
     """Return n vectors of float32 with matching lengths."""
     m = draw(integers(min_value=1, max_value=5))
-    array_list = [draw(arrays(np.float32, m, elements=my_floats()))
-                  for ii in range(n)]
+    array_list = [draw(arrays(np.float32, m, elements=my_floats())) for ii in range(n)]
     return array_list
 
 
@@ -40,7 +46,7 @@ def property_1(distance):
     """Output satisfies property 1."""
     assert np.isreal(distance)
     assert np.isfinite(distance)
-    assert distance >= 0.
+    assert distance >= 0.0
     assert isinstance(distance, np.float32)
 
 
@@ -66,10 +72,10 @@ def test_tree_type(xy):
 # Property 2: Output == 0 iff x == y
 def property_2(x, y, distance):
     """Output satisfies property 2."""
-    if np.isclose(distance, 0.):
+    if np.isclose(distance, 0.0):
         assert np.allclose(x, y, rtol=1e-6)
-    if np.allclose(x, y, rtol=1e0-6):
-        assert np.isclose(distance, 0.)
+    if np.allclose(x, y, rtol=1e0 - 6):
+        assert np.isclose(distance, 0.0)
 
 
 @given(my_arrays())
@@ -146,25 +152,25 @@ def test_same_country():
     """Test tree output with same country."""
     x = np.array([1, 2, 4])
     y = np.array([1, 2, 4])
-    assert np.isclose(tree(x, y), 0.)
+    assert np.isclose(tree(x, y), 0.0)
 
 
 def test_same_region():
     """Test tree output with same region."""
     x = np.array([1, 2, 4])
     y = np.array([1, 2, 5])
-    assert np.isclose(tree(x, y), 1.)
+    assert np.isclose(tree(x, y), 1.0)
 
 
 def test_same_super_region():
     """Test tree output with same super region."""
     x = np.array([1, 2, 4])
     y = np.array([1, 3, 6])
-    assert np.isclose(tree(x, y), 2.)
+    assert np.isclose(tree(x, y), 2.0)
 
 
 def test_different_super_region():
     """Test tree output with different super regions."""
     x = np.array([1, 2, 4])
     y = np.array([7, 8, 9])
-    assert np.isclose(tree(x, y), 3.)
+    assert np.isclose(tree(x, y), 3.0)
