@@ -68,7 +68,7 @@ class Dimension:
         or `['super_region', 'region', 'country']`. Can be same as
         `name` attribute if dimension is 1D.
 
-    kernel : {'exponential', 'tricubic', 'depth', 'identity'}
+    kernel : {'exponential', 'tricubic', 'depth', 'variance', 'identity'}
         Kernel function name.
 
         Name of kernel function to compute smoothing weights.
@@ -89,7 +89,7 @@ class Dimension:
     radius : positive number, optional
         Kernel radius.
 
-        Kernel radius if `kernel` is 'exponential' or 'depth'.
+        Kernel radius if `kernel` is 'exponential', 'depth', or 'variance'.
 
     exponent : positive number, optional
         Kernel exponent.
@@ -111,8 +111,6 @@ class Dimension:
 
     """
 
-    # TODO: add variance kernel to class documentation
-
     def __init__(
         self,
         name: str,
@@ -132,7 +130,7 @@ class Dimension:
             Dimension name.
         coordinates : str or list of str, optional
             Dimension coordinates, if different from `name`.
-        kernel : {'exponential', 'tricubic', 'depth', 'identity'}, optional
+        kernel : {'exponential', 'tricubic', 'depth', 'variance', 'identity'}, optional
             Kernel function name. Default is 'identity'.
         distance : {'euclidean', 'tree', 'dictionary'}, optional
             Distance function name. If None, default distance function
@@ -141,8 +139,9 @@ class Dimension:
         Other Parameters
         ----------------
         radius : positive number, optional
-            Kernel radius if `kernel` is 'exponential' or 'depth'. For
-            depth kernel, `radius` must be a float in (0.5, 1).
+            Kernel radius if `kernel` is 'exponential', 'depth', or
+            'variance'. For depth kernel, `radius` must be a float in
+            (0.5, 1).
         exponent : positive number, optional
             Kernel exponent if `kernel` is 'tricubic'.
         version : {'codem', 'stgpr'}, optional
@@ -261,7 +260,6 @@ class Dimension:
             )
 
         """
-        # TODO: add variance kernel to __init__ documentation
         self.name = name
         self.coordinates = coordinates
         self.kernel = kernel
