@@ -68,7 +68,6 @@ class Smoother:
         >>> smoother = Smoother(dimensions)
 
         """
-        # TODO: add variance kernel to __init__ examples
         self.dimensions = as_list(dimensions)
         self.variance_weights = all(
             dim.kernel == "variance" for dim in self._dimensions
@@ -192,7 +191,8 @@ class Smoother:
         observed : str
             Column name of values to smooth.
         stdev: str, optional
-            Column name of standard deviations.
+            Column name of standard deviations. Required for inverse
+            variance kernels.
         smoothed : str, optional
             Column name of smoothed values. If None, append '_smooth'
             to  `observed`.
@@ -259,8 +259,6 @@ class Smoother:
         1       3  ...    3.0  True      2.919984
 
         """
-        # TODO: add variance kernel to __call__ and documentation
-        # TODO: add down_weight to documentation and add tests
         # Check input
         self.check_input(data, observed, stdev, smoothed, fit, predict, down_weight)
         smoothed = f"{observed}_smooth" if smoothed is None else smoothed
@@ -419,7 +417,6 @@ class Smoother:
             If `down_weight` is not in [0, 1].
 
         """
-        # TODO: add test down_weight checks
         col_set = set([observed, stdev, smoothed])
         if not (stdev is None and smoothed is None) and len(col_set) < 3:
             raise ValueError("Duplicates in `observed`, `stdev`, `smoothed`")
@@ -481,8 +478,7 @@ class Smoother:
         if stdev is not None and stdev not in data:
             raise KeyError(f"`stdev` column {stdev} not in data")
         if smoothed in data:
-            msg = f"`smoothed` column {smoothed} will be overwritten"
-            warnings.warn(msg)
+            warnings.warn(f"`smoothed` column {smoothed} will be overwritten")
         if fit is not None and fit not in data:
             raise KeyError(f"`fit` column {fit} not in data")
         if predict is not None and predict not in data:
@@ -552,8 +548,7 @@ class Smoother:
         if not all(is_numeric_dtype(data[name]) for name in names):
             raise TypeError("Not all `dimension.name` data int or float")
         if not all(is_numeric_dtype(data[coord]) for coord in coords):
-            msg = "Not all `dimension.coordinates` data int or float"
-            raise TypeError(msg)
+            raise TypeError("Not all `dimension.coordinates` data int or float")
         if not is_numeric_dtype(data[observed]):
             raise TypeError(f"`observed` data {observed} not int or float")
         if stdev is not None:
@@ -596,7 +591,6 @@ class Smoother:
             If `stdev` contains zeros or negative values.
 
         """
-        # TODO: write test for stdev check
         if data.isna().any(axis=None):
             raise ValueError("`data` contains NaNs")
         cols_in = [observed] if stdev is None else [observed, stdev]
