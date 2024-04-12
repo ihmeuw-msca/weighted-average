@@ -253,6 +253,22 @@ def inverse(distance: number, radius: float) -> np.float32:
     nonnegative numpy.float32
         Inverse-distance smoothing weight.
 
+    Notes
+    -----
+    The inverse-distance kernel function for a single dimension is
+    defined as
+
+    .. math:: k(d; r) = \\frac{d}{r},
+
+    which is combined over all dimensions :math:`m \in \mathcal{M}` to
+    create weights
+
+    .. math:: \\tilde{w}_{i,j} = \\frac{1}
+              {\sum_{m \\in \\mathcal{M}} k(d_{i,j}^m; r^m) + \\sigma_i^2}.
+
+    When using inverse-distance weights, all dimension kernels must be
+    set to 'inverse', and the `stdev` argument is required for
+    :mod:`weave.smoother.Smoother()`.
+
     """
-    # TODO: add notes and examples to documentation
     return np.float32(distance / radius)
