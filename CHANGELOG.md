@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Added `inverse` kernel that implements inverse-distance weights.
+- Added `down_weight` argument to smoother to change relative importance of neighbors
+  for in-sample points.
 
 ## [1.1.2] - 2024-02-06
 
