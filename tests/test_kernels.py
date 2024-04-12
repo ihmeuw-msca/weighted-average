@@ -11,7 +11,7 @@ from hypothesis import given, settings
 from hypothesis.strategies import floats, integers
 import numpy as np
 
-from weave.kernels import exponential, depth, tricubic, variance
+from weave.kernels import exponential, depth, tricubic, inverse
 
 # Hypothesis types
 my_dist = floats(
@@ -84,10 +84,10 @@ def test_tricubic_type(distance, radius, exponent):
 
 @settings(deadline=None)
 @given(my_dist, my_radius1)
-def test_variance_type(distance, radius):
-    """Variance output satisfies property 1."""
-    variance_term = variance(distance, radius)
-    property_1(variance_term)
+def test_inverse_type(distance, radius):
+    """Inverse output satisfies property 1."""
+    inverse_term = inverse(distance, radius)
+    property_1(inverse_term)
 
 
 # Property 2: Output decreases as distance increases
@@ -125,10 +125,10 @@ def test_tricubic_direction(distance_a, distance_b, radius, exponent):
 
 
 @given(my_dist, my_dist, my_radius1)
-def test_variance_direction(distance_a, distance_b, radius):
-    """Variance output satisfies property 2."""
-    weight_a = 1 / (variance(distance_a, radius) + 0.1)
-    weight_b = 1 / (variance(distance_b, radius) + 0.1)
+def test_inverse_direction(distance_a, distance_b, radius):
+    """Inverse output satisfies property 2."""
+    weight_a = 1 / (inverse(distance_a, radius) + 0.1)
+    weight_b = 1 / (inverse(distance_b, radius) + 0.1)
     property_2(distance_a, distance_b, weight_a, weight_b)
 
 

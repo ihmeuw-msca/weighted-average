@@ -75,11 +75,11 @@ def test_depth_version_type(version):
 
 
 @pytest.mark.parametrize("radius", not_numeric)
-def test_variance_radius_type(radius):
+def test_inverse_radius_type(radius):
     """Raise TypeError if `radius` is not an int or float."""
     if radius is not None:
         with pytest.raises(TypeError):
-            Dimension("dummy", kernel="variance", radius=radius)
+            Dimension("dummy", kernel="inverse", radius=radius)
 
 
 @pytest.mark.parametrize("distance", not_str)
@@ -209,17 +209,17 @@ def test_depth_version_default():
     assert dim.version == "codem"
 
 
-def test_variance_radius_exists():
+def test_inverse_radius_exists():
     """Raise AttributeError if `radius` is not passed."""
     with pytest.raises(AttributeError):
-        Dimension("dummy", kernel="variance")
+        Dimension("dummy", kernel="inverse")
 
 
 @pytest.mark.parametrize("radius", [-1, -1.0, 0, 0.0])
-def test_variance_radius_value(radius):
+def test_inverse_radius_value(radius):
     """Raise ValueError if `radius` not valid."""
     with pytest.raises(ValueError):
-        Dimension("dummy", kernel="variance", radius=radius)
+        Dimension("dummy", kernel="inverse", radius=radius)
 
 
 def test_distance_value():
@@ -345,9 +345,9 @@ def test_depth_reset_version_type(version):
 
 
 @pytest.mark.parametrize("radius", not_numeric)
-def test_variance_reset_radius_type(radius):
+def test_inverse_reset_radius_type(radius):
     """Raise TypeError if `radius` is not an int or float."""
-    dim = Dimension("dummy", kernel="variance", radius=0.6)
+    dim = Dimension("dummy", kernel="inverse", radius=0.6)
     if radius is not None:
         with pytest.raises(TypeError):
             dim.radius = radius
@@ -385,8 +385,8 @@ def test_depth_reset_version_value():
 
 
 @pytest.mark.parametrize("radius", [-1, -1.0, 0, 0.0])
-def test_variance_reset_radius_value(radius):
+def test_inverse_reset_radius_value(radius):
     """Raise ValueError if `radius` is not valid."""
-    dim = Dimension("dummy", kernel="variance", radius=0.6)
+    dim = Dimension("dummy", kernel="inverse", radius=0.6)
     with pytest.raises(ValueError):
         dim.radius = radius

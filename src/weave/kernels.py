@@ -40,7 +40,7 @@ References
        <https://en.wikipedia.org/wiki/Kernel_(statistics)#Kernel_functions_in_common_use>`_
 
 """
-# TODO: add note about variance kernel to kernel module documentation
+# TODO: add note about inverse-distance kernel to kernel module documentation
 from typing import Union
 
 import numpy as np
@@ -238,8 +238,8 @@ def depth(distance: number, levels: int, radius: float, version: str) -> np.floa
     return np.float32(weight)
 
 
-def variance(distance: number, radius: float) -> np.float32:
-    """Get variance smoothing weight.
+def inverse(distance: number, radius: float) -> np.float32:
+    """Get inverse-distance smoothing weight.
 
     Parameters
     ----------
@@ -251,7 +251,7 @@ def variance(distance: number, radius: float) -> np.float32:
     Returns
     -------
     nonnegative numpy.float32
-        Depth smoothing weight.
+        Inverse-distance smoothing weight.
 
     """
     # TODO: add notes and examples to documentation

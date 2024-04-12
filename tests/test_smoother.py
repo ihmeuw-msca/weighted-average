@@ -6,7 +6,7 @@ import numpy as np
 from pandas import DataFrame
 
 from weave.dimension import Dimension
-from weave.smoother import Smoother, smooth, smooth_variance
+from weave.smoother import Smoother, smooth, smooth_inverse
 
 # Lists of wrong types to test exceptions
 value_list = [1, 1.0, "dummy", True, None, [], (), {}]
@@ -35,24 +35,24 @@ location = Dimension(
 )
 smoother = Smoother([age, year, location])
 
-# Example variance smoother
-age_variance = Dimension(
+# Example inverse smoother
+age_inverse = Dimension(
     name="age_id",
-    kernel="variance",
+    kernel="inverse",
     radius=0.5,
 )
-year_variance = Dimension(
+year_inverse = Dimension(
     name="year_id",
-    kernel="variance",
+    kernel="inverse",
     radius=0.5,
 )
-location_variance = Dimension(
+location_inverse = Dimension(
     name="location_id",
     coordinates=["super_region", "region", "country"],
-    kernel="variance",
+    kernel="inverse",
     radius=0.5,
 )
-smoother_variance = Smoother([age_variance, year_variance, location_variance])
+smoother_inverse = Smoother([age_inverse, year_inverse, location_inverse])
 
 
 # Example data
@@ -119,22 +119,22 @@ def test_dimension_immutable():
         smoother.dimensions = dim
 
 
-def test_variance_weights_value():
-    """`variance_weights` set to correct values."""
-    assert smoother.variance_weights is False
-    assert smoother_variance.variance_weights is True
+def test_inverse_weights_value():
+    """`inverse_weights` set to correct values."""
+    assert smoother.inverse_weights is False
+    assert smoother_inverse.inverse_weights is True
 
 
-def test_variance_weights_error():
-    """Raise ValueError if dimensions have variance and non-variance kernels."""
+def test_inverse_weights_error():
+    """Raise ValueError if dimensions have inverse and non-inverse kernels."""
     with pytest.raises(ValueError):
-        Smoother([age, year_variance])
+        Smoother([age, year_inverse])
 
 
-def test_variance_weights_immutable():
-    """Raise AttributeError if attempt to reset `variance_weights`."""
+def test_inverse_weights_immutable():
+    """Raise AttributeError if attempt to reset `inverse_weights`."""
     with pytest.raises(AttributeError):
-        smoother.variance_weights = False
+        smoother.inverse_weights = False
 
 
 # Test input types
@@ -210,10 +210,10 @@ def test_stdev_smoothed_overlap():
         smoother(data, "residual", stdev="residual_sd", smoothed="residual_sd")
 
 
-def test_stdev_passed_with_variance_weights():
-    """Raise ValueError if `stdev` not passed when `variance_weights` is True."""
+def test_stdev_passed_with_inverse_weights():
+    """Raise ValueError if `stdev` not passed when `inverse_weights` is True."""
     with pytest.raises(ValueError):
-        smoother_variance(data, "residual")
+        smoother_inverse(data, "residual")
 
 
 def test_smoothed_warning():
@@ -417,15 +417,15 @@ def test_smooth_shape(predict):
 
 
 @pytest.mark.parametrize("predict", [None, "fit", "predict"])
-def test_smooth_variance_shape(predict):
-    """`smooth_variance` returns array of correct shape."""
+def test_smooth_inverse_shape(predict):
+    """`smooth_inverse` returns array of correct shape."""
     idx_fit = smoother.get_indices(data, None)
     idx_pred = smoother.get_indices(data, predict)
     col_obs = smoother.get_values(data, "residual", idx_fit)
     col_sd = smoother.get_values(data, None, idx_fit)
     points = smoother.get_points(data)
     dim_list = smoother.get_typed_dimensions(data)
-    cols_smooth = smooth_variance(
+    cols_smooth = smooth_inverse(
         dim_list, points, col_obs, col_sd, idx_fit, idx_pred, 1.0
     )
     if predict is None:
@@ -456,9 +456,9 @@ def test_smoother_columns(smoothed):
 
 
 @pytest.mark.parametrize("smoothed", [None, "dummy"])
-def test_smoother_variance_columns(smoothed):
+def test_smoother_inverse_columns(smoothed):
     """Return data frame with correct column names."""
-    result = smoother_variance(data, "residual", "residual_sd", smoothed=smoothed)
+    result = smoother_inverse(data, "residual", "residual_sd", smoothed=smoothed)
     if smoothed is None:
         assert "residual_smooth" in result.columns
     else:
@@ -478,11 +478,11 @@ def test_result():
     assert np.allclose(vals, result["residual_smooth"].values)
 
 
-def test_variance_result():
+def test_inverse_result():
     """Check output values."""
-    result = smoother_variance(data, "residual", "residual_sd")
+    result = smoother_inverse(data, "residual", "residual_sd")
     vals = np.array([0.20000343, 0.40000615, 0.59999865, 0.7999712, 0.99992466])
     assert np.allclose(vals, result["residual_smooth"].values)
-    result = smoother_variance(data, "residual", "residual_sd", fit="fit")
+    result = smoother_inverse(data, "residual", "residual_sd", fit="fit")
     vals = np.array([0.20000166, 0.4879758, 0.6842466, 0.7999973, 0.9999626])
     assert np.allclose(vals, result["residual_smooth"].values)

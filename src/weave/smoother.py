@@ -23,8 +23,8 @@ class Smoother:
     ----------
     dimensions : list of Dimension
         Smoothing dimensions.
-    variance_weights: bool
-        Whether or not to use inverse-variance weights.
+    inverse_weights: bool
+        Whether or not to use inverse-distance weights.
 
     See Also
     --------
@@ -69,9 +69,7 @@ class Smoother:
 
         """
         self.dimensions = as_list(dimensions)
-        self.variance_weights = all(
-            dim.kernel == "variance" for dim in self._dimensions
-        )
+        self.inverse_weights = all(dim.kernel == "inverse" for dim in self._dimensions)
 
     @property
     def dimensions(self) -> List[Dimension]:
@@ -126,45 +124,45 @@ class Smoother:
         self._dimensions = dimensions
 
     @property
-    def variance_weights(self) -> bool:
-        """Get inverse-variance weights flag.
+    def inverse_weights(self) -> bool:
+        """Get inverse-distance weights flag.
 
         Returns
         -------
         bool
-            Whether or not to use inverse-variance weights.
+            Whether or not to use inverse-distance weights.
 
         """
-        return self._variance_weights
+        return self._inverse_weights
 
-    @variance_weights.setter
-    def variance_weights(self, variance_weights: bool) -> None:
-        """Set inverse-variance weights flag.
+    @inverse_weights.setter
+    def inverse_weights(self, inverse_weights: bool) -> None:
+        """Set inverse-distance weights flag.
 
         Parameters
         ----------
-        variance_weights : bool
-            Whether or not to use inverse-variance weights.
+        inverse_weights : bool
+            Whether or not to use inverse-distance weights.
 
         Raises
         ------
         AttributeError
-            If `variance_weights` has already been set.
+            If `inverse_weights` has already been set.
         ValueError
-            If dimensions have both variance and non-variance kernels.
+            If dimensions have both inverse and non-inverse kernels.
 
         """
-        # Once set, `variance_weights` cannot be changed
-        if hasattr(self, "variance_weights"):
-            raise AttributeError("`variance_weights` cannot be changed")
+        # Once set, `inverse_weights` cannot be changed
+        if hasattr(self, "inverse_weights"):
+            raise AttributeError("`inverse_weights` cannot be changed")
 
         # Check values
-        if variance_weights:
-            self._variance_weights = True
+        if inverse_weights:
+            self._inverse_weights = True
         else:
-            if any(dim.kernel == "variance" for dim in self._dimensions):
-                raise ValueError("Cannot mix variance and non-variance kernels")
-            self._variance_weights = False
+            if any(dim.kernel == "inverse" for dim in self._dimensions):
+                raise ValueError("Cannot mix inverse and non-inverse kernels")
+            self._inverse_weights = False
 
     def __call__(
         self,
@@ -191,8 +189,8 @@ class Smoother:
         observed : str
             Column name of values to smooth.
         stdev: str, optional
-            Column name of standard deviations. Required for inverse
-            variance kernels.
+            Column name of standard deviations. Required for
+            inverse-distance kernels.
         smoothed : str, optional
             Column name of smoothed values. If None, append '_smooth'
             to  `observed`.
@@ -273,8 +271,8 @@ class Smoother:
         dim_list = self.get_typed_dimensions(data)
 
         # Calculate smoothed values
-        if self.variance_weights:
-            col_smooth = smooth_variance(
+        if self.inverse_weights:
+            col_smooth = smooth_inverse(
                 dim_list, points, col_obs, col_sd, idx_fit, idx_pred, down_weight
             )
         else:
@@ -413,15 +411,15 @@ class Smoother:
         ------
         ValueError
             If `observed`, `stdev`, or `smoothed` overlap.
-            If `stdev` not passed when `self.variance_weights` is True.
+            If `stdev` not passed when `self.inverse_weights` is True.
             If `down_weight` is not in [0, 1].
 
         """
         col_set = set([observed, stdev, smoothed])
         if not (stdev is None and smoothed is None) and len(col_set) < 3:
             raise ValueError("Duplicates in `observed`, `stdev`, `smoothed`")
-        if self.variance_weights and stdev is None:
-            raise ValueError("`stdev` required for inverse-variance weighting")
+        if self.inverse_weights and stdev is None:
+            raise ValueError("`stdev` required for inverse-distance weighting")
         if not 0 <= down_weight <= 1:
             raise ValueError("`down_weight` must be in [0, 1]")
 
@@ -783,7 +781,7 @@ def smooth(
 
 
 @njit
-def smooth_variance(
+def smooth_inverse(
     dim_list: List[TypedDimension],
     points: np.ndarray,
     col_obs: np.ndarray,
@@ -792,7 +790,7 @@ def smooth_variance(
     idx_pred: np.ndarray,
     down_weight: float,
 ) -> np.ndarray:
-    """Smooth data across dimensions with inverse-variance weighted averages.
+    """Smooth data across dimensions with inverse-distance weighted averages.
 
     Parameters
     ----------
@@ -817,25 +815,25 @@ def smooth_variance(
         Smoothed values.
 
     """
-    # Initialize variance matrix
+    # Initialize distance matrix
     n_fit = len(idx_fit)
     n_pred = len(idx_pred)
     weights = np.zeros((n_pred, n_fit), dtype=np.float32)
 
-    # Calculate variance weights one prediction at a time
+    # Calculate distance weights one prediction at a time
     for ii in range(n_pred):
-        variance = col_sd**2
+        distance = col_sd**2
         for idx_dim, dim in enumerate(dim_list):
             pred = points[idx_pred[ii], idx_dim]
-            dim_variance = np.zeros(n_fit, dtype=np.float32)
+            dim_distance = np.zeros(n_fit, dtype=np.float32)
             for jj in range(n_fit):
                 fit = points[idx_fit[jj], idx_dim]
-                dim_variance[jj] = dim.weight_dict[(pred, fit)]
-            variance += dim_variance
-        weights[ii] = 1 / variance
+                dim_distance[jj] = dim.weight_dict[(pred, fit)]
+            distance += dim_distance
+        weights[ii] = 1 / distance
         if idx_pred[ii] in idx_fit and down_weight < 1:
             neighbors = idx_pred[ii] != idx_fit
             weights[ii] = np.where(neighbors, weights[ii] * down_weight, weights[ii])
 
-    # Compute smoothed values with inverse-variance weights
+    # Compute smoothed values with inverse-distance weights
     return weights.dot(col_obs) / weights.sum(axis=1)
