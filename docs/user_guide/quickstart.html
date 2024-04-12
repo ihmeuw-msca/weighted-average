@@ -1,15 +1,16 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en" data-content_root="../">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="API Reference" href="../api_reference/index.html" /><link rel="prev" title="Installation" href="installation.html" />
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="API Reference" href="../api_reference/index.html" /><link rel="prev" title="Installation" href="installation.html" />
 
-    <meta name="generator" content="sphinx-4.4.0, furo 2022.01.02"/>
+    <!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
         <title>Quickstart - weave 1.1.2</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=df49af52631e7917044a9c21a57f7b83170a6dd0" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=fade93df149f7c5fedb3ff897f799dc7d283b420" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=36a5483c" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=86fc41ad" />
     
     
 
@@ -24,17 +25,8 @@
   --color-background-secondary: #F8F8F8;
   
   }
-  body[data-theme="dark"] {
-    --color-code-background: #202020;
-  --color-code-foreground: #d0d0d0;
-  --color-brand-primary: #6FD8D1;
-  --color-brand-content: #6FD8D1;
-  --color-problematic: #FA9F50;
-  --color-background-secondary: #202020;
-  
-  }
-  @media (prefers-color-scheme: dark) {
-    body:not([data-theme="light"]) {
+  @media not print {
+    body[data-theme="dark"] {
       --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
   --color-brand-primary: #6FD8D1;
@@ -43,27 +35,36 @@
   --color-background-secondary: #202020;
   
     }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #6FD8D1;
+  --color-brand-content: #6FD8D1;
+  --color-problematic: #FA9F50;
+  --color-background-secondary: #202020;
+  
+      }
+    }
   }
 </style></head>
   <body>
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
     
+
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
     <title>Contents</title>
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path stroke="none" d="M0 0h24v24H0z" />
-      <line x1="4" y1="6" x2="20" y2="6" />
-      <line x1="10" y1="12" x2="20" y2="12" />
-      <line x1="6" y1="18" x2="20" y2="18" />
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
     </svg>
   </symbol>
   <symbol id="svg-menu" viewBox="0 0 24 24">
     <title>Menu</title>
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
       <line x1="3" y1="12" x2="21" y2="12"></line>
       <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -72,14 +73,14 @@
   </symbol>
   <symbol id="svg-arrow-right" viewBox="0 0 24 24">
     <title>Expand</title>
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
       <polyline points="9 18 15 12 9 6"></polyline>
     </svg>
   </symbol>
   <symbol id="svg-sun" viewBox="0 0 24 24">
     <title>Light mode</title>
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
       <circle cx="12" cy="12" r="5"></circle>
       <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -94,7 +95,7 @@
   </symbol>
   <symbol id="svg-moon" viewBox="0 0 24 24">
     <title>Dark mode</title>
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
       <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
@@ -102,7 +103,7 @@
   </symbol>
   <symbol id="svg-sun-half" viewBox="0 0 24 24">
     <title>Auto light/dark mode</title>
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <circle cx="12" cy="12" r="9" />
@@ -165,13 +166,13 @@
   <span class="sidebar-brand-text">weave 1.1.2</span>
   
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
-  <input class="sidebar-search" placeholder=Search name="q" aria-label="Search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
-<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">User Guide</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">User Guide</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of User Guide</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="intro.html">What is WeAve?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Quickstart</a></li>
@@ -179,7 +180,7 @@
 </li>
 </ul>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../api_reference/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api_reference/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api_reference/weave.smoother.html">weave.smoother</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api_reference/weave.dimension.html">weave.dimension</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api_reference/weave.kernels.html">weave.kernels</a></li>
@@ -190,6 +191,7 @@
 
 </div>
 </div>
+
       </div>
       
     </div>
@@ -197,8 +199,15 @@
   <div class="main">
     <div class="content">
       <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
         <div class="content-icon-container">
-          <div class="theme-toggle-container theme-toggle-content">
+          
+<div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle">
               <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
               <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
@@ -212,10 +221,10 @@
           </label>
         </div>
         <article role="main">
-          <div class="section" id="quickstart">
-<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="the-basics">
-<h2>The Basics<a class="headerlink" href="#the-basics" title="Permalink to this headline">¶</a></h2>
+          <section id="quickstart">
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Link to this heading">#</a></h1>
+<section id="the-basics">
+<h2>The Basics<a class="headerlink" href="#the-basics" title="Link to this heading">#</a></h2>
 <p>The WeAve package has four main components:</p>
 <ol class="arabic simple">
 <li><p>The <a class="reference internal" href="../api_reference/weave.smoother.html"><span class="doc">Smoother</span></a> class, which computes
@@ -238,8 +247,8 @@ by importing all of the packages we will be using.</p>
 <span class="kn">from</span> <span class="nn">weave.smoother</span> <span class="kn">import</span> <span class="n">Smoother</span>
 </pre></div>
 </div>
-<div class="section" id="data">
-<h3>Data<a class="headerlink" href="#data" title="Permalink to this headline">¶</a></h3>
+<section id="data">
+<h3>Data<a class="headerlink" href="#data" title="Link to this heading">#</a></h3>
 <p>WeAve works with data in the form of <a class="reference external" href="https://pandas.pydata.org/">Pandas</a>
 data frames. The following code generates and plots our data set.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">n_obs</span> <span class="o">=</span> <span class="mi">50</span>
@@ -248,29 +257,29 @@ data frames. The following code generates and plots our data set.</p>
 <span class="n">y_obs</span> <span class="o">=</span> <span class="n">y_true</span> <span class="o">+</span> <span class="mf">0.3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">n_obs</span><span class="p">)</span>
 
 <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-    <span class="s1">'x_id'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_obs</span><span class="p">),</span>
-    <span class="s1">'x_val'</span><span class="p">:</span> <span class="n">x_val</span><span class="p">,</span>
-    <span class="s1">'y_true'</span><span class="p">:</span> <span class="n">y_true</span><span class="p">,</span>
-    <span class="s1">'y_obs'</span><span class="p">:</span> <span class="n">y_obs</span>
+    <span class="s1">&#39;x_id&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_obs</span><span class="p">),</span>
+    <span class="s1">&#39;x_val&#39;</span><span class="p">:</span> <span class="n">x_val</span><span class="p">,</span>
+    <span class="s1">&#39;y_true&#39;</span><span class="p">:</span> <span class="n">y_true</span><span class="p">,</span>
+    <span class="s1">&#39;y_obs&#39;</span><span class="p">:</span> <span class="n">y_obs</span>
 <span class="p">})</span>
 
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Truth'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_obs</span><span class="p">,</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Observed'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'y'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Truth&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_obs</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Observed&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
-<img alt="../_images/raw_data.png" class="align-center" src="../_images/raw_data.png"/>
-</div>
-<div class="section" id="dimension">
-<h3>Dimension<a class="headerlink" href="#dimension" title="Permalink to this headline">¶</a></h3>
+<img alt="../_images/raw_data.png" class="align-center" src="../_images/raw_data.png" />
+</section>
+<section id="dimension">
+<h3>Dimension<a class="headerlink" href="#dimension" title="Link to this heading">#</a></h3>
 <p>To smooth data using WeAve, we first need to specify the dimensions in our data
 by creating an instance of the <cite>Dimension</cite> class. This object contains
 information about how weights are computed. Many dimension parameters have
 defaults, but at the minimum we need to include <cite>name</cite>. This corresponds to the
 column in our data frame containing unique point IDs.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">age</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span><span class="s1">'x_id'</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">age</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span><span class="s1">&#39;x_id&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The dimension object above will have the default identity kernel (i.e., weights
@@ -281,7 +290,7 @@ specified.</p>
 <p>To compute weights based on a column other than ‘x_id’, we can include the
 <cite>coordinates</cite> parameter. Values in this column do not need to be unique, unlike
 those corresponding to <cite>name</cite>.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">age</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span><span class="s1">'x_id'</span><span class="p">,</span> <span class="s1">'x_val'</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">age</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span><span class="s1">&#39;x_id&#39;</span><span class="p">,</span> <span class="s1">&#39;x_val&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>All kernels other than the identity kernel have additional parameters. For this
@@ -289,16 +298,16 @@ tutorial, we will use the exponential kernel which requires a kernel radius.
 The following code creates our smoothing dimension with default Euclidean
 distance.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dimension</span> <span class="o">=</span> <span class="n">Dimension</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s1">'x_id'</span><span class="p">,</span>
-    <span class="n">coordinates</span><span class="o">=</span><span class="s1">'x_val'</span><span class="p">,</span>
-    <span class="n">kernel</span><span class="o">=</span><span class="s1">'exponential'</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;x_id&#39;</span><span class="p">,</span>
+    <span class="n">coordinates</span><span class="o">=</span><span class="s1">&#39;x_val&#39;</span><span class="p">,</span>
+    <span class="n">kernel</span><span class="o">=</span><span class="s1">&#39;exponential&#39;</span><span class="p">,</span>
     <span class="n">radius</span><span class="o">=</span><span class="mf">0.5</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="smoother">
-<h3>Smoother<a class="headerlink" href="#smoother" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="smoother">
+<h3>Smoother<a class="headerlink" href="#smoother" title="Link to this heading">#</a></h3>
 <p>Our next step is to create an instance of the <cite>Smoother</cite> class using the
 dimension object defined above. While this tutorial only uses one dimension,
 you can also input multiple dimensions in a list.</p>
@@ -311,21 +320,21 @@ a copy of the input data frame with appended column(s) containing the smoothed
 data. You can specify the column names of the smoothed values with the
 parameter <cite>smoothed</cite>, otherwise ‘_smooth’ will be appended to the column names
 in <cite>observed</cite>. The following code smooths our data and plots the results.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="n">smoothed</span><span class="o">=</span><span class="s1">'y_smooth'</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;y_obs&#39;</span><span class="p">,</span> <span class="n">smoothed</span><span class="o">=</span><span class="s1">&#39;y_smooth&#39;</span><span class="p">)</span>
 
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Truth'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_obs</span><span class="p">,</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Observed'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">'x_val'</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="s1">'y_smooth'</span><span class="p">],</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Smoothed'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'y'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Truth&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_obs</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Observed&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;x_val&#39;</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;y_smooth&#39;</span><span class="p">],</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Smoothed&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
-<img alt="../_images/smooth_data.png" class="align-center" src="../_images/smooth_data.png"/>
-</div>
-</div>
-<div class="section" id="choosing-parameters">
-<h2>Choosing Parameters<a class="headerlink" href="#choosing-parameters" title="Permalink to this headline">¶</a></h2>
+<img alt="../_images/smooth_data.png" class="align-center" src="../_images/smooth_data.png" />
+</section>
+</section>
+<section id="choosing-parameters">
+<h2>Choosing Parameters<a class="headerlink" href="#choosing-parameters" title="Link to this heading">#</a></h2>
 <p>The degree of smoothing is influenced by the choice of kernel parameters, so
 it’s important to find parameters that produce smooth results but don’t
 oversmooth. Below we see our example with values smoothed using radii between
@@ -336,24 +345,24 @@ curve and towards the data average.</p>
 <span class="n">radii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">radius</span> <span class="ow">in</span> <span class="n">radii</span><span class="p">:</span>
     <span class="n">smoother</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="n">smoothed</span><span class="o">=</span><span class="s1">'y_smooth'</span><span class="p">)</span>
-    <span class="n">result</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">]</span> <span class="o">=</span> <span class="n">radius</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;y_obs&#39;</span><span class="p">,</span> <span class="n">smoothed</span><span class="o">=</span><span class="s1">&#39;y_smooth&#39;</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radius</span>
     <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
-<span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">results</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'x_val'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">'y_smooth'</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="s1">'radius'</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">results</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">&#39;x_val&#39;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">&#39;y_smooth&#39;</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="s1">&#39;radius&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_obs</span><span class="p">,</span> <span class="s1">'.'</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'y'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_obs</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<img alt="../_images/radius_vals.png" class="align-center" src="../_images/radius_vals.png"/>
+<img alt="../_images/radius_vals.png" class="align-center" src="../_images/radius_vals.png" />
 <p>To explore the tradeoff between data fidelity (i.e., how closely the smoothed
 data follows the true curve) and smoothness, we can define functions that
 measure each of these properties and evaluate them for different radius values.</p>
-<div class="section" id="train-test-split">
-<h3>Train/Test Split<a class="headerlink" href="#train-test-split" title="Permalink to this headline">¶</a></h3>
+<section id="train-test-split">
+<h3>Train/Test Split<a class="headerlink" href="#train-test-split" title="Link to this heading">#</a></h3>
 <p>We will use <a class="reference external" href="https://en.wikipedia.org/wiki/Cross-validation_(statistics)">cross-validation</a>
 to compare our model error for different radii. In this framework, we randomly
 split our data into two sets: 80% will go into the training set and 20% will go
@@ -362,22 +371,22 @@ values using weighted averages composed only of points in the training set. In
 this way, we can infer how our model would perform on new or missing data. The
 following code splits our data into the two sets and creates corresponding
 boolean columns in our data frame.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-<span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">'x_id'</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="n">n_obs</span><span class="o">//</span><span class="mi">5</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="s1">'train'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="n">data</span><span class="p">[</span><span class="s1">'test'</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]</span> <span class="o">==</span> <span class="kc">False</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;x_id&#39;</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="n">n_obs</span><span class="o">//</span><span class="mi">5</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="s1">&#39;train&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">data</span><span class="p">[</span><span class="s1">&#39;test&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="kc">False</span>
 
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Truth'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]][</span><span class="s1">'x_val'</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">'train'</span><span class="p">]][</span><span class="s1">'y_obs'</span><span class="p">],</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Train'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">'test'</span><span class="p">]][</span><span class="s1">'x_val'</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">'test'</span><span class="p">]][</span><span class="s1">'y_obs'</span><span class="p">],</span> <span class="s1">'x'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Test'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'y'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_val</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Truth&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">]][</span><span class="s1">&#39;x_val&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">]][</span><span class="s1">&#39;y_obs&#39;</span><span class="p">],</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Train&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;test&#39;</span><span class="p">]][</span><span class="s1">&#39;x_val&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;test&#39;</span><span class="p">]][</span><span class="s1">&#39;y_obs&#39;</span><span class="p">],</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Test&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
-<img alt="../_images/train_test.png" class="align-center" src="../_images/train_test.png"/>
-</div>
-<div class="section" id="metrics">
-<h3>Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">¶</a></h3>
+<img alt="../_images/train_test.png" class="align-center" src="../_images/train_test.png" />
+</section>
+<section id="metrics">
+<h3>Metrics<a class="headerlink" href="#metrics" title="Link to this heading">#</a></h3>
 <p>Next we define functions that measure the error and smoothness of our model
 output. For error, we compute the mean absolute difference between the true
 curve and the smoothed values in the test set. For smoothenss, we compute the
@@ -388,18 +397,18 @@ the weighted averages and which points to smooth, respectively. If not
 supplied, both default to the entire input data frame.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_error</span><span class="p">(</span><span class="n">radius</span><span class="p">):</span>
     <span class="n">smoother</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="n">smoothed</span><span class="o">=</span><span class="s1">'y_smooth'</span><span class="p">,</span> <span class="n">fit</span><span class="o">=</span><span class="s1">'train'</span><span class="p">,</span> <span class="n">predict</span><span class="o">=</span><span class="s1">'test'</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">'y_true'</span><span class="p">]</span> <span class="o">-</span> <span class="n">result</span><span class="p">[</span><span class="s1">'y_smooth'</span><span class="p">]))</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;y_obs&#39;</span><span class="p">,</span> <span class="n">smoothed</span><span class="o">=</span><span class="s1">&#39;y_smooth&#39;</span><span class="p">,</span> <span class="n">fit</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">,</span> <span class="n">predict</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;y_true&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;y_smooth&#39;</span><span class="p">]))</span>
 
 <span class="k">def</span> <span class="nf">get_smoothness</span><span class="p">(</span><span class="n">radius</span><span class="p">):</span>
     <span class="n">smoother</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'y_obs'</span><span class="p">,</span> <span class="n">smoothed</span><span class="o">=</span><span class="s1">'y_smooth'</span><span class="p">,</span> <span class="n">fit</span><span class="o">=</span><span class="s1">'train'</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">'y_smooth'</span><span class="p">])))</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">smoother</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;y_obs&#39;</span><span class="p">,</span> <span class="n">smoothed</span><span class="o">=</span><span class="s1">&#39;y_smooth&#39;</span><span class="p">,</span> <span class="n">fit</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;y_smooth&#39;</span><span class="p">])))</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="grid-search">
-<h3>Grid Search<a class="headerlink" href="#grid-search" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="grid-search">
+<h3>Grid Search<a class="headerlink" href="#grid-search" title="Link to this heading">#</a></h3>
 <p>To find the best radius value in terms of error and smoothness, we evaluate our
 performance functions for radius values between zero and one. This is known as
 a grid search. For problems with multiple dimensions and parameters, a grid
@@ -413,25 +422,25 @@ combination of the two metrics with weights that reflect this assumption.</p>
 <span class="n">smoothnesss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">get_smoothness</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span> <span class="k">for</span> <span class="n">radius</span> <span class="ow">in</span> <span class="n">radii</span><span class="p">])</span>
 <span class="n">combined</span> <span class="o">=</span> <span class="mi">2</span><span class="o">/</span><span class="mi">3</span><span class="o">*</span><span class="n">error</span> <span class="o">+</span> <span class="mi">1</span><span class="o">/</span><span class="mi">3</span><span class="o">*</span><span class="n">smoothness</span>
 
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Error'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">,</span> <span class="n">smoothness</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Smoothness'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">,</span> <span class="n">combined</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Combined'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">error</span><span class="p">)],</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="s1">'k*'</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">smoothness</span><span class="p">)],</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">smoothness</span><span class="p">),</span> <span class="s1">'k*'</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">combined</span><span class="p">)],</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">combined</span><span class="p">),</span> <span class="s1">'k*'</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Radius'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Performance'</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Error&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">,</span> <span class="n">smoothness</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Smoothness&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">,</span> <span class="n">combined</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Combined&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">error</span><span class="p">)],</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="s1">&#39;k*&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">smoothness</span><span class="p">)],</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">smoothness</span><span class="p">),</span> <span class="s1">&#39;k*&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">radii</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">combined</span><span class="p">)],</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">combined</span><span class="p">),</span> <span class="s1">&#39;k*&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Radius&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Performance&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper right&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<img alt="../_images/performance.png" class="align-center" src="../_images/performance.png"/>
+<img alt="../_images/performance.png" class="align-center" src="../_images/performance.png" />
 <p>For the exponential kernel, a larger radius produces smoother output, while the
 lowest test error occurs at 0.21. Our combined metric is minimized at a radius
 of 0.32, with smoothed data plotted below.</p>
-<img alt="../_images/opt_radius.png" class="align-center" src="../_images/opt_radius.png"/>
-</div>
-</div>
-</div>
+<img alt="../_images/opt_radius.png" class="align-center" src="../_images/opt_radius.png" />
+</section>
+</section>
+</section>
 
         </article>
       </div>
@@ -445,10 +454,10 @@ of 0.32, with smoothed data plotted below.</p>
                 </div>
                 <div class="title">API Reference</div>
               </div>
-              <svg><use href="#svg-arrow-right"></use></svg>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
           <a class="prev-page" href="installation.html">
-              <svg><use href="#svg-arrow-right"></use></svg>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
@@ -459,15 +468,19 @@ of 0.32, with smoothed data plotted below.</p>
               </div>
             </a>
         </div>
-
-        <div class="related-information">
-              Copyright &#169; 2024, IHME Math Sciences |
-          Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-          <a href="https://github.com/pradyunsg/furo">Furo theme</a>.
-            | <a class="muted-link" href="../_sources/user_guide/quickstart.rst.txt"
-               rel="nofollow">
-              Show Source
-            </a>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, IHME Math Sciences
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
         </div>
         
       </footer>
@@ -478,7 +491,7 @@ of 0.32, with smoothed data plotted below.</p>
       <div class="toc-sticky toc-scroll">
         <div class="toc-title-container">
           <span class="toc-title">
-            Contents
+            On this page
           </span>
         </div>
         <div class="toc-tree-container">
@@ -508,10 +521,9 @@ of 0.32, with smoothed data plotted below.</p>
       
     </aside>
   </div>
-</div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/scripts/furo.js"></script>
+</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=32e29ea5"></script>
     </body>
 </html>
