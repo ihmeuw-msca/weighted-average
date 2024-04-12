@@ -261,10 +261,10 @@ def inverse(distance: number, radius: float) -> np.float32:
     .. math:: k(d; r) = \\frac{d}{r},
 
     which is combined over all dimensions :math:`m \in \mathcal{M}` to
-    create weights
+    create intermediate weights
 
     .. math:: \\tilde{w}_{i,j} = \\frac{1}
-              {\sum_{m \\in \\mathcal{M}} k(d_{i,j}^m; r^m) + \\sigma_i^2}.
+              {\\sum_{m \\in \\mathcal{M}} k(d_{i,j}^m; r^m) + \\sigma_i^2}.
 
     When using inverse-distance weights, all dimension kernels must be
     set to 'inverse', and the `stdev` argument is required for
