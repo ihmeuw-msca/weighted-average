@@ -23,7 +23,7 @@ Distance functions :math:`d(x_i, x_j)` calculate the distance between points
 :math:`x_i` and :math:`x_j`, and kernel functions
 :math:`k(d_{i, j} \, ; p_1, p_2, \dots)` calculate smoothing weights given
 distance :math:`d_{i, j}` and a set of parameters :math:`p_1, p_2, \dots`. In
-WeAve, you can choose from three distance functions and four kernel functions.
+WeAve, you can choose from three distance functions and five kernel functions.
 
 Weighted averages :math:`\hat{y}` of dependent variables :math:`y` are
 calculated using the :doc:`Smoother <../api_reference/weave.smoother>` class
@@ -68,6 +68,17 @@ are given by
           \frac{\prod_{\ell < n} w_{i, j}^{m_\ell}}
           {\sum_{k \in \mathcal{D}_{i, j}} \prod_{\ell < n}
           w_{i, k}^{m_\ell}}.
+
+Inverse-Distance Weights
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Inverse-distance weights are inspired by
+`inverse-variance weighting <https://en.wikipedia.org/wiki/Inverse-variance_weighting>`_.
+When the inverse kernel is used, scaled distances are combined over all
+dimensions :math:`m \in \mathcal{M}` to create intermediate weights
+
+.. math:: \tilde{w}_{i,j} = \frac{1}
+    {\sum_{m \in \mathcal{M}} d_{i,j}^m / r^m + \sigma_i^2}.
 
 Cause of Death Ensemble Model
 -----------------------------

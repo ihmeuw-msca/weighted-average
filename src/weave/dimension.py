@@ -10,7 +10,7 @@ import numpy as np
 from pandas import DataFrame  # type: ignore
 
 from weave.distance import euclidean, tree
-from weave.kernels import exponential, tricubic, depth, variance
+from weave.kernels import exponential, tricubic, depth, inverse
 from weave.utils import as_list, is_float, is_number
 
 number = Union[int, float]
@@ -68,7 +68,7 @@ class Dimension:
         or `['super_region', 'region', 'country']`. Can be same as
         `name` attribute if dimension is 1D.
 
-    kernel : {'exponential', 'tricubic', 'depth', 'identity'}
+    kernel : {'exponential', 'tricubic', 'depth', 'inverse', 'identity'}
         Kernel function name.
 
         Name of kernel function to compute smoothing weights.
@@ -89,7 +89,7 @@ class Dimension:
     radius : positive number, optional
         Kernel radius.
 
-        Kernel radius if `kernel` is 'exponential' or 'depth'.
+        Kernel radius if `kernel` is 'exponential', 'depth', or 'inverse'.
 
     exponent : positive number, optional
         Kernel exponent.
@@ -111,8 +111,6 @@ class Dimension:
 
     """
 
-    # TODO: add variance kernel to class documentation
-
     def __init__(
         self,
         name: str,
@@ -132,7 +130,7 @@ class Dimension:
             Dimension name.
         coordinates : str or list of str, optional
             Dimension coordinates, if different from `name`.
-        kernel : {'exponential', 'tricubic', 'depth', 'identity'}, optional
+        kernel : {'exponential', 'tricubic', 'depth', 'inverse', 'identity'}, optional
             Kernel function name. Default is 'identity'.
         distance : {'euclidean', 'tree', 'dictionary'}, optional
             Distance function name. If None, default distance function
@@ -141,8 +139,9 @@ class Dimension:
         Other Parameters
         ----------------
         radius : positive number, optional
-            Kernel radius if `kernel` is 'exponential' or 'depth'. For
-            depth kernel, `radius` must be a float in (0.5, 1).
+            Kernel radius if `kernel` is 'exponential', 'depth', or
+            'inverse'. For depth kernel, `radius` must be a float in
+            (0.5, 1).
         exponent : positive number, optional
             Kernel exponent if `kernel` is 'tricubic'.
         version : {'codem', 'stgpr'}, optional
@@ -180,7 +179,7 @@ class Dimension:
                - ``version``
                - \\{'codem', 'stgpr'\\}, optional (default is 'codem')
                -
-             * - ``variance``
+             * - ``inverse``
                - ``radius``
                - Positive number
                - ``euclidean``
@@ -261,7 +260,6 @@ class Dimension:
             )
 
         """
-        # TODO: add variance kernel to __init__ documentation
         self.name = name
         self.coordinates = coordinates
         self.kernel = kernel
@@ -380,7 +378,7 @@ class Dimension:
 
         Parameters
         ----------
-        kernel : {'exponential', 'tricubic', 'depth', 'variance', 'identity'}
+        kernel : {'exponential', 'tricubic', 'depth', 'inverse', 'identity'}
             Kernel function name.
 
         Raises
@@ -402,7 +400,7 @@ class Dimension:
             raise TypeError("`kernel` is not a str")
 
         # Check value
-        if kernel not in ("exponential", "tricubic", "depth", "variance", "identity"):
+        if kernel not in ("exponential", "tricubic", "depth", "inverse", "identity"):
             raise ValueError("`kernel` is not a valid kernel function")
 
         self._kernel = kernel
@@ -462,7 +460,7 @@ class Dimension:
 
     @property
     def radius(self) -> number:
-        """Get kernel radius if `kernel` is 'exponential', 'depth', or 'variance'.
+        """Get kernel radius if `kernel` is 'exponential', 'depth', or 'inverse'.
 
         Returns
         -------
@@ -474,7 +472,7 @@ class Dimension:
 
     @radius.setter
     def radius(self, radius: Optional[number]) -> None:
-        """Set kernel radius if `kernel` is 'exponential', 'depth', or 'variance'.
+        """Set kernel radius if `kernel` is 'exponential', 'depth', or 'inverse'.
 
         Parameters
         ----------
@@ -484,20 +482,20 @@ class Dimension:
         Raises
         ------
         AttributeError
-            If `kernel` is 'exponential', 'depth', or 'variance' but `radius` is None.
+            If `kernel` is 'exponential', 'depth', or 'inverse' but `radius` is None.
         TypeError
-            If `kernel` is 'exponential' or 'variance' but `radius` is not a number.
+            If `kernel` is 'exponential' or 'inverse' but `radius` is not a number.
             If `kernel` is 'depth' but `radius` is not a float.
         ValueError
-            If `kernel` is 'exponential' or 'variance' but `radius` is not positive.
+            If `kernel` is 'exponential' or 'inverse' but `radius` is not positive.
             If `kernel` is 'depth' but `radius` is not in (0.5, 1).
 
         """
-        if self._kernel in ("exponential", "depth", "variance"):
+        if self._kernel in ("exponential", "depth", "inverse"):
             if radius is None:
                 msg = f"`radius` is required for '{self._kernel}' kernel"
                 raise AttributeError(msg)
-            if self._kernel in ("exponential", "variance"):
+            if self._kernel in ("exponential", "inverse"):
                 if not is_number(radius):
                     raise TypeError("`radius` is not an int or float")
                 if radius <= 0:
@@ -732,8 +730,8 @@ class Dimension:
             return tricubic(distance, radius, self._exponent)
         if self._kernel == "depth":
             return depth(distance, levels, self._radius, self._version)
-        if self._kernel == "variance":
-            return variance(distance, self._radius)
+        if self._kernel == "inverse":
+            return inverse(distance, self._radius)
         return np.float32(distance)  # identity
 
 
