@@ -10,7 +10,7 @@ import numpy as np
 from pandas import DataFrame  # type: ignore
 
 from weave.distance import euclidean, tree
-from weave.kernels import exponential, depth, tricubic
+from weave.kernels import exponential, tricubic, depth, inverse
 from weave.utils import as_list, is_float, is_number
 
 number = Union[int, float]
@@ -18,13 +18,17 @@ DistanceDict = Dict[Tuple[number, number], number]
 WeightDict = Dict[Tuple[float, float], float]
 
 
-@jitclass([('name', unicode_type),
-           ('kernel', unicode_type),
-           ('weight_dict', DictType(UniTuple(float32, 2), float32))])
+@jitclass(
+    [
+        ("name", unicode_type),
+        ("kernel", unicode_type),
+        ("weight_dict", DictType(UniTuple(float32, 2), float32)),
+    ]
+)
 class TypedDimension:
     """Smoothing dimension specifications."""
-    def __init__(self, name: str, kernel: str, weight_dict: WeightDict) \
-            -> None:
+
+    def __init__(self, name: str, kernel: str, weight_dict: WeightDict) -> None:
         """Create smoothing dimension.
 
         Parameters
@@ -64,7 +68,7 @@ class Dimension:
         or `['super_region', 'region', 'country']`. Can be same as
         `name` attribute if dimension is 1D.
 
-    kernel : {'exponential', 'tricubic', 'depth', 'identity'}
+    kernel : {'exponential', 'tricubic', 'depth', 'inverse', 'identity'}
         Kernel function name.
 
         Name of kernel function to compute smoothing weights.
@@ -85,7 +89,7 @@ class Dimension:
     radius : positive number, optional
         Kernel radius.
 
-        Kernel radius if `kernel` is 'exponential' or 'depth'.
+        Kernel radius if `kernel` is 'exponential', 'depth', or 'inverse'.
 
     exponent : positive number, optional
         Kernel exponent.
@@ -107,14 +111,17 @@ class Dimension:
 
     """
 
-    def __init__(self, name: str,
-                 coordinates: Optional[Union[str, List[str]]] = None,
-                 kernel: Optional[str] = 'identity',
-                 distance: Optional[str] = None,
-                 radius: Optional[number] = None,
-                 exponent: Optional[number] = None,
-                 version: Optional[str] = None,
-                 distance_dict: Optional[DistanceDict] = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        coordinates: Optional[Union[str, List[str]]] = None,
+        kernel: Optional[str] = "identity",
+        distance: Optional[str] = None,
+        radius: Optional[number] = None,
+        exponent: Optional[number] = None,
+        version: Optional[str] = None,
+        distance_dict: Optional[DistanceDict] = None,
+    ) -> None:
         """Create smoothing dimension.
 
         Parameters
@@ -123,7 +130,7 @@ class Dimension:
             Dimension name.
         coordinates : str or list of str, optional
             Dimension coordinates, if different from `name`.
-        kernel : {'exponential', 'tricubic', 'depth', 'identity'}, optional
+        kernel : {'exponential', 'tricubic', 'depth', 'inverse', 'identity'}, optional
             Kernel function name. Default is 'identity'.
         distance : {'euclidean', 'tree', 'dictionary'}, optional
             Distance function name. If None, default distance function
@@ -132,8 +139,9 @@ class Dimension:
         Other Parameters
         ----------------
         radius : positive number, optional
-            Kernel radius if `kernel` is 'exponential' or 'depth'. For
-            depth kernel, `radius` must be a float in (0.5, 1).
+            Kernel radius if `kernel` is 'exponential', 'depth', or
+            'inverse'. For depth kernel, `radius` must be a float in
+            (0.5, 1).
         exponent : positive number, optional
             Kernel exponent if `kernel` is 'tricubic'.
         version : {'codem', 'stgpr'}, optional
@@ -171,6 +179,10 @@ class Dimension:
                - ``version``
                - \\{'codem', 'stgpr'\\}, optional (default is 'codem')
                -
+             * - ``inverse``
+               - ``radius``
+               - Positive number
+               - ``euclidean``
              * - ``identity``
                -
                -
@@ -287,12 +299,12 @@ class Dimension:
 
         """
         # Once set, `name` cannot be changed
-        if hasattr(self, 'name'):
-            raise AttributeError('`name` cannot be changed')
+        if hasattr(self, "name"):
+            raise AttributeError("`name` cannot be changed")
 
         # Check type
         if not isinstance(name, str):
-            raise TypeError('`name` is not a str')
+            raise TypeError("`name` is not a str")
 
         self._name = name
 
@@ -309,8 +321,7 @@ class Dimension:
         return self._coordinates
 
     @coordinates.setter
-    def coordinates(self, coordinates: Optional[Union[str, List[str]]]) \
-            -> None:
+    def coordinates(self, coordinates: Optional[Union[str, List[str]]]) -> None:
         """Set dimension coordinates.
 
         Parameters
@@ -329,8 +340,8 @@ class Dimension:
 
         """
         # Once set, `coordinates` cannot be changed
-        if hasattr(self, 'coordinates'):
-            raise AttributeError('`coordinates` cannot be changed')
+        if hasattr(self, "coordinates"):
+            raise AttributeError("`coordinates` cannot be changed")
 
         # Set default
         if coordinates is None:
@@ -339,13 +350,13 @@ class Dimension:
         # Check types
         coordinates = as_list(coordinates)
         if not all(isinstance(coord, str) for coord in coordinates):
-            raise TypeError('`coordinates` contains invalid types')
+            raise TypeError("`coordinates` contains invalid types")
 
         # Check values
         if len(coordinates) == 0:
-            raise ValueError('`coordinates` is an empty list')
+            raise ValueError("`coordinates` is an empty list")
         if len(coordinates) > len(set(coordinates)):
-            raise ValueError('`coordinates` contains duplicates')
+            raise ValueError("`coordinates` contains duplicates")
 
         self._coordinates = coordinates
 
@@ -367,7 +378,7 @@ class Dimension:
 
         Parameters
         ----------
-        kernel : {'depth', 'exponential', 'identity', 'tricubic'}
+        kernel : {'exponential', 'tricubic', 'depth', 'inverse', 'identity'}
             Kernel function name.
 
         Raises
@@ -381,16 +392,16 @@ class Dimension:
 
         """
         # Once set, `kernel` cannot be changed
-        if hasattr(self, 'kernel'):
-            raise AttributeError('`kernel` cannot be changed')
+        if hasattr(self, "kernel"):
+            raise AttributeError("`kernel` cannot be changed")
 
         # Check type
         if not isinstance(kernel, str):
-            raise TypeError('`kernel` is not a str')
+            raise TypeError("`kernel` is not a str")
 
         # Check value
-        if kernel not in ('exponential', 'tricubic', 'depth', 'identity'):
-            raise ValueError('`kernel` is not a valid kernel function')
+        if kernel not in ("exponential", "tricubic", "depth", "inverse", "identity"):
+            raise ValueError("`kernel` is not a valid kernel function")
 
         self._kernel = kernel
 
@@ -426,30 +437,30 @@ class Dimension:
 
         """
         # Once set, `distance` cannot be changed
-        if hasattr(self, 'distance'):
-            raise AttributeError('`distance` cannot be changed')
+        if hasattr(self, "distance"):
+            raise AttributeError("`distance` cannot be changed")
 
         # Set default
         if distance is None:
-            if self._kernel == 'depth':
-                distance = 'tree'
+            if self._kernel == "depth":
+                distance = "tree"
             else:
-                distance = 'euclidean'
+                distance = "euclidean"
 
         # Check type
         if not isinstance(distance, str):
-            raise TypeError('`distance` is not a str')
+            raise TypeError("`distance` is not a str")
 
         # Check value
-        if distance not in ('euclidean', 'tree', 'dictionary'):
-            msg = '`distance` is not a valid distance function'
+        if distance not in ("euclidean", "tree", "dictionary"):
+            msg = "`distance` is not a valid distance function"
             raise ValueError(msg)
 
         self._distance = distance
 
     @property
     def radius(self) -> number:
-        """Get kernel radius if `kernel` is 'exponential' or 'depth'.
+        """Get kernel radius if `kernel` is 'exponential', 'depth', or 'inverse'.
 
         Returns
         -------
@@ -461,7 +472,7 @@ class Dimension:
 
     @radius.setter
     def radius(self, radius: Optional[number]) -> None:
-        """Set kernel radius if `kernel` is 'exponential' or 'depth'.
+        """Set kernel radius if `kernel` is 'exponential', 'depth', or 'inverse'.
 
         Parameters
         ----------
@@ -471,29 +482,29 @@ class Dimension:
         Raises
         ------
         AttributeError
-            If `kernel` is 'exponential' or 'depth' but `radius` is None.
+            If `kernel` is 'exponential', 'depth', or 'inverse' but `radius` is None.
         TypeError
-            If `kernel` is 'exponential' but `radius` is not a number.
+            If `kernel` is 'exponential' or 'inverse' but `radius` is not a number.
             If `kernel` is 'depth' but `radius` is not a float.
         ValueError
-            If `kernel` is 'exponential' but `radius` is not positive.
+            If `kernel` is 'exponential' or 'inverse' but `radius` is not positive.
             If `kernel` is 'depth' but `radius` is not in (0.5, 1).
 
         """
-        if self._kernel in ('exponential', 'depth'):
+        if self._kernel in ("exponential", "depth", "inverse"):
             if radius is None:
                 msg = f"`radius` is required for '{self._kernel}' kernel"
                 raise AttributeError(msg)
-            if self._kernel == 'exponential':
+            if self._kernel in ("exponential", "inverse"):
                 if not is_number(radius):
-                    raise TypeError('`radius` is not an int or float')
+                    raise TypeError("`radius` is not an int or float")
                 if radius <= 0:
-                    raise ValueError('`radius` is not positive')
-            elif self._kernel == 'depth':
+                    raise ValueError("`radius` is not positive")
+            elif self._kernel == "depth":
                 if not is_float(radius):
-                    raise TypeError('`radius` is not a float')
+                    raise TypeError("`radius` is not a float")
                 if radius <= 0.5 or radius >= 1:
-                    raise ValueError('`radius` is not in (0.5, 1)')
+                    raise ValueError("`radius` is not in (0.5, 1)")
             self._radius = radius
 
     @property
@@ -527,14 +538,14 @@ class Dimension:
             If `kernel` is 'tricubic' but `exponent` is not positive.
 
         """
-        if self._kernel == 'tricubic':
+        if self._kernel == "tricubic":
             if exponent is None:
                 msg = "`exponent` is required for 'tricubic' kernel"
                 raise AttributeError(msg)
             if not is_number(exponent):
-                raise TypeError('`exponent` is not an int or float')
+                raise TypeError("`exponent` is not an int or float")
             if exponent <= 0:
-                raise ValueError('`exponent` is not positive')
+                raise ValueError("`exponent` is not positive")
             self._exponent = exponent
 
     @property
@@ -567,13 +578,13 @@ class Dimension:
             {'codem', 'stgpr'}.
 
         """
-        if self._kernel == 'depth':
+        if self._kernel == "depth":
             if version is None:
-                self._version = 'codem'
+                self._version = "codem"
             else:
                 if not isinstance(version, str):
-                    raise TypeError('`version` is not a str')
-                if version not in ('codem', 'stgpr'):
+                    raise TypeError("`version` is not a str")
+                if version not in ("codem", "stgpr"):
                     raise ValueError("`version` not in {'codem', 'stgpr'}")
                 self._version = version
 
@@ -607,14 +618,14 @@ class Dimension:
 
         """
         # Once set, `distance_dict` cannot be changed
-        if hasattr(self, 'distance_dict'):
-            raise AttributeError('`distance_dict` cannot be changed')
+        if hasattr(self, "distance_dict"):
+            raise AttributeError("`distance_dict` cannot be changed")
 
         # Check values
-        if self._distance == 'dictionary':
+        if self._distance == "dictionary":
             if distance_dict is None:
                 msg = "`distance` is 'dictionary', "
-                msg += 'but `distance_dict` is None'
+                msg += "but `distance_dict` is None"
                 raise ValueError(msg)
             check_dict(distance_dict)
             self._distance_dict = distance_dict
@@ -655,19 +666,20 @@ class Dimension:
         points = np.array(points.drop_duplicates(), dtype=np.float32)
 
         # Initialize weight dictionary
-        weight_dict = TypedDict.empty(
-            key_type=UniTuple(float32, 2),
-            value_type=float32
-        )
+        weight_dict = TypedDict.empty(key_type=UniTuple(float32, 2), value_type=float32)
 
         # Compute weights
         for idx_x, x in enumerate(points[:, 0]):
-            distances = {y: self.get_distance(points[idx_x], points[idx_y])
-                         for idx_y, y in enumerate(points[:, 0])}
+            distances = {
+                y: self.get_distance(points[idx_x], points[idx_y])
+                for idx_y, y in enumerate(points[:, 0])
+            }
             radius = max(distances.values()) + 1  # tricubic kernel
             levels = len(points[idx_x, 1:])  # depth kernel
-            weights = {(x, y): self.get_weight(distances[y], radius, levels)
-                       for y in points[:, 0]}
+            weights = {
+                (x, y): self.get_weight(distances[y], radius, levels)
+                for y in points[:, 0]
+            }
             weight_dict.update(weights)
 
         return weight_dict
@@ -688,14 +700,13 @@ class Dimension:
             Distance between `x` and `y`.
 
         """
-        if self._distance == 'euclidean':
+        if self._distance == "euclidean":
             return euclidean(x[1:], y[1:])
-        if self._distance == 'tree':
+        if self._distance == "tree":
             return tree(x[1:], y[1:])
         return np.float32(self._distance_dict[(x[0], y[0])])
 
-    def get_weight(self, distance: number, radius: number, levels: int) \
-            -> np.float32:
+    def get_weight(self, distance: number, radius: number, levels: int) -> np.float32:
         """Get dimension smoothing weight.
 
         Parameters
@@ -713,12 +724,14 @@ class Dimension:
             Dimension smoothing weight.
 
         """
-        if self._kernel == 'exponential':
+        if self._kernel == "exponential":
             return exponential(distance, self._radius)
-        if self._kernel == 'tricubic':
+        if self._kernel == "tricubic":
             return tricubic(distance, radius, self._exponent)
-        if self._kernel == 'depth':
+        if self._kernel == "depth":
             return depth(distance, levels, self._radius, self._version)
+        if self._kernel == "inverse":
+            return inverse(distance, self._radius)
         return np.float32(distance)  # identity
 
 
@@ -746,18 +759,18 @@ def check_dict(distance_dict: Dict[Tuple[number, number], number]) -> None:
     """
     # Check types
     if not isinstance(distance_dict, dict):
-        raise TypeError('`distance_dict` is not a dict')
+        raise TypeError("`distance_dict` is not a dict")
     if not all(isinstance(key, tuple) for key in distance_dict):
-        raise TypeError('`distance_dict` keys not all tuple')
+        raise TypeError("`distance_dict` keys not all tuple")
     if not all(is_number(point) for key in distance_dict for point in key):
-        raise TypeError('`distance_dict` key entries not all int or float')
+        raise TypeError("`distance_dict` key entries not all int or float")
     if not all(is_number(value) for value in distance_dict.values()):
-        raise TypeError('`distance_dict` values not all int or float')
+        raise TypeError("`distance_dict` values not all int or float")
 
     # Check values
     if len(distance_dict) == 0:
-        raise ValueError('`distance_dict` is an empty dict')
+        raise ValueError("`distance_dict` is an empty dict")
     if any(len(key) != 2 for key in distance_dict):
-        raise ValueError('`distance_dict` keys are not all length 2')
+        raise ValueError("`distance_dict` keys are not all length 2")
     if any(value < 0.0 for value in distance_dict.values()):
-        raise ValueError('`distance_dict` contains negative values')
+        raise ValueError("`distance_dict` contains negative values")

@@ -40,6 +40,7 @@ References
        <https://en.wikipedia.org/wiki/Kernel_(statistics)#Kernel_functions_in_common_use>`_
 
 """
+# TODO: add note about inverse-distance kernel to kernel module documentation
 from typing import Union
 
 import numpy as np
@@ -89,7 +90,7 @@ def exponential(distance: number, radius: number) -> np.float32:
     0.01831564
 
     """
-    return np.float32(1/np.exp(distance/radius))
+    return np.float32(1 / np.exp(distance / radius))
 
 
 def tricubic(distance: number, radius: number, exponent: number) -> np.float32:
@@ -143,11 +144,10 @@ def tricubic(distance: number, radius: number, exponent: number) -> np.float32:
     0.0
 
     """
-    return np.float32(np.maximum(0, (1 - (distance/radius)**exponent)**3))
+    return np.float32(np.maximum(0, (1 - (distance / radius) ** exponent) ** 3))
 
 
-def depth(distance: number, levels: int, radius: float, version: str) \
-        -> np.float32:
+def depth(distance: number, levels: int, radius: float, version: str) -> np.float32:
     """Get depth smoothing weight.
 
     Parameters
@@ -231,8 +231,44 @@ def depth(distance: number, levels: int, radius: float, version: str) \
 
     """
     same_tree = distance <= levels - 1
-    if version == 'stgpr':
-        return np.float32(same_tree*radius**np.ceil(distance))
+    if version == "stgpr":
+        return np.float32(same_tree * radius ** np.ceil(distance))
     not_root = levels > 1 and distance <= levels - 2
-    weight = same_tree*radius**not_root*(1 - radius)**np.ceil(distance)
+    weight = same_tree * radius**not_root * (1 - radius) ** np.ceil(distance)
     return np.float32(weight)
+
+
+def inverse(distance: number, radius: float) -> np.float32:
+    """Get inverse-distance smoothing weight.
+
+    Parameters
+    ----------
+    distance : nonnegative int or float
+        Distance between points.
+    radius : positive int or float
+        Kernel radius.
+
+    Returns
+    -------
+    nonnegative numpy.float32
+        Inverse-distance smoothing weight.
+
+    Notes
+    -----
+    The inverse-distance kernel function for a single dimension is
+    defined as
+
+    .. math:: k(d; r) = \\frac{d}{r},
+
+    which is combined over all dimensions :math:`m \in \mathcal{M}` to
+    create intermediate weights
+
+    .. math:: \\tilde{w}_{i,j} = \\frac{1}
+              {\\sum_{m \\in \\mathcal{M}} k(d_{i,j}^m; r^m) + \\sigma_i^2}.
+
+    When using inverse-distance weights, all dimension kernels must be
+    set to 'inverse', and the `stdev` argument is required for
+    :mod:`weave.smoother.Smoother()`.
+
+    """
+    return np.float32(distance / radius)
