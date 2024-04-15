@@ -740,7 +740,7 @@ def smooth(
 
     Returns
     -------
-    Tuple of 1D numpy.ndarray of float32
+    tuple of 1D numpy.ndarray of float32
         Smoothed observations and standard deviations.
 
     """
