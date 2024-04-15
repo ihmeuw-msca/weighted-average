@@ -272,18 +272,19 @@ class Smoother:
 
         # Calculate smoothed values
         if self.inverse_weights:
-            col_smooth, col_variance = smooth_inverse(
+            result = smooth_inverse(
                 dim_list, points, col_obs, col_sd, idx_fit, idx_pred, down_weight
             )
         else:
-            col_smooth, col_variance = smooth(
+            result = smooth(
                 dim_list, points, col_obs, col_sd, idx_fit, idx_pred, down_weight
             )
 
         # Construct smoothed data frame
         data_smooth = data.iloc[idx_pred].reset_index(drop=True)
-        data_smooth[smoothed] = col_smooth
-        data_smooth[f"{smoothed}_var"] = col_variance
+        data_smooth[smoothed] = result[0]
+        if stdev is not None:
+            data_smooth[f"{smoothed}_sd"] = result[1]
 
         return data_smooth
 
@@ -739,8 +740,8 @@ def smooth(
 
     Returns
     -------
-    1D numpy.ndarray of float32
-        Smoothed values.
+    2D numpy.ndarray of float32
+        Smoothed observations and standard deviations.
 
     """
     # Initialize weight matrix
@@ -778,9 +779,9 @@ def smooth(
         weights = weights / (col_sd**2)
 
     # Compute smoothed values
-    smoothed_values = weights.dot(col_obs) / weights.sum(axis=1)
-    variance_vals = (weights**2).dot(col_sd**2) / (weights.sum(axis=1) ** 2)
-    return smoothed_values, variance_vals
+    smoothed_obs = weights.dot(col_obs) / weights.sum(axis=1)
+    smoothed_sd = np.sqrt((weights**2).dot(col_sd**2) / (weights.sum(axis=1) ** 2))
+    return np.array([smoothed_obs, smoothed_sd])
 
 
 @njit
@@ -814,8 +815,8 @@ def smooth_inverse(
 
     Returns
     -------
-    1D numpy.ndarray of float32
-        Smoothed values.
+    2D numpy.ndarray of float32
+        Smoothed observations and standard deviations.
 
     """
     # Initialize distance matrix
@@ -839,6 +840,6 @@ def smooth_inverse(
             weights[ii] = np.where(neighbors, weights[ii] * down_weight, weights[ii])
 
     # Compute smoothed values with inverse-distance weights
-    smoothed_values = weights.dot(col_obs) / weights.sum(axis=1)
-    variance_values = (weights**2).dot(col_sd**2) / (weights.sum(axis=1) ** 2)
-    return smoothed_values, variance_values
+    smoothed_obs = weights.dot(col_obs) / weights.sum(axis=1)
+    smoothed_sd = np.sqrt((weights**2).dot(col_sd**2) / (weights.sum(axis=1) ** 2))
+    return np.array([smoothed_obs, smoothed_sd])
