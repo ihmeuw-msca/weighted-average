@@ -1,7 +1,7 @@
 # pylint: disable=C0103, E0611, E1133, R0912, R0913, R0914
 """Smooth data across multiple dimensions using weighted averages."""
 from itertools import product
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 import warnings
 
 from numba import njit  # type: ignore
@@ -272,17 +272,19 @@ class Smoother:
 
         # Calculate smoothed values
         if self.inverse_weights:
-            col_smooth = smooth_inverse(
+            result = smooth_inverse(
                 dim_list, points, col_obs, col_sd, idx_fit, idx_pred, down_weight
             )
         else:
-            col_smooth = smooth(
+            result = smooth(
                 dim_list, points, col_obs, col_sd, idx_fit, idx_pred, down_weight
             )
 
         # Construct smoothed data frame
         data_smooth = data.iloc[idx_pred].reset_index(drop=True)
-        data_smooth[smoothed] = col_smooth
+        data_smooth[smoothed] = result[0]
+        if stdev is not None:
+            data_smooth[f"{smoothed}_sd"] = result[1]
 
         return data_smooth
 
@@ -716,7 +718,7 @@ def smooth(
     idx_fit: np.ndarray,
     idx_pred: np.ndarray,
     down_weight: float,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray]:
     """Smooth data across dimensions with weighted averages.
 
     Parameters
@@ -738,8 +740,8 @@ def smooth(
 
     Returns
     -------
-    1D numpy.ndarray of float32
-        Smoothed values.
+    tuple of 1D numpy.ndarray of float32
+        Smoothed observations and standard deviations.
 
     """
     # Initialize weight matrix
@@ -777,7 +779,9 @@ def smooth(
         weights = weights / (col_sd**2)
 
     # Compute smoothed values
-    return weights.dot(col_obs) / weights.sum(axis=1)
+    smoothed_obs = weights.dot(col_obs) / weights.sum(axis=1)
+    smoothed_sd = np.sqrt((weights**2).dot(col_sd**2) / (weights.sum(axis=1) ** 2))
+    return smoothed_obs, smoothed_sd
 
 
 @njit
@@ -789,7 +793,7 @@ def smooth_inverse(
     idx_fit: np.ndarray,
     idx_pred: np.ndarray,
     down_weight: float,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray]:
     """Smooth data across dimensions with inverse-distance weighted averages.
 
     Parameters
@@ -811,8 +815,8 @@ def smooth_inverse(
 
     Returns
     -------
-    1D numpy.ndarray of float32
-        Smoothed values.
+    tuple of 1D numpy.ndarray of float32
+        Smoothed observations and standard deviations.
 
     """
     # Initialize distance matrix
@@ -836,4 +840,6 @@ def smooth_inverse(
             weights[ii] = np.where(neighbors, weights[ii] * down_weight, weights[ii])
 
     # Compute smoothed values with inverse-distance weights
-    return weights.dot(col_obs) / weights.sum(axis=1)
+    smoothed_obs = weights.dot(col_obs) / weights.sum(axis=1)
+    smoothed_sd = np.sqrt((weights**2).dot(col_sd**2) / (weights.sum(axis=1) ** 2))
+    return smoothed_obs, smoothed_sd

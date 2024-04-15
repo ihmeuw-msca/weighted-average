@@ -402,67 +402,93 @@ def test_typed_dimensions_len():
 
 @pytest.mark.parametrize("predict", [None, "fit", "predict"])
 def test_smooth_shape(predict):
-    """`smooth` returns array of correct shape."""
+    """`smooth` returns arrays of correct shape."""
     idx_fit = smoother.get_indices(data, None)
     idx_pred = smoother.get_indices(data, predict)
     col_obs = smoother.get_values(data, "residual", idx_fit)
-    col_sd = smoother.get_values(data, None, idx_fit)
+    col_sd = smoother.get_values(data, "residual_sd", idx_fit)
     points = smoother.get_points(data)
     dim_list = smoother.get_typed_dimensions(data)
-    cols_smooth = smooth(dim_list, points, col_obs, col_sd, idx_fit, idx_pred, 1.0)
+    result = smooth(dim_list, points, col_obs, col_sd, idx_fit, idx_pred, 1.0)
+    assert len(result) == 2
     if predict is None:
-        assert cols_smooth.shape == (len(data),)
+        assert result[0].shape == (len(data),)  # smoothed_obs
+        assert result[1].shape == (len(data),)  # smoothed_sd
     else:
-        assert cols_smooth.shape == (data[predict].sum(),)
+        assert result[0].shape == (data[predict].sum(),)
+        assert result[1].shape == (data[predict].sum(),)
 
 
 @pytest.mark.parametrize("predict", [None, "fit", "predict"])
 def test_smooth_inverse_shape(predict):
-    """`smooth_inverse` returns array of correct shape."""
+    """`smooth_inverse` returns arrays of correct shape."""
     idx_fit = smoother.get_indices(data, None)
     idx_pred = smoother.get_indices(data, predict)
     col_obs = smoother.get_values(data, "residual", idx_fit)
     col_sd = smoother.get_values(data, None, idx_fit)
     points = smoother.get_points(data)
     dim_list = smoother.get_typed_dimensions(data)
-    cols_smooth = smooth_inverse(
-        dim_list, points, col_obs, col_sd, idx_fit, idx_pred, 1.0
-    )
+    result = smooth_inverse(dim_list, points, col_obs, col_sd, idx_fit, idx_pred, 1.0)
+    assert len(result) == 2
     if predict is None:
-        assert cols_smooth.shape == (len(data),)
+        assert result[0].shape == (len(data),)  # smoothed_obs
+        assert result[1].shape == (len(data),)  # smoothed_sd
     else:
-        assert cols_smooth.shape == (data[predict].sum(),)
+        assert result[0].shape == (data[predict].sum(),)
+        assert result[1].shape == (data[predict].sum(),)
 
 
+@pytest.mark.parametrize("stdev", [None, "residual_sd"])
 @pytest.mark.parametrize("predict", [None, "fit", "predict"])
-def test_smoother_shape(predict):
+def test_smoother_shape(stdev, predict):
     """Return data frame with correct shape."""
-    result = smoother(data, "residual", predict=predict)
+    result = smoother(data, "residual", stdev, predict=predict)
     if predict is None:
         assert len(result) == len(data)
     else:
         assert len(result) == data[predict].sum()
-    assert len(result.columns) == len(data.columns) + 1
+    if stdev is None:
+        assert len(result.columns) == len(data.columns) + 1
+    else:
+        assert len(result.columns) == len(data.columns) + 2
 
 
+@pytest.mark.parametrize("predict", [None, "fit", "predict"])
+def test_smoother_inverse_shape(predict):
+    """Return data frame with correct shape."""
+    result = smoother_inverse(data, "residual", "residual_sd", predict=predict)
+    if predict is None:
+        assert len(result) == len(data)
+    else:
+        assert len(result) == data[predict].sum()
+    assert len(result.columns) == len(data.columns) + 2
+
+
+@pytest.mark.parametrize("stdev", [None, "residual_sd"])
 @pytest.mark.parametrize("smoothed", [None, "dummy"])
-def test_smoother_columns(smoothed):
+def test_smoother_columns(stdev, smoothed):
     """Return data frame with correct column names."""
-    result = smoother(data, "residual", smoothed=smoothed)
+    result = smoother(data, "residual", stdev, smoothed)
     if smoothed is None:
         assert "residual_smooth" in result.columns
+        if stdev is not None:
+            assert "residual_smooth_sd" in result.columns
     else:
         assert smoothed in result.columns
+        if stdev is not None:
+            assert f"{smoothed}_sd" in result.columns
 
 
 @pytest.mark.parametrize("smoothed", [None, "dummy"])
 def test_smoother_inverse_columns(smoothed):
     """Return data frame with correct column names."""
-    result = smoother_inverse(data, "residual", "residual_sd", smoothed=smoothed)
+    result = smoother_inverse(data, "residual", "residual_sd", smoothed)
     if smoothed is None:
         assert "residual_smooth" in result.columns
+        assert "residual_smooth_sd" in result.columns
     else:
         assert smoothed in result.columns
+        assert f"{smoothed}_sd" in result.columns
 
 
 def test_result():

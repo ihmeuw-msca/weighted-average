@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Installation" href="installation.html" /><link rel="prev" title="User Guide" href="index.html" />
 
     <!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
-        <title>What is WeAve? - weave 1.2.0</title>
+        <title>What is WeAve? - weave 1.3.0</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=135e06be" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=36a5483c" />
@@ -136,7 +136,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">weave 1.2.0</div></a>
+      <a href="../index.html"><div class="brand">weave 1.3.0</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -163,7 +163,7 @@
     <img class="sidebar-logo only-dark" src="../_static/logo/logo-dark.png" alt="Dark Logo"/>
   </div>
   
-  <span class="sidebar-brand-text">weave 1.2.0</span>
+  <span class="sidebar-brand-text">weave 1.3.0</span>
   
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -266,7 +266,12 @@ are defined as</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[w_{i, j} = \frac{\tilde{w}_{i, j} / \sigma_j^2}
-{\sum_{k \in \mathcal{D}} \tilde{w}_{i, k} / \sigma_k^2}.\]</div>
+{\sum_{k \in \mathcal{D}} \tilde{w}_{i, k} / \sigma_k^2},\]</div>
+</div>
+<p>and the standard deviation of the smoothed observations are defined as</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\hat{\sigma_i} = \sqrt{\sum_{j \in \mathcal{D}} w_{i, j}^2 \, \sigma_j^2}.\]</div>
 </div>
 <p>For instructions on how to get started, see the <a class="reference internal" href="quickstart.html"><span class="doc">Quickstart</span></a>.
 For descriptions of the modules, objects, and functions included in WeAve, see

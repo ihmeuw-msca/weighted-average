@@ -15,7 +15,7 @@ __classifiers__ = [
     'Programming Language :: Python :: 3',
 ]
 
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 __year__ = '2024'
 __author__ = 'IHME Math Sciences'
 __email__ = 'ihme.math.sciences@gmail.com'
