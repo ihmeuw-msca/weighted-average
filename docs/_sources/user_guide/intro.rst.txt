@@ -45,7 +45,11 @@ If the standard deviation of each observation is known, then the final weights
 are defined as
 
 .. math:: w_{i, j} = \frac{\tilde{w}_{i, j} / \sigma_j^2}
-         {\sum_{k \in \mathcal{D}} \tilde{w}_{i, k} / \sigma_k^2}.
+         {\sum_{k \in \mathcal{D}} \tilde{w}_{i, k} / \sigma_k^2},
+
+and the standard deviation of the smoothed observations are defined as
+
+.. math:: \hat{\sigma_i} = \sqrt{\sum_{j \in \mathcal{D}} w_{i, j}^2 \, \sigma_j^2}.
 
 For instructions on how to get started, see the :doc:`Quickstart <quickstart>`.
 For descriptions of the modules, objects, and functions included in WeAve, see
