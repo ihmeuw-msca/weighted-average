@@ -438,6 +438,8 @@ def test_smooth_inverse_shape(predict):
         assert result[1].shape == (data[predict].sum(),)
 
 
+@pytest.mark.parametrize("stdev", [None, "residual_sd"])
+@pytest.mark.parametrize("predict", [None, "fit", "predict"])
 def test_smoother_shape(stdev, predict):
     """Return data frame with correct shape."""
     result = smoother(data, "residual", stdev, predict=predict)
